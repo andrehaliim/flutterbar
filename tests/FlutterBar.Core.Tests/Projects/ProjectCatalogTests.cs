@@ -49,6 +49,18 @@ public class ProjectCatalogTests
     }
 
     [Fact]
+    public void Build_BlankEntries_AreIgnored()
+    {
+        var settings = new AppSettings();
+        settings.ManualProjects.AddRange(["", "  "]);
+        settings.HiddenProjects.Add("");
+
+        var result = ProjectCatalog.Build(["C:\\Work\\a", ""], settings, AllExist);
+
+        Assert.Equal(["a"], result.Select(p => p.DisplayName));
+    }
+
+    [Fact]
     public void Build_MissingDirectory_MarkedUnavailable()
     {
         var result = ProjectCatalog.Build(

@@ -17,6 +17,11 @@ public static class ProjectScanner
         var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in roots)
         {
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                continue;
+            }
+
             var full = PathKey.Normalize(root);
             if (Directory.Exists(full))
             {

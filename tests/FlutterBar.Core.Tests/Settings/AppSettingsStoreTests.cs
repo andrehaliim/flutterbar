@@ -66,6 +66,44 @@ public sealed class AppSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Projects_TrailingSeparatorLookup_Hits()
+    {
+        var settings = new AppSettings
+        {
+            Projects = new Dictionary<string, ProjectState> { ["C:\\Work\\app"] = new() { Config = "x" } },
+        };
+
+        Assert.True(settings.TryGetProject("c:\\work\\APP\\", out var state));
+        Assert.Equal("x", state.Config);
+        Assert.False(settings.TryGetProject("C:\\Work\\other", out _));
+    }
+
+    [Fact]
+    public void GetOrAddProject_Normalizes()
+    {
+        var settings = new AppSettings();
+
+        var a = settings.GetOrAddProject("C:\\Work\\app\\");
+        var b = settings.GetOrAddProject("c:\\work\\APP");
+
+        Assert.Same(a, b);
+        Assert.Equal(["C:\\Work\\app"], settings.Projects.Keys);
+    }
+
+    [Fact]
+    public void Load_DuplicateProjectKeys_MergedWithoutException()
+    {
+        File.WriteAllText(SettingsPath,
+            "{\"projects\":{\"C:\\\\a\\\\app\":{\"config\":\"first\"},\"c:\\\\A\\\\APP\\\\\":{\"config\":\"last\"}}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Single(settings.Projects);
+        Assert.Equal("last", settings.Projects.Values.Single().Config);
+    }
+
+    [Fact]
     public void Save_WritesCamelCaseKeys()
     {
         new AppSettingsStore(SettingsPath).Save(new AppSettings());

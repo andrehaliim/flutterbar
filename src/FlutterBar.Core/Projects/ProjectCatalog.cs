@@ -10,16 +10,19 @@ public static class ProjectCatalog
     public static IReadOnlyList<ProjectInfo> Build(
         IReadOnlyList<string> scanned, AppSettings settings, Func<string, bool> directoryExists)
     {
-        var hidden = new HashSet<string>(settings.HiddenProjects.Select(PathKey.Normalize), StringComparer.OrdinalIgnoreCase);
+        var hidden = new HashSet<string>(settings.HiddenProjects.Where(IsPresent).Select(PathKey.Normalize), StringComparer.OrdinalIgnoreCase);
 
         var lastUsed = new Dictionary<string, DateTimeOffset?>(StringComparer.OrdinalIgnoreCase);
         foreach (var (key, state) in settings.Projects)
         {
-            lastUsed[PathKey.Normalize(key)] = state.LastUsed;
+            if (IsPresent(key))
+            {
+                lastUsed[PathKey.Normalize(key)] = state.LastUsed;
+            }
         }
 
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var raw in scanned.Concat(settings.ManualProjects))
+        foreach (var raw in scanned.Concat(settings.ManualProjects).Where(IsPresent))
         {
             var path = PathKey.Normalize(raw);
             if (!hidden.Contains(path))
@@ -48,6 +51,8 @@ public static class ProjectCatalog
                 .ThenBy(p => p.Path, StringComparer.OrdinalIgnoreCase),
         ];
     }
+
+    private static bool IsPresent(string? path) => !string.IsNullOrWhiteSpace(path);
 
     private static string FolderName(string path)
     {

@@ -1,3 +1,5 @@
+using FlutterBar.Core.Projects;
+
 namespace FlutterBar.Core.Settings;
 
 public sealed class AppSettings
@@ -28,12 +30,40 @@ public sealed class AppSettings
         set => _hiddenProjects = value ?? [];
     }
 
-    /// <summary>Keyed by project path; always case-insensitive, also after JSON deserialization.</summary>
+    /// <summary>
+    /// Keyed by normalized project path (case-insensitive). The setter normalizes keys and merges
+    /// duplicates (last wins); blank keys and null values are dropped. Prefer
+    /// <see cref="TryGetProject"/> / <see cref="GetOrAddProject"/>, which normalize the lookup path.
+    /// </summary>
     public Dictionary<string, ProjectState> Projects
     {
         get => _projects;
-        set => _projects = new Dictionary<string, ProjectState>(
-            value ?? [], StringComparer.OrdinalIgnoreCase);
+        set
+        {
+            var merged = new Dictionary<string, ProjectState>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (key, state) in value ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(key) && state is not null)
+                {
+                    merged[PathKey.Normalize(key)] = state;
+                }
+            }
+            _projects = merged;
+        }
+    }
+
+    public bool TryGetProject(string path, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out ProjectState? state) =>
+        _projects.TryGetValue(PathKey.Normalize(path), out state);
+
+    public ProjectState GetOrAddProject(string path)
+    {
+        var key = PathKey.Normalize(path);
+        if (!_projects.TryGetValue(key, out var state))
+        {
+            state = new ProjectState();
+            _projects[key] = state;
+        }
+        return state;
     }
 
     public string? CurrentProject { get; set; }
