@@ -1,5 +1,7 @@
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FlutterBar.Core.IO;
 
 namespace FlutterBar.Core.Config;
 
@@ -98,9 +100,7 @@ public static class LaunchConfigStore
             writer.WriteEndObject();
         }
 
-        var tmp = path + ".tmp";
-        File.WriteAllBytes(tmp, stream.ToArray());
-        File.Move(tmp, path, overwrite: true);
+        AtomicFile.WriteAllText(path, Encoding.UTF8.GetString(stream.ToArray()));
     }
 
     private static List<LaunchConfig> Validate(JsonElement root, string projectRoot, List<ConfigError> errors)
