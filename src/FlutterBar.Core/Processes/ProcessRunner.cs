@@ -17,6 +17,7 @@ public sealed class ProcessRunner(IProcessLauncher launcher) : IProcessRunner
         await using var handle = launcher.Start(spec);
         handle.StdoutLine += line => Append(stdout, line);
         handle.StderrLine += line => Append(stderr, line);
+        handle.CloseStdin(); // commands run here are non-interactive: prompts see EOF instead of hanging
 
         using var timeoutCts = new CancellationTokenSource(timeout);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
@@ -29,7 +30,8 @@ public sealed class ProcessRunner(IProcessLauncher launcher) : IProcessRunner
         {
             // Timed out (not cancelled by the caller): kill the tree and report what was captured.
             handle.KillTree();
-            await handle.Exited.ConfigureAwait(false);
+            // Bounded wait for the output to drain; if it does not, report what we have.
+            await Task.WhenAny(handle.Exited, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
             return Result(-1, stdout, stderr);
         }
         // Caller cancellation propagates; the handle's DisposeAsync kills the process tree.

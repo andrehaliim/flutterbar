@@ -35,13 +35,19 @@ internal sealed class EchoArgsFixture : IDisposable
 
     public void Dispose()
     {
-        try
+        // Test cleanup only: a just-killed process may still hold files/handles briefly. Retry a few times, then
+        // leave the leftovers in %TEMP% rather than failing the test.
+        for (var attempt = 0; attempt < 5; attempt++)
         {
-            _root.Delete(recursive: true);
-        }
-        catch (IOException)
-        {
-            // A just-killed process may still hold a handle briefly; the OS temp cleaner reaps the leftovers.
+            try
+            {
+                _root.Delete(recursive: true);
+                return;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Thread.Sleep(100);
+            }
         }
     }
 

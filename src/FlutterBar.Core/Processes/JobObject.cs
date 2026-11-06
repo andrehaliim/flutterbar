@@ -11,6 +11,7 @@ public sealed class JobObject : IDisposable
     private const int JobObjectExtendedLimitInformation = 9;
     private const uint JobObjectLimitKillOnJobClose = 0x2000;
 
+    private readonly object _gate = new();
     private readonly SafeJobHandle _handle;
 
     public JobObject()
@@ -41,8 +42,25 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>Closes the job handle, which kills every process still in the job. Safe to call repeatedly.</summary>
-    public void Dispose() => _handle.Dispose();
+    /// <summary>Terminates every process in the job (exit code 1) and closes the handle. Safe to call repeatedly.</summary>
+    public void Dispose()
+    {
+        lock (_gate)
+        {
+            if (_handle.IsClosed)
+            {
+                return;
+            }
+            // Return value ignored on purpose: closing the handle below kills the job anyway (KILL_ON_JOB_CLOSE);
+            // terminating first just gives the processes a non-zero exit code.
+            _ = TerminateJobObject(_handle, 1);
+            _handle.Dispose();
+        }
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool TerminateJobObject(SafeJobHandle job, uint exitCode);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern SafeJobHandle CreateJobObjectW(IntPtr attributes, string? name);

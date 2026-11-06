@@ -86,11 +86,51 @@ public class ProcessLauncherTests
     }
 
     [Fact]
+    public async Task KillTree_ExitCodeIsNonZero()
+    {
+        using var echo = new EchoArgsFixture();
+        await using var handle = new ProcessLauncher().Start(echo.Spec(echo.Exe, "--interactive"));
+
+        handle.KillTree();
+
+        Assert.NotEqual(0, await handle.Exited.WaitAsync(Wait));
+    }
+
+    [Fact]
+    public void Start_MissingExe_SurfacesOriginalWin32Exception()
+    {
+        var spec = new ProcessSpec(Path.Combine(Path.GetTempPath(), "no-such-flutterbar-tool.exe"), [], Path.GetTempPath());
+
+        Assert.Throws<System.ComponentModel.Win32Exception>(() => new ProcessLauncher().Start(spec));
+    }
+
+    [Fact]
+    public void Start_MissingWorkingDirectory_SurfacesOriginalWin32Exception()
+    {
+        using var echo = new EchoArgsFixture();
+        var missing = Path.Combine(echo.Dir, "deleted-project");
+
+        Assert.Throws<System.ComponentModel.Win32Exception>(
+            () => new ProcessLauncher().Start(new ProcessSpec(echo.Exe, [], missing)));
+    }
+
+    [Fact]
+    public async Task Runner_ClosesStdin_SoInteractiveChildExitsInsteadOfTimingOut()
+    {
+        using var echo = new EchoArgsFixture();
+
+        var result = await new ProcessRunner(new ProcessLauncher())
+            .RunAsync(echo.Spec(echo.Exe, "--interactive"), TimeSpan.FromSeconds(20), CancellationToken.None);
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
     public async Task Runner_Timeout_KillsAndReturnsMinusOne()
     {
         using var echo = new EchoArgsFixture();
         var result = await new ProcessRunner(new ProcessLauncher())
-            .RunAsync(echo.Spec(echo.Exe, "--interactive"), TimeSpan.FromMilliseconds(500), CancellationToken.None);
+            .RunAsync(echo.Spec(echo.Exe, "--hang"), TimeSpan.FromMilliseconds(500), CancellationToken.None);
 
         Assert.Equal(-1, result.ExitCode);
     }
@@ -102,7 +142,7 @@ public class ProcessLauncherTests
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ProcessRunner(new ProcessLauncher())
-            .RunAsync(echo.Spec(echo.Exe, "--interactive"), TimeSpan.FromSeconds(30), cts.Token));
+            .RunAsync(echo.Spec(echo.Exe, "--hang"), TimeSpan.FromSeconds(30), cts.Token));
     }
 
     [Fact]

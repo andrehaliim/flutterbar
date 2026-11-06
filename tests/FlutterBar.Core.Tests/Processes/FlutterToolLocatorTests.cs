@@ -65,7 +65,7 @@ public class FlutterToolLocatorTests
 
         Assert.Null(r.Error);
         Assert.Equal("cmd.exe", r.Spec!.FileName);
-        Assert.Equal(["/d", "/s", "/c", @"C:\f\flutter.bat", "devices", "--machine"], r.Spec.Args);
+        Assert.Equal(["/e:ON", "/v:OFF", "/d", "/s", "/c", @"C:\f\flutter.bat", "devices", "--machine"], r.Spec.Args);
     }
 
     [Fact]
@@ -77,6 +77,32 @@ public class FlutterToolLocatorTests
 
         Assert.Equal(@"C:\f\flutter.exe", r.Spec!.FileName);
         Assert.Equal(["doctor"], r.Spec.Args);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void QuoteInArg_Rejected(bool fvm)
+    {
+        var locator = new FlutterToolLocator(
+            new FakePaths(new() { ["fvm"] = @"C:\x\fvm.exe", ["flutter"] = @"C:\f\flutter.bat" }),
+            p => fvm && p == Path.Combine(Root, ".fvmrc"));
+
+        var r = locator.Resolve(Root, ["run", "--dart-define=A=say \"hi\""]);
+
+        Assert.Null(r.Spec);
+        Assert.Contains("tanda kutip", r.Error);
+        Assert.Contains("say \"hi\"", r.Error);
+    }
+
+    [Fact]
+    public void FvmConfigJson_MissingFvm_ErrorNamesTriggerFile()
+    {
+        var locator = new FlutterToolLocator(new FakePaths([]), p => p == Path.Combine(Root, ".fvm", "fvm_config.json"));
+
+        var r = locator.Resolve(Root, ["devices"]);
+
+        Assert.Contains("fvm_config.json", r.Error);
     }
 
     [Fact]

@@ -5,6 +5,7 @@ using System.Text.Json;
 // Test helper for FlutterBar process tests.
 //   (default)       prints the received args as one JSON array line
 //   --interactive   echoes every stdin line as "echo:<line>" until EOF
+//   --hang          sleeps forever
 //   --spawn-child   starts a child "echoargs --interactive", prints the child PID, waits on stdin
 Console.OutputEncoding = new UTF8Encoding(false);
 Console.InputEncoding = new UTF8Encoding(false);
@@ -18,6 +19,11 @@ if (args.Length == 1 && args[0] == "--interactive")
         Console.Out.Flush();
     }
     return 0;
+}
+
+if (args.Length == 1 && args[0] == "--hang")
+{
+    Thread.Sleep(Timeout.Infinite);
 }
 
 if (args.Length == 1 && args[0] == "--spawn-child")

@@ -9,7 +9,8 @@ public sealed class ProcessLauncher : IProcessLauncher
 
     internal static bool IsBatchFile(string fileName)
     {
-        var ext = Path.GetExtension(fileName);
+        // Windows ignores trailing dots and spaces, so "x.bat." still runs as a batch file.
+        var ext = Path.GetExtension(fileName.TrimEnd('.', ' '));
         return ext.Equals(".bat", StringComparison.OrdinalIgnoreCase)
             || ext.Equals(".cmd", StringComparison.OrdinalIgnoreCase);
     }
@@ -31,23 +32,24 @@ public sealed class ProcessLauncher : IProcessLauncher
         ApplyCommand(psi, spec);
 
         var job = new JobObject();
-        Process? process = null;
+        var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        var started = false;
         try
         {
-            process = new Process { StartInfo = psi, EnableRaisingEvents = true };
             process.Start();
+            started = true;
             job.Assign(process);
             return new Handle(process, job);
         }
         catch
         {
-            // Startup failed: make sure nothing is left running or leaked, then surface the original error.
+            // Startup failed: clean up, then let the original exception (e.g. Win32Exception) propagate.
             job.Dispose();
-            if (process is { HasExited: false })
+            if (started && !process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
             }
-            process?.Dispose();
+            process.Dispose();
             throw;
         }
     }
@@ -61,9 +63,10 @@ public sealed class ProcessLauncher : IProcessLauncher
         }
         else if (IsCmdBatchInvocation(spec))
         {
-            // cmd.exe /d /s /c <batch> <args...> (as built by FlutterToolLocator): escape through CmdEscaper.
+            // cmd.exe <CmdSwitches> <batch> <args...> (as built by FlutterToolLocator): escape through CmdEscaper.
+            var n = CmdEscaper.CmdSwitches.Count;
             psi.FileName = spec.FileName;
-            psi.Arguments = CmdEscaper.BuildCmdArguments(spec.Args[3], [.. spec.Args.Skip(4)]);
+            psi.Arguments = CmdEscaper.BuildCmdArguments(spec.Args[n], [.. spec.Args.Skip(n + 1)]);
         }
         else
         {
@@ -75,45 +78,84 @@ public sealed class ProcessLauncher : IProcessLauncher
         }
     }
 
-    private static bool IsCmdBatchInvocation(ProcessSpec spec) =>
-        Path.GetFileName(spec.FileName).Equals(CmdExe, StringComparison.OrdinalIgnoreCase)
-        && spec.Args.Count >= 4
-        && spec.Args[0] == "/d"
-        && spec.Args[1] == "/s"
-        && spec.Args[2] == "/c"
-        && IsBatchFile(spec.Args[3]);
+    private static bool IsCmdBatchInvocation(ProcessSpec spec)
+    {
+        var switches = CmdEscaper.CmdSwitches;
+        if (!Path.GetFileName(spec.FileName).Equals(CmdExe, StringComparison.OrdinalIgnoreCase)
+            || spec.Args.Count <= switches.Count)
+        {
+            return false;
+        }
+        for (var i = 0; i < switches.Count; i++)
+        {
+            if (spec.Args[i] != switches[i])
+            {
+                return false;
+            }
+        }
+        return IsBatchFile(spec.Args[switches.Count]);
+    }
 
+    /// <summary>
+    /// Event with replay of lines raised before the first subscriber. Handlers are invoked outside the lock;
+    /// the per-stream reader is serial, and lines arriving during replay are queued so order is preserved.
+    /// </summary>
     private sealed class LineEvent
     {
+        private const int MaxPending = 10_000;
+
         private readonly object _gate = new();
-        private List<string>? _pending = [];
+        private Queue<string>? _pending = new();
         private Action<string>? _handler;
 
         public void Raise(string line)
         {
+            Action<string>? handler;
             lock (_gate)
             {
-                if (_handler is null)
+                if (_pending is not null)
                 {
-                    _pending?.Add(line);
+                    if (_pending.Count >= MaxPending)
+                    {
+                        _pending.Dequeue();
+                    }
+                    _pending.Enqueue(line);
                     return;
                 }
-                _handler(line);
+                handler = _handler;
             }
+            handler?.Invoke(line);
         }
 
         public void Add(Action<string> handler)
         {
+            Queue<string>? batch;
             lock (_gate)
             {
                 _handler += handler;
-                if (_pending is { } pending)
+                if (_pending is null)
                 {
-                    _pending = null;
-                    foreach (var line in pending)
+                    return;
+                }
+                batch = _pending;
+                _pending = new Queue<string>();
+            }
+
+            while (true)
+            {
+                foreach (var line in batch)
+                {
+                    handler(line);
+                }
+                lock (_gate)
+                {
+                    if (_pending!.Count == 0)
                     {
-                        handler(line);
+                        _pending = null;
+                        return;
                     }
+                    batch = _pending;
+                    _pending = new Queue<string>();
                 }
             }
         }
@@ -129,10 +171,13 @@ public sealed class ProcessLauncher : IProcessLauncher
 
     private sealed class Handle : IProcessHandle
     {
+        private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(5);
+
         private readonly Process _process;
         private readonly JobObject _job;
         private readonly LineEvent _stdout = new();
         private readonly LineEvent _stderr = new();
+        private readonly SemaphoreSlim _writeLock = new(1, 1);
         private int _disposed;
 
         public Handle(Process process, JobObject job)
@@ -176,7 +221,20 @@ public sealed class ProcessLauncher : IProcessLauncher
             remove => _stderr.Remove(value!);
         }
 
-        public Task WriteLineAsync(string line) => _process.StandardInput.WriteLineAsync(line);
+        public async Task WriteLineAsync(string line)
+        {
+            await _writeLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                await _process.StandardInput.WriteLineAsync(line).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
+        }
+
+        public void CloseStdin() => _process.StandardInput.Close();
 
         public void KillTree() => _job.Dispose();
 
@@ -187,8 +245,11 @@ public sealed class ProcessLauncher : IProcessLauncher
                 return;
             }
             KillTree();
-            await Exited.ConfigureAwait(false);
-            _process.Dispose();
+            var drained = await Task.WhenAny(Exited, Task.Delay(DrainTimeout)).ConfigureAwait(false) == Exited;
+            if (drained)
+            {
+                _process.Dispose();
+            }
         }
 
         private async Task<int> WaitForExitAsync()

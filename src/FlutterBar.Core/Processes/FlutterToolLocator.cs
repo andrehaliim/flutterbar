@@ -7,15 +7,33 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
 {
     public ToolResolution Resolve(string projectRoot, IReadOnlyList<string> flutterArgs)
     {
-        var usesFvm = fileExists(Path.Combine(projectRoot, ".fvmrc"))
-            || fileExists(Path.Combine(projectRoot, ".fvm", "fvm_config.json"));
+        // No escaping survives both cmd.exe and the Dart argv parser behind flutter.bat's %*, so fail closed.
+        foreach (var arg in flutterArgs)
+        {
+            if (arg.Contains('"'))
+            {
+                return new ToolResolution(
+                    null,
+                    $"Argumen berisi tanda kutip (\") tidak didukung saat menjalankan flutter: {arg}. Gunakan --dart-define-from-file untuk nilai kompleks.");
+            }
+        }
 
-        if (usesFvm)
+        string? fvmMarker = null;
+        if (fileExists(Path.Combine(projectRoot, ".fvmrc")))
+        {
+            fvmMarker = ".fvmrc";
+        }
+        else if (fileExists(Path.Combine(projectRoot, ".fvm", "fvm_config.json")))
+        {
+            fvmMarker = ".fvm/fvm_config.json";
+        }
+
+        if (fvmMarker is not null)
         {
             var fvm = paths.Find("fvm");
             if (fvm is null)
             {
-                return new ToolResolution(null, "Project memakai fvm (.fvmrc) tetapi fvm tidak ditemukan di PATH");
+                return new ToolResolution(null, $"Project memakai fvm ({fvmMarker}) tetapi fvm tidak ditemukan di PATH");
             }
             return new ToolResolution(new ProcessSpec(fvm, ["flutter", .. flutterArgs], projectRoot), null);
         }
@@ -29,7 +47,7 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
         if (ProcessLauncher.IsBatchFile(flutter))
         {
             return new ToolResolution(
-                new ProcessSpec(ProcessLauncher.CmdExe, ["/d", "/s", "/c", flutter, .. flutterArgs], projectRoot),
+                new ProcessSpec(ProcessLauncher.CmdExe, [.. CmdEscaper.CmdSwitches, flutter, .. flutterArgs], projectRoot),
                 null);
         }
         return new ToolResolution(new ProcessSpec(flutter, flutterArgs, projectRoot), null);

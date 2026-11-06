@@ -10,15 +10,25 @@ public static class CmdEscaper
 {
     private const string SpecialChars = " \t\"&|<>^%!()`;,=";
 
-    /// <summary>Returns <c>/d /s /c ""batch" arg1 arg2"</c> with every argument escaped.</summary>
+    /// <summary>
+    /// Switches placed before the batch path. Extensions on (needed for <c>%cd:~,%</c>, <c>%*</c>, <c>%~dp0</c>) and delayed
+    /// expansion off, so a registry DelayedExpansion=1 cannot expand <c>!VAR!</c> in arguments.
+    /// </summary>
+    public static readonly IReadOnlyList<string> CmdSwitches = ["/e:ON", "/v:OFF", "/d", "/s", "/c"];
+
+    /// <summary>Returns <c>/e:ON /v:OFF /d /s /c ""batch" arg1 arg2"</c> with every argument escaped.</summary>
     public static string BuildCmdArguments(string batchPath, IReadOnlyList<string> args)
     {
         ArgumentNullException.ThrowIfNull(batchPath);
         ArgumentNullException.ThrowIfNull(args);
         RejectNewlines(batchPath);
+        if (batchPath.Contains('"'))
+        {
+            throw new ArgumentException("Batch path must not contain a double quote.");
+        }
 
-        var sb = new StringBuilder("/d /s /c \"\"");
-        sb.Append(batchPath).Append('"');
+        var sb = new StringBuilder(string.Join(' ', CmdSwitches)).Append(" \"\"");
+        sb.Append(batchPath.Replace("%", "%%cd:~,%")).Append('"');
         foreach (var arg in args)
         {
             RejectNewlines(arg);

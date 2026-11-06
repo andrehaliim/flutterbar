@@ -16,12 +16,19 @@ public interface IProcessHandle : IAsyncDisposable
     /// <summary>Completes with the exit code once the process exited and stdout/stderr were fully drained.</summary>
     Task<int> Exited { get; }
 
-    /// <summary>Lines raised before the first subscriber attaches are buffered and replayed to it.</summary>
+    /// <summary>
+    /// Lines raised before the first subscriber attaches are buffered (newest 10,000 per stream) and replayed to it.
+    /// Handlers run on a reader thread and must not throw.
+    /// </summary>
     event Action<string>? StdoutLine;
 
     event Action<string>? StderrLine;
 
+    /// <summary>Writes are serialized; do not call after <see cref="CloseStdin"/>.</summary>
     Task WriteLineAsync(string line);
+
+    /// <summary>Closes the child's stdin so it sees EOF.</summary>
+    void CloseStdin();
 
     void KillTree();
 }
