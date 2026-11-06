@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FlutterBar.Core\FlutterBar.Core.csproj" />
     <ProjectReference Include="..\..\src\FlutterBar.Cli\FlutterBar.Cli.csproj" />
+    <ProjectReference Include="..\EchoArgs\EchoArgs.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
