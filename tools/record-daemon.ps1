@@ -14,6 +14,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Device,
     [Parameter(Mandatory = $true)][ValidateSet('start-ok', 'reload-ok', 'restart-ok', 'reload-compile-error', 'runtime-exception', 'stop', 'build-fail', 'web-reload-unsupported')][string]$Scenario,
     [Parameter(Mandatory = $true)][string]$Out,
+    [string]$StderrOut = '',
     [string]$ProjectDir = '',
     [int]$TimeoutSec = 300
 )
@@ -29,6 +30,8 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $outDir = Split-Path -Parent ([IO.Path]::GetFullPath($Out))
 if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Force $outDir | Out-Null }
 $Out = [IO.Path]::GetFullPath($Out)
+if ($StderrOut -eq '') { $StderrOut = [IO.Path]::ChangeExtension($Out, '.stderr.txt') }
+$StderrOut = [IO.Path]::GetFullPath($StderrOut)
 
 $originalBytes = [IO.File]::ReadAllBytes($mainDart)
 $script:lines = New-Object System.Collections.ArrayList
@@ -191,8 +194,8 @@ finally {
     Start-Sleep -Milliseconds 500
     Unregister-Event -SourceIdentifier 'rec-out' -ErrorAction SilentlyContinue
     Unregister-Event -SourceIdentifier 'rec-err' -ErrorAction SilentlyContinue
-    # stderr is not part of the fixture (stdout only); keep it next to the temp files for diagnosis.
-    $errFile = Join-Path ([IO.Path]::GetTempPath()) ("record-daemon-$Scenario.stderr.txt")
+    # stderr goes to a sidecar file (cross-stream ordering with stdout is not recorded).
+    $errFile = $StderrOut
     [IO.File]::WriteAllText($errFile, (($script:errs.ToArray()) -join "`n"), $utf8NoBom)
     Write-Host "[$Scenario] stderr ($($script:errs.Count) lines) saved to $errFile"
     [System.Threading.Monitor]::Enter($script:sync)

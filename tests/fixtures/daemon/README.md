@@ -2,7 +2,11 @@
 
 Raw stdout of `fvm flutter run --machine -d <device>` recorded by `tools/record-daemon.ps1` against `tests/sample_app`
 (pristine `flutter create` template, pinned to 3.22.3 via `.fvmrc`). One line per line, exactly as emitted (UTF-8, no BOM).
-stderr is NOT part of the fixtures.
+stderr is recorded as a sidecar `<name>.stderr.txt` next to each `<name>.jsonl` (empty when nothing was written; the
+recorder's `-StderrOut` defaults to that path). Cross-stream ordering between stdout and stderr is NOT captured. Observed
+behavior: stderr diagnostics (compiler errors) arrive before the `code:1` response / `app.stop` on stdout.
+`web-reload-unsupported` is effectively identical to `reload-ok` (web turns reload into restart, code 0), so Task 9 needs a
+hand-built "reload rejected" response for that case.
 
 ## Device used
 

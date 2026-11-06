@@ -1,0 +1,4 @@
+lib/main.dart:127:9: Error: Expected an identifier, but got ';'.
+Try inserting an identifier before ';'.
+int x = ;
+        ^

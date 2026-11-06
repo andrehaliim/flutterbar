@@ -73,6 +73,16 @@ public class DaemonProtocolTests
         Assert.Contains(messages, m => m is AppStop);
     }
 
+    [Theory]
+    [InlineData("build-fail")]
+    [InlineData("reload-compile-error")]
+    public void CompileFailureFixtures_StderrSidecarContainsCompilerError(string fixture)
+    {
+        var stderr = File.ReadAllText(TestPaths.Fixture("daemon", "3.22.3", fixture + ".stderr.txt"));
+
+        Assert.Contains("Error:", stderr, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Stop_ResponseThenAppStop()
     {
