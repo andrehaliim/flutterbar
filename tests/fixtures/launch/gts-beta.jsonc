@@ -1,0 +1,18 @@
+// FlutterBar launch configuration (JSONC)
+{
+  "version": 1,
+  "configurations": [
+    {
+      "name": "beta", /* unique per file */
+      "program": "lib/main.dart",
+      "flavor": "beta",
+      "mode": "debug",
+      "args": [
+        "--dart-define=mode=debug",
+        "--dart-define=API_SERVER=https://beta.api.example.com/",
+        "--dart-define=APP_NAME=GTS Mobile Beta",
+        "--dart-define=FLAVOR=beta",
+      ],
+    },
+  ],
+}
