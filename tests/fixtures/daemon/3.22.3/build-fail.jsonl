@@ -1,0 +1,6 @@
+[{"event":"daemon.connected","params":{"version":"0.6.1","pid":28632}}]
+[{"event":"app.start","params":{"appId":"75de6c8f-1936-453c-8aea-2ef6bf2d5bf8","deviceId":"chrome","directory":"C:\\Work\\flutterbar\\tests\\sample_app","supportsRestart":true,"launchMode":"run","mode":"debug"}}]
+Launching lib\main.dart on Chrome in debug mode...
+[{"event":"app.progress","params":{"appId":"75de6c8f-1936-453c-8aea-2ef6bf2d5bf8","id":"0","progressId":null,"message":"Waiting for connection from debug service on Chrome...","finished":false}}]
+[{"event":"app.progress","params":{"appId":"75de6c8f-1936-453c-8aea-2ef6bf2d5bf8","id":"0","progressId":null,"finished":true}}]
+[{"event":"app.stop","params":{"appId":"75de6c8f-1936-453c-8aea-2ef6bf2d5bf8"}}]

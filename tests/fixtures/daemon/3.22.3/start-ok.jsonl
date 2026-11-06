@@ -1,0 +1,10 @@
+[{"event":"daemon.connected","params":{"version":"0.6.1","pid":20944}}]
+[{"event":"app.start","params":{"appId":"7c65a290-0448-420b-baeb-2dcde4e0017b","deviceId":"chrome","directory":"C:\\Work\\flutterbar\\tests\\sample_app","supportsRestart":true,"launchMode":"run","mode":"debug"}}]
+Launching lib\main.dart on Chrome in debug mode...
+[{"event":"app.progress","params":{"appId":"7c65a290-0448-420b-baeb-2dcde4e0017b","id":"0","progressId":null,"message":"Waiting for connection from debug service on Chrome...","finished":false}}]
+[{"event":"app.progress","params":{"appId":"7c65a290-0448-420b-baeb-2dcde4e0017b","id":"0","progressId":null,"finished":true}}]
+[{"event":"app.webLaunchUrl","params":{"url":"http://localhost:52078","launched":true}}]
+This app is linked to the debug service: ws://127.0.0.1:54178/JC-OxLa-WG8=/ws
+Debug service listening on ws://127.0.0.1:54178/JC-OxLa-WG8=/ws
+[{"event":"app.started","params":{"appId":"7c65a290-0448-420b-baeb-2dcde4e0017b"}}]
+[{"event":"app.debugPort","params":{"appId":"7c65a290-0448-420b-baeb-2dcde4e0017b","port":54178,"wsUri":"ws://127.0.0.1:54178/JC-OxLa-WG8=/ws"}}]
