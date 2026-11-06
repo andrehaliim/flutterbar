@@ -104,6 +104,19 @@ public sealed class AppSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Load_InvalidPathKey_BacksUpAndReturnsDefaults()
+    {
+        File.WriteAllText(SettingsPath, "{\"projects\":{\"C:\\\\a\\u0000b\":{\"config\":\"x\"}}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.NotNull(warning);
+        Assert.Empty(settings.Projects);
+        Assert.False(File.Exists(SettingsPath));
+        Assert.Single(Directory.GetFiles(_dir.FullName, "settings.json.bak-*"));
+    }
+
+    [Fact]
     public void Save_WritesCamelCaseKeys()
     {
         new AppSettingsStore(SettingsPath).Save(new AppSettings());

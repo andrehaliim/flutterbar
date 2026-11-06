@@ -41,8 +41,10 @@ public sealed class AppSettingsStore(string path)
         {
             settings = JsonSerializer.Deserialize<AppSettings>(text, JsonOptions);
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException or NotSupportedException)
         {
+            // Invalid JSON or invalid path keys (rejected by AppSettings.Projects): treat as corrupt,
+            // back the file up below and fall back to defaults with a warning.
             settings = null;
         }
 
