@@ -1,0 +1,64 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "GTS Mobile Dev",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": [
+                "--flavor",
+                "dev",
+                "--dart-define=mode=debug",
+                "--dart-define=API_SERVER=https://dev.api.example.com/api/",
+                "--dart-define=APP_NAME=GTS Mobile Dev"
+            ]
+        },
+        {
+            "name": "GTS Mobile Beta",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": [
+                "--flavor",
+                "beta",
+                "--dart-define=mode=debug",
+                "--dart-define=API_SERVER=https://beta.api.example.com/",
+                "--dart-define=APP_NAME=GTS Mobile Beta"
+            ]
+        },
+        {
+            "name": "GTS Mobile Live",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": [
+                "--flavor",
+                "live",
+                "--dart-define=mode=debug",
+                "--dart-define=API_SERVER=https://api.example.com/",
+                "--dart-define=APP_NAME=GTS Mobile"
+            ]
+        },
+        {
+            "name": "Node Helper",
+            "request": "launch",
+            "type": "node",
+            "program": "${workspaceFolder}/tool/helper.js"
+        },
+        {
+            "name": "GTS Mobile Live Profile",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_live.dart",
+            "flutterMode": "profile",
+            "args": [
+                "--flavor=live",
+                "--dart-define=mode=profile"
+            ]
+        }
+    ]
+}

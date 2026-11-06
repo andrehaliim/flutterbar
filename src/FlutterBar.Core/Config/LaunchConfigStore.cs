@@ -7,6 +7,13 @@ public static class LaunchConfigStore
 {
     private const string DefaultProgram = "lib/main.dart";
 
+    /// <summary>JSONC: comments and trailing commas are allowed.</summary>
+    internal static readonly JsonDocumentOptions JsoncOptions = new()
+    {
+        CommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true,
+    };
+
     public static string PathFor(string projectRoot) =>
         Path.Combine(projectRoot, ".flutterbar", "launch.json");
 
@@ -31,16 +38,10 @@ public static class LaunchConfigStore
             return new LaunchConfigLoadResult(false, [], []);
         }
 
-        var options = new JsonDocumentOptions
-        {
-            CommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true,
-        };
-
         JsonDocument doc;
         try
         {
-            doc = JsonDocument.Parse(text, options);
+            doc = JsonDocument.Parse(text, JsoncOptions);
         }
         catch (JsonException ex)
         {
