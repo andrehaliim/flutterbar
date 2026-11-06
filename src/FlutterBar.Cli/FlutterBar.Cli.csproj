@@ -6,4 +6,8 @@
     <RootNamespace>FlutterBar.Cli</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FlutterBar.Core\FlutterBar.Core.csproj" />
+  </ItemGroup>
+
 </Project>
