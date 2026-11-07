@@ -16,6 +16,10 @@ public partial class MainWindow : Window
     static readonly HashSet<string> ShellProcesses = new(StringComparer.OrdinalIgnoreCase)
         { "explorer", "SearchHost", "StartMenuExperienceHost", "ShellExperienceHost", "ShellHost" };
 
+    readonly string _id = Guid.NewGuid().ToString("N")[..6];
+    int _ownerFails;
+    bool _abHidden;
+    HwndSource? _src;
     IntPtr _hwnd, _tray, _fgHook, _locHook;
     uint _taskbarCreatedMsg;
     Native.WinEventDelegate? _fgCb, _locCb; // keep alive (GC)
@@ -50,8 +54,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Program.FirstInstanceId ??= _id;
         SourceInitialized += OnSourceInitialized;
-        _timer.Tick += (_, _) => OnTimer();
+        _timer.Tick += OnTick;
         Closed += OnClosed;
     }
 
@@ -84,6 +89,14 @@ public partial class MainWindow : Window
         Reassert("menu-closed");
     }
 
+    void OnDebugToggle(object sender, RoutedEventArgs e)
+    {
+        _settings.HideDebug = DebugItem.IsChecked;
+        _settings.Save();
+        Taskbar.Log($"{Now()} hide debug info -> {_settings.HideDebug}");
+        Reassert("debug-toggle");
+    }
+
     // ---- manual position / drag ----
     void OnDragToggle(object sender, RoutedEventArgs e) => SetDragMode(DragItem.IsChecked);
 
@@ -106,7 +119,7 @@ public partial class MainWindow : Window
             if (_dragged && _dragX is int dx && Native.GetWindowRect(_tray, out var tb))
             {
                 int w = (int)(300 * Native.GetDpiForWindow(_hwnd) / 96.0);
-                _settings = new SpikeSettings { Mode = "manual", OffsetFromRight = Math.Max(0, tb.Right - (dx + w)) };
+                _settings.Mode = "manual"; _settings.OffsetFromRight = Math.Max(0, tb.Right - (dx + w));
                 _settings.Save();
                 Taskbar.Log($"{Now()} drag mode OFF -> position locked, mode=manual offsetFromRight={_settings.OffsetFromRight}");
             }
@@ -122,8 +135,8 @@ public partial class MainWindow : Window
         DragItem.IsChecked = false;
         Frame.BorderBrush = Brushes.Transparent;
         Cursor = null;
-        _settings = new SpikeSettings();
-        SpikeSettings.Delete();
+        _settings.Mode = "auto"; _settings.OffsetFromRight = null;
+        _settings.Save(); // keeps HideDebug; position back to auto
         _lastPos = default;
         _applied = null; _pending = null; _pendingHeld = 0; _evalLayout = null; _immediate = true; // next auto layout applies immediately
         Taskbar.Log($"{Now()} reset to auto position (drag mode exited, immediate-apply armed)");
@@ -175,7 +188,10 @@ public partial class MainWindow : Window
         var ex = Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE).ToInt64();
         Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, new IntPtr(ex | Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE));
         _taskbarCreatedMsg = Native.RegisterWindowMessage("TaskbarCreated");
-        HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
+        _src = HwndSource.FromHwnd(_hwnd);
+        _src?.AddHook(WndProc);
+        DebugItem.IsChecked = _settings.HideDebug;
+        Taskbar.Log($"{Now()} window created inst={_id} hwnd=0x{_hwnd:X} hideDebug={_settings.HideDebug}");
         _fgCb = OnForeground;
         _fgHook = Native.SetWinEventHook(Native.EVENT_SYSTEM_FOREGROUND, Native.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _fgCb, 0, 0, Native.WINEVENT_OUTOFCONTEXT);
         if (_fgHook == IntPtr.Zero) Taskbar.Log("SetWinEventHook(FOREGROUND) failed");
@@ -189,7 +205,7 @@ public partial class MainWindow : Window
 
     IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (_taskbarCreatedMsg != 0 && (uint)msg == _taskbarCreatedMsg)
+        if (!_dead && _taskbarCreatedMsg != 0 && (uint)msg == _taskbarCreatedMsg)
         {
             Taskbar.Log($"{Now()} TaskbarCreated received (explorer restarted)");
             _layout = null; _immediate = true; _evalLayout = null;
@@ -200,22 +216,42 @@ public partial class MainWindow : Window
     }
 
     // Set the taskbar as owner; (re)install the location hook only when the tray handle changed (or forced).
+    // The owner is verified with GetWindowLongPtr(GWLP_HWNDPARENT), NOT GetWindow(GW_OWNER): while the Start/Search
+    // flyout (an immersive CoreWindow) is foreground, GW_OWNER returns 0 although the real owner is intact, and
+    // re-setting the same owner then CLEARS it for good (v3.1 bug, see findings doc).
     void AttachToTaskbar(string why, bool forceHook)
     {
+        if (_dead) return;
         var tray = Native.FindWindow("Shell_TrayWnd", null);
-        if (tray == IntPtr.Zero) { LogLimited("attach-notfound", $"{Now()} AttachToTaskbar({why}): Shell_TrayWnd not found"); return; }
+        if (tray == IntPtr.Zero) { LogLimited("attach-notfound", $"{Now()} AttachToTaskbar({why}) inst={_id}: Shell_TrayWnd not found"); return; }
         bool changed = tray != _tray;
         if (changed || forceHook || _locHook == IntPtr.Zero)
         {
             if (_locHook != IntPtr.Zero) { Native.UnhookWinEvent(_locHook); _locHook = IntPtr.Zero; }
             uint tid = Native.GetWindowThreadProcessId(tray, out var pid);
             _locHook = Native.SetWinEventHook(Native.EVENT_OBJECT_LOCATIONCHANGE, Native.EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _locCb!, pid, 0, Native.WINEVENT_OUTOFCONTEXT);
-            Taskbar.Log($"{Now()} location hook ({why}): tray=0x{tray:X} pid={pid} tid={tid} locHook={(_locHook == IntPtr.Zero ? "FAILED" : "ok")}");
+            Taskbar.Log($"{Now()} location hook ({why}) inst={_id}: tray=0x{tray:X} pid={pid} tid={tid} locHook={(_locHook == IntPtr.Zero ? "FAILED" : "ok")}");
         }
         _tray = tray;
-        Native.SetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT, tray);
-        var owner = Native.GetWindow(_hwnd, Native.GW_OWNER);
-        LogLimited("attach", $"{Now()} AttachToTaskbar({why}): tray=0x{tray:X} owner=0x{owner:X}");
+        var before = Native.GetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT);
+        int err = 0;
+        if (before != tray && !(Program.SimulateOwnerFailure && _id == Program.FirstInstanceId))
+        {
+            Native.SetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT, tray);
+            err = System.Runtime.InteropServices.Marshal.GetLastWin32Error();
+        }
+        var owner = Native.GetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT);
+        var gwOwner = Native.GetWindow(_hwnd, Native.GW_OWNER);
+        if (owner == tray)
+        {
+            _ownerFails = 0;
+            LogLimited("attach", $"{Now()} AttachToTaskbar({why}) inst={_id} hwnd=0x{_hwnd:X}: tray=0x{tray:X} owner=0x{owner:X} verified (before=0x{before:X}, GW_OWNER=0x{gwOwner:X})");
+        }
+        else
+        {
+            _ownerFails++;
+            LogLimited("attach", $"{Now()} AttachToTaskbar({why}) inst={_id} hwnd=0x{_hwnd:X}: FAILED to set owner: tray=0x{tray:X} owner=0x{owner:X} before=0x{before:X} lastError={err} consecutiveFails={_ownerFails}");
+        }
     }
 
     void LogLimited(string key, string msg)
@@ -225,29 +261,46 @@ public partial class MainWindow : Window
         Taskbar.Log(msg);
     }
 
-    void Cleanup()
+    // Full stop of this instance: timer, WinEvent hooks, window-proc hook. After this no handler does anything (all check _dead).
+    void Teardown()
     {
         _timer.Stop();
+        _timer.Tick -= OnTick;
         if (_fgHook != IntPtr.Zero) Native.UnhookWinEvent(_fgHook);
         if (_locHook != IntPtr.Zero) Native.UnhookWinEvent(_locHook);
         _fgHook = _locHook = IntPtr.Zero;
+        _src?.RemoveHook(WndProc);
+        _src = null;
     }
 
     void Recreate(string why)
     {
         if (_dead) return;
         _dead = true;
-        Cleanup();
+        Teardown();
         if (Program.Exiting) return;
-        Taskbar.Log($"{Now()} widget window destroyed ({why}) -> recreating");
-        Dispatcher.BeginInvoke(() => new MainWindow().Show());
+        Taskbar.Log($"{Now()} widget window destroyed inst={_id} ({why}) -> old instance stopped, recreating");
+        var oldHwnd = _hwnd;
+        Dispatcher.BeginInvoke(() =>
+        {
+            new MainWindow().Show();
+            if (Native.IsWindow(oldHwnd)) Close(); // OnClosed -> Recreate is a no-op (_dead)
+        });
     }
 
     void OnClosed(object? sender, EventArgs e) => Recreate("Closed event, owner gone?");
 
+    void OnTick(object? sender, EventArgs e) => OnTimer();
+
     void OnTimer()
     {
+        if (_dead) return;
         if (_hwnd != IntPtr.Zero && !Native.IsWindow(_hwnd)) { Recreate("IsWindow=false"); return; }
+        if (_ownerFails >= 3)
+        {
+            if ((DateTime.Now - Program.LastOwnerRecreate).TotalSeconds < 20) LogLimited("owner-recreate-limit", $"{Now()} inst={_id} owner attach keeps failing ({_ownerFails}x); recreate rate-limited");
+            else { Program.LastOwnerRecreate = DateTime.Now; Program.SimulateOwnerFailure = false; Recreate($"owner attach failed {_ownerFails}x"); return; }
+        }
         if (_menuOpen && ContextMenu is { IsOpen: false })
         {
             _menuOpen = false;
@@ -259,13 +312,16 @@ public partial class MainWindow : Window
     }
 
     void OnForeground(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
-        => Reassert("foreground:" + Native.ClassOf(hwnd));
+    {
+        if (_dead) return;
+        Reassert("foreground:" + Native.ClassOf(hwnd));
+    }
 
     void OnLocation(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
     {
-        if (idObject != Native.OBJID_WINDOW || _locPending) return;
+        if (_dead || idObject != Native.OBJID_WINDOW || _locPending) return;
         _locPending = true;
-        Dispatcher.BeginInvoke(() => { _locPending = false; Reassert("locationchange"); }, DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(() => { _locPending = false; if (!_dead) Reassert("locationchange"); }, DispatcherPriority.Background);
     }
 
     static string Now() => DateTime.Now.ToString("HH:mm:ss.fff");
@@ -411,9 +467,33 @@ public partial class MainWindow : Window
             LogReason(reason);
             var tray = Native.FindWindow("Shell_TrayWnd", null);
             if (tray == IntPtr.Zero) { Info.Text = "taskbar not found"; return; }
-            if (tray != _tray || Native.GetWindow(_hwnd, Native.GW_OWNER) != tray) AttachToTaskbar("handle/owner changed", false);
+            if (tray != _tray || Native.GetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT) != tray) AttachToTaskbar("handle/owner changed", false);
             bool timer = reason == "timer";
-            if (timer) KickQuery(tray);
+
+            // v3.2 auto-hide tracking: visible fraction of the taskbar rect on its monitor; < 50% = hidden by auto-hide.
+            Native.GetWindowRect(tray, out var tbr);
+            bool abHidden = false;
+            string abTxt = "";
+            if (_autoHide)
+            {
+                var mi = new Native.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Native.MONITORINFO>() };
+                if (Native.GetMonitorInfo(Native.MonitorFromWindow(tray, Native.MONITOR_DEFAULTTONEAREST), ref mi))
+                {
+                    long tbArea = Math.Max(1L, (long)(tbr.Right - tbr.Left) * (tbr.Bottom - tbr.Top));
+                    long vw = Math.Max(0, Math.Min(tbr.Right, mi.rcMonitor.Right) - Math.Max(tbr.Left, mi.rcMonitor.Left));
+                    long vh = Math.Max(0, Math.Min(tbr.Bottom, mi.rcMonitor.Bottom) - Math.Max(tbr.Top, mi.rcMonitor.Top));
+                    double frac = (double)(vw * vh) / tbArea;
+                    abHidden = frac < 0.5;
+                    abTxt = $"vis={frac * 100:F0}%";
+                }
+                else LogLimited("ab-monitor", $"{Now()} GetMonitorInfo failed for taskbar (auto-hide tracking skipped), err={System.Runtime.InteropServices.Marshal.GetLastWin32Error()}");
+            }
+            if (abHidden != _abHidden)
+            {
+                _abHidden = abHidden;
+                Taskbar.Log($"{Now()} auto-hide: taskbar {(abHidden ? "OFF-SCREEN -> hide widget, UIA re-layout paused" : "VISIBLE -> show widget, follow taskbar rect")} {abTxt} tbRect=({tbr.Left},{tbr.Top},{tbr.Right},{tbr.Bottom}) [{reason}]");
+            }
+            if (timer && !_abHidden) KickQuery(tray); // no UIA re-layout while the taskbar is auto-hidden (it would only be REJECTED)
 
             bool fs = !_autoHide && DetectFullscreen(tray);
             if (timer)
@@ -431,7 +511,6 @@ public partial class MainWindow : Window
             int x = 0, y = 0;
             string gapTxt = "?";
             bool haveGap = false, noFit = false;
-            Native.GetWindowRect(tray, out var tbr);
             int yDock = tbr.Top + (tbr.Bottom - tbr.Top - h) / 2;
             int xMax = Math.Max(tbr.Left, tbr.Right - w);
             bool manual = !_dragMode && _settings.Mode == "manual" && _settings.OffsetFromRight is not null;
@@ -449,7 +528,7 @@ public partial class MainWindow : Window
             {
                 var gaps = Taskbar.Gaps(res, Gap);
                 gapTxt = string.Join(" ", gaps.Select(g => $"[{g.L}..{g.R}]={g.R - g.L}"));
-                if (!ReferenceEquals(res, _evalLayout))
+                if (!ReferenceEquals(res, _evalLayout) && !_abHidden)
                 {
                     _evalLayout = res;
                     Evaluate(gaps, scale, tray, tbr, gapTxt);
@@ -459,7 +538,7 @@ public partial class MainWindow : Window
                     sizeIdx = ap.Size; noFit = ap.NoFit;
                     w = (int)(SizeW[sizeIdx] * scale);
                     x = Math.Clamp(ap.X, tbr.Left, Math.Max(tbr.Left, tbr.Right - w));
-                    y = res.Taskbar.Top + (res.Taskbar.Bottom - res.Taskbar.Top - h) / 2;
+                    y = yDock; // live taskbar rect, so the widget slides with an auto-hiding bar
                     haveGap = true;
                     gapTxt += $" -> {SizeName[sizeIdx]} x={x}{(noFit ? " (TIDAK MUAT)" : "")}";
                 }
@@ -476,7 +555,7 @@ public partial class MainWindow : Window
                 else gapTxt = "(no layout, no TrayNotifyWnd)";
             }
             if (noFit != _noFit) { _noFit = noFit; Taskbar.Log($"{Now()} taskbar full: {(noFit ? "nothing fits even ButtonsOnly -> widget STAYS VISIBLE (ButtonsOnly, last X) with hint" : "fits again")} gaps: {gapTxt}"); }
-            bool wantVisible = !fs;
+            bool wantVisible = !fs && !_abHidden;
 
             if (!wantVisible)
             {
@@ -493,14 +572,22 @@ public partial class MainWindow : Window
                 if (moved && !_dragging) _lastPos = (x, y, w, h);
             }
             string modeTxt = _dragMode ? "drag" : _settings.Mode;
-            Info.FontSize = sizeIdx == 2 ? 9 : 11;
-            Info.Margin = sizeIdx == 2 ? new Thickness(3, 0, 3, 0) : new Thickness(5, 1, 5, 1);
-            Info.Text = sizeIdx switch
+            bool hideDbg = _settings.HideDebug;
+            double fontSize = sizeIdx == 2 ? 9 : (hideDbg ? 13 : 11);
+            var margin = sizeIdx == 2 ? new Thickness(3, 0, 3, 0) : new Thickness(5, 1, 5, 1);
+            string text;
+            if (noFit) text = "▶ ⚡ Taskbar penuh — gunakan Drag widget";
+            else if (hideDbg) text = sizeIdx switch { 0 => "▶ ⚡ 🔄 ⏹", 1 => "▶ ⚡ 🔄", _ => "▶ ⚡" };
+            else text = sizeIdx switch
             {
-                0 => $"[Full] mode={modeTxt} off={_settings.OffsetFromRight?.ToString() ?? "-"} gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}",
+                0 => $"[Full] mode={modeTxt} off={_settings.OffsetFromRight?.ToString() ?? "-"} gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")}{(_autoHide ? (_abHidden ? " (hidden)" : " (shown)") : "")} last={_lastReason}",
                 1 => $"[Compact] mode={modeTxt} x={x}\nDPI={dpi} rata={_align}",
-                _ => noFit ? "\u25B6 \u26A1 Taskbar penuh \u2014 gunakan Drag widget" : "\u25B6 \u26A1",
+                _ => "▶ ⚡",
             };
+            // assign only on change so the widget text does not flicker/relayout every tick
+            if (Info.FontSize != fontSize) Info.FontSize = fontSize;
+            if (Info.Margin != margin) Info.Margin = margin;
+            if (Info.Text != text) Info.Text = text;
             var tipText = noFit ? "Taskbar penuh \u2014 gunakan Drag widget" : null;
             if (tipText != _toolTipText) { _toolTipText = tipText; ToolTip = tipText; }
 

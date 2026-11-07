@@ -352,7 +352,12 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Topmost diterapkan ulang saat taskbar menjadi foreground, lewat WinEvent hook, supaya widget tidak
   tertutup taskbar Windows 11.
 - **Auto-hide:** status dan posisi taskbar dipantau (`SHAppBarMessage`). Widget ikut sembunyi dan
-  muncul bersama taskbar.
+  muncul bersama taskbar. Aturan visibilitas (v3.2): saat auto-hide menyala, tiap perubahan lokasi taskbar dan tiap tick timer
+  membaca rect `Shell_TrayWnd` dan menghitung bagian yang terlihat di monitornya (irisan dengan `rcMonitor`). Bila < 50% tinggi
+  taskbar terlihat widget disembunyikan; selain itu ditampilkan dengan Y di tengah vertikal rect taskbar saat itu (ikut meluncur).
+  Re-layout UIA dilewati selagi tersembunyi oleh auto-hide.
+- **Owner (v3.2):** diverifikasi lewat `GetWindowLongPtr(GWLP_HWNDPARENT)`, bukan `GetWindow(GW_OWNER)` (0 selama Start/Search terbuka);
+  owner tidak dipasang ulang bila sudah benar.
 - **Fullscreen:** kalau jendela foreground menutupi seluruh monitor (atau dari
   `SHQueryUserNotificationState`), widget disembunyikan.
 - **DPI:** per-monitor DPI aware (v2).

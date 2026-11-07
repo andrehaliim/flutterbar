@@ -211,7 +211,89 @@ Pengamatan otomatis (rata kiri, 1920x1080, DPI 96, build ke direktori scratch ka
   `taskbar full: nothing fits even ButtonsOnly -> widget STAYS VISIBLE`, `visible=True`, ButtonsOnly di x=1546 (fallback kiri TrayNotifyWnd karena belum ada X valid).
 - Belum diuji otomatis: klik Reset saat drag (butuh mouse), hover tombol aplikasi, taskbar penuh sungguhan.
 
-## Checklist manual v3.1 (pakai ini; menggantikan checklist v3)
+## Hasil uji ulang v3.1 (user, 2026-11-07)
+
+Rekaman video ~17:58, taskbar rata tengah, 1920x1080, DPI 100%.
+
+1. Dengan auto-hide taskbar menyala, widget TIDAK ikut hilang saat taskbar meluncur keluar layar.
+2. Teks widget "tidak mau diam" (berubah terus). Penyebab: teks debug (angka gap, `fs/ah`, `last=reason`) ditulis ulang tiap tick/event.
+
+Bukti `spike.log` (bin/Debug, mulai 17:56): sejak 17:56:14 muncul `AttachToTaskbar(handle/owner changed): tray=... owner=0x0` tiap ~2,4 detik tanpa henti,
+dan `UIA layout REJECTED (tray elements=False, occupied=0, elements=3 ...)` tiap ~6 detik saat taskbar auto-hide. Semua baris `layout:` tetap
+`visible=True` dengan `ah=ya` karena v3.1 tidak punya pelacakan visibilitas auto-hide.
+
+Akar masalah owner (TERBUKTI; hipotesis awal "instance lama/zombie setelah window dibuat ulang" SALAH):
+- Log tidak punya satu pun baris `widget window destroyed ... recreating`, jadi window tidak pernah dibuat ulang. Owner sudah 0 sejak 17:56:14, sebelum explorer restart (17:57:35),
+  dengan handle taskbar yang sama (`0x40D0C`). Hanya ada satu instance.
+- Pemicu 17:56:14: user membuka Start/Search (foreground `Windows.UI.Core.CoreWindow`, `SHQueryUserNotificationState=7`, UIA taskbar hanya `elements=1`).
+- Direproduksi dengan menekan tombol Win saat spike berjalan (instance tunggal). Selama Start/Search terbuka, `GetWindow(hwnd, GW_OWNER)` mengembalikan 0 PADAHAL
+  owner asli masih utuh: `GetWindowLongPtr(GWLP_HWNDPARENT)` = tray (log: `EXP readback differs: GW_OWNER=0x0 GWLP_HWNDPARENT=0x1C0A10 ... qunsFg=Windows.UI.Core.CoreWindow`).
+- Kode v3.1 memakai `GW_OWNER != tray` sebagai tanda "owner hilang", lalu memanggil `SetWindowLongPtr(GWLP_HWNDPARENT, tray)` lagi. Memasang owner yang SAMA itu justru MENGHAPUS owner
+  (log: `prev=0x1C0A10 err=0` lalu GWLP_HWNDPARENT=0x0). Setelah itu setiap pemasangan ulang tidak berefek (`prev=0x0`, kadang `err=87`), sehingga owner tetap 0 dan
+  dicoba lagi tiap tick selamanya. Pulih hanya lewat explorer restart/window baru.
+- Perbaikan: verifikasi dengan `GetWindowLongPtr(GWLP_HWNDPARENT)` (bukan `GW_OWNER`), JANGAN pernah memasang ulang bila sudah sama dengan tray, verifikasi setelah pasang,
+  log FAILED + `Marshal.GetLastWin32Error()` bila gagal, dan bila gagal 3x berturut-turut buat ulang window (maks sekali per 20 detik).
+  Setelah perbaikan: buka/tutup Start tidak lagi mengubah owner (tanpa baris `handle/owner changed`).
+
+## Spike v3.2
+
+1. **Pelacakan auto-hide**: bila auto-hide menyala, tiap `EVENT_OBJECT_LOCATIONCHANGE` dan tick timer membaca `GetWindowRect(Shell_TrayWnd)`, menghitung bagian yang terlihat
+   di monitornya (irisan dengan `rcMonitor`). < 50% terlihat -> widget disembunyikan; selain itu ditampilkan dengan Y mengikuti rect taskbar hidup
+   (dock di tengah vertikal rect saat itu), sehingga widget ikut meluncur. Saat disembunyikan karena auto-hide, re-layout UIA tidak dijalankan (layout baik terakhir
+   dipertahankan, tanpa spam `REJECTED`). Transisi dicatat sekali: `auto-hide: taskbar OFF-SCREEN ...` / `VISIBLE ...`.
+2. **Lifecycle & owner**: lihat akar masalah di atas. Window yang dibuat ulang: instance lama berhenti total (`Teardown`: timer + tick handler, kedua WinEvent hook, hook WndProc;
+   semua handler cek `_dead` dan tidak mencatat apa pun), lalu `Close()` setelah window baru tampil. Log memuat id instance (GUID pendek, `inst=`) dan `hwnd=`.
+3. **Hide debug info**: item menu kanan "Hide debug info" (checkable); bila dicentang widget hanya menampilkan placeholder statis `▶ ⚡ 🔄 ⏹` (Full), `▶ ⚡ 🔄` (Compact),
+   `▶ ⚡` (ButtonsOnly) plus tooltip. Disimpan di `spike-settings.json` (`hideDebug`). Teks hanya ditulis bila berubah. Fitur ini HANYA untuk spike.
+   Catatan: "Reset to auto position" kini menyimpan `mode=auto` (bukan menghapus file) supaya `hideDebug` tidak hilang.
+4. Hook uji spike: `--simulate-owner-failure` (instance pertama tidak memasang owner, menguji jalur gagal -> buat ulang).
+
+Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata tengah):
+- Auto-hide dinyalakan lewat `SHAppBarMessage(ABM_SETSTATE)` (state asli dibaca dulu = 0, dicatat, dipulihkan = 0, dikonfirmasi `FINAL=0`; total ~20 detik):
+  `auto-hide: taskbar OFF-SCREEN -> hide widget, UIA re-layout paused vis=29% tbRect=(0,1066,1920,1114)`; Y widget ikut turun (1037, 1046, 1057, 1070 ... 1082) lalu `visible=False`;
+  tanpa baris `REJECTED` selama tersembunyi. Dimatikan: `auto-hide: taskbar VISIBLE -> show widget`.
+- Tombol Win (Start terbuka/tutup): owner tetap `verified`, tanpa pemasangan ulang.
+- Explorer di-restart sekali (`Stop-Process -Name explorer`, disetujui user): `AttachToTaskbar(handle/owner changed) ... tray=0x60734 owner=0x60734 verified (before=0x0)`, instance sama.
+- `--simulate-owner-failure`: `FAILED to set owner ... lastError=0 consecutiveFails=1`, lalu `widget window destroyed inst=3f9e35 (owner attach failed 3x) -> old instance stopped, recreating`;
+  instance baru `inst=b76562` owner `verified`; 0 baris log dari instance lama setelahnya.
+- `spike-settings.json` dengan `hideDebug=true`: log `settings: loaded ... hideDebug=True`; tangkapan layar menunjukkan placeholder statis.
+- Belum diuji otomatis: klik item menu "Hide debug info" (butuh mouse), auto-hide lewat jendela Settings Windows, multi-monitor.
+
+## Checklist manual v3.2 (pakai ini; menggantikan checklist v3.1)
+
+| Uji | Hasil |
+|---|---|
+| Taskbar rata tengah | BELUM DIUJI (user) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
+| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
+| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
+| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
+| Auto-hide taskbar menyala | BELUM DIUJI (user) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| DPI 100% | BELUM DIUJI (user) |
+| DPI 125% | BELUM DIUJI (user) |
+| DPI 150% | BELUM DIUJI (user) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
+| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | BELUM DIUJI (user) |
+| Reset to auto position | BELUM DIUJI (user) |
+| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
+| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
+| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
+| Taskbar penuh: widget mengecil (260→120) lalu tetap tampil dengan pesan | BELUM DIUJI (user) |
+| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
+| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
+| Explorer restart: owner terpasang lagi (log owner≠0x0) | BELUM DIUJI (user) |
+| Hide debug info: teks widget diam | BELUM DIUJI (user) |
+
+## Checklist manual v3.1 (tidak dipakai lagi, digantikan checklist v3.2)
 
 | Uji | Hasil |
 |---|---|
@@ -309,7 +391,7 @@ Pengamatan otomatis (rata kiri, 1920x1080, DPI 96, build ke direktori scratch ka
 | Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang (poll 1 detik) | BELUM DIUJI (user) |
 | Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
 
-## Catatan untuk Task 13 (aturan v2 + v3 + v3.1)
+## Catatan untuk Task 13 (aturan v2 + v3 + v3.1 + v3.2)
 
 - Owner: setelah HWND ada, `SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, Shell_TrayWnd)` (SetWindowLongPtrW hanya
   ada di x64/ARM64; jangan target x86). Setelah itu jangan ubah `ShowInTaskbar`/`Owner` WPF. Pasang ulang
@@ -354,3 +436,13 @@ Pengamatan otomatis (rata kiri, 1920x1080, DPI 96, build ke direktori scratch ka
 - **Max-hold (v3.1)**: kandidat berbeda yang ditahan >= 5 query berturut-turut (walau berganti-ganti) -> terapkan kandidat terbaru (log `max-hold`).
 - **Debounce (v3.1)**: terapkan penempatan baru hanya bila (ukuran, x) yang sama (toleransi 3 px) keluar dari 2 query UIA berturut-turut; layout pertama
   setelah startup / `ResetToAuto()` / `TaskbarCreated` diterapkan langsung; log kandidat yang ditahan. `ResetToAuto()` saat drag aktif harus keluar dari mode drag dulu.
+- **Visibilitas auto-hide (v3.2)**: bila auto-hide menyala, pada tiap `EVENT_OBJECT_LOCATIONCHANGE` taskbar dan tiap tick timer baca `GetWindowRect(Shell_TrayWnd)`, hitung bagian yang terlihat
+  di monitornya (irisan dengan `rcMonitor` dari `GetMonitorInfo`). < 50% terlihat -> sembunyikan widget; selain itu tampilkan dan taruh Y di tengah vertikal rect taskbar saat itu
+  (widget ikut meluncur). Jangan jalankan re-layout UIA selagi tersembunyi oleh auto-hide (pertahankan layout baik terakhir, jangan spam log); log sekali per transisi.
+  Posisi Y selalu dari rect taskbar hidup, bukan dari rect hasil query UIA yang basi.
+- **Aturan lifecycle window dibuat ulang (v3.2)**: window lama harus berhenti total sebelum yang baru dibuat (stop timer, lepas semua WinEvent hook dan hook WndProc, semua handler
+  cek flag mati dan tidak menulis log), `_hwnd` selalu handle window hidup instance itu, dan `Close()` window lama setelah yang baru tampil. Log memuat id instance agar zombie terlihat.
+- **Verifikasi owner (v3.2)**: verifikasi owner dengan `GetWindowLongPtr(hwnd, GWLP_HWNDPARENT) == Shell_TrayWnd`, BUKAN `GetWindow(GW_OWNER)` (mengembalikan 0 selama Start/Search terbuka).
+  JANGAN memasang ulang bila sudah sama (itu menghapus owner). Setelah `SetWindowLongPtr` verifikasi hasilnya; bila tidak sama log FAILED dengan `Marshal.GetLastWin32Error()`,
+  dan bila gagal berulang buat ulang window (dibatasi, mis. maks sekali per 20 detik).
+- **Debug info hanya untuk spike (v3.2)**: teks debug widget, item "Hide debug info", dan hook `--simulate-owner-failure` TIDAK dibawa ke produksi.

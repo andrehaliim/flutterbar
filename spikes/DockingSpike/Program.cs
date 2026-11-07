@@ -7,6 +7,10 @@ namespace DockingSpike;
 internal static class Program
 {
     public static volatile bool Exiting;
+    public static string? FirstInstanceId;
+    public static DateTime LastOwnerRecreate = DateTime.MinValue;
+    // SPIKE-ONLY test hook (--simulate-owner-failure): the first window instance never sets its owner, to exercise the failure -> recreate path.
+    public static bool SimulateOwnerFailure;
 
     [STAThread]
     static int Main(string[] args)
@@ -17,6 +21,7 @@ internal static class Program
             // SPIKE-ONLY test hooks (do not copy to production)
             foreach (var a in args)
                 if (a.StartsWith("--force-empty-after=", StringComparison.Ordinal) && int.TryParse(a.AsSpan(20), out var n)) Taskbar.ForceEmptyAfter = n;
+            SimulateOwnerFailure = args.Contains("--simulate-owner-failure");
             foreach (var a in args)
                 if (a.StartsWith("--force-min-gap=", StringComparison.Ordinal) && int.TryParse(a.AsSpan(16), out var g)) Taskbar.ForceMaxGap = g;
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };

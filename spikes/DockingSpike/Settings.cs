@@ -7,6 +7,7 @@ internal sealed class SpikeSettings
 {
     public string Mode { get; set; } = "auto";
     public int? OffsetFromRight { get; set; }
+    public bool HideDebug { get; set; }
 
     public static readonly string Path = System.IO.Path.Combine(AppContext.BaseDirectory, "spike-settings.json");
     static readonly JsonSerializerOptions Opts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = false };
@@ -17,8 +18,8 @@ internal sealed class SpikeSettings
         {
             if (!File.Exists(Path)) { Taskbar.Log("settings: none -> mode=auto"); return new(); }
             var s = JsonSerializer.Deserialize<SpikeSettings>(File.ReadAllText(Path), Opts) ?? new();
-            if (s.Mode != "manual" || s.OffsetFromRight is null) s = new();
-            Taskbar.Log($"settings: loaded mode={s.Mode} offsetFromRight={s.OffsetFromRight}");
+            if (s.Mode != "manual" || s.OffsetFromRight is null) { s.Mode = "auto"; s.OffsetFromRight = null; }
+            Taskbar.Log($"settings: loaded mode={s.Mode} offsetFromRight={s.OffsetFromRight} hideDebug={s.HideDebug}");
             return s;
         }
         catch (Exception ex)
@@ -32,11 +33,5 @@ internal sealed class SpikeSettings
     {
         try { File.WriteAllText(Path, JsonSerializer.Serialize(this, Opts)); Taskbar.Log($"settings: saved {JsonSerializer.Serialize(this, Opts)}"); }
         catch (Exception ex) { Taskbar.Log($"settings: save failed: {ex.Message}"); }
-    }
-
-    public static void Delete()
-    {
-        try { if (File.Exists(Path)) File.Delete(Path); Taskbar.Log("settings: deleted (reset to auto)"); }
-        catch (Exception ex) { Taskbar.Log($"settings: delete failed: {ex.Message}"); }
     }
 }

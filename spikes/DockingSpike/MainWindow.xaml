@@ -9,6 +9,7 @@
         <ContextMenu Placement="Top" Opened="OnMenuOpened" Closed="OnMenuClosed">
             <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragToggle"/>
             <MenuItem Header="Reset to auto position" Click="OnResetAuto"/>
+            <MenuItem x:Name="DebugItem" Header="Hide debug info" IsCheckable="True" Click="OnDebugToggle"/>
             <Separator/>
             <MenuItem Header="Freeze 5s (debug)" Click="OnFreeze"/>
         </ContextMenu>
