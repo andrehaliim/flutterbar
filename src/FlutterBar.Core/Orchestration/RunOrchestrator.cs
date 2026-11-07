@@ -57,18 +57,18 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         ArgumentNullException.ThrowIfNull(selection);
         if (string.IsNullOrWhiteSpace(selection.ProjectRoot))
         {
-            return new RunOutcome(RunOutcomeKind.NoProject, "Pilih project dulu");
+            return new RunOutcome(RunOutcomeKind.NoProject, "Select a project first");
         }
         if (SessionGuard.NeedsStopConfirmation(session.Snapshot.State))
         {
-            return new RunOutcome(RunOutcomeKind.SessionActive, "Sesi masih berjalan");
+            return new RunOutcome(RunOutcomeKind.SessionActive, "A session is still running");
         }
 
         var root = selection.ProjectRoot;
         var loaded = await Task.Run(() => Directory.Exists(root) ? LaunchConfigStore.Load(root) : null, ct).ConfigureAwait(false);
         if (loaded is null)
         {
-            return new RunOutcome(RunOutcomeKind.ProjectMissing, $"Folder project tidak ditemukan: {root}");
+            return new RunOutcome(RunOutcomeKind.ProjectMissing, $"Project folder not found: {root}");
         }
         if (!loaded.FileExists)
         {
@@ -76,7 +76,7 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         }
         if (loaded.Errors.Count > 0)
         {
-            return new RunOutcome(RunOutcomeKind.ConfigInvalid, $"launch.json tidak valid ({loaded.Errors.Count} error)");
+            return new RunOutcome(RunOutcomeKind.ConfigInvalid, $"launch.json has errors ({loaded.Errors.Count})");
         }
         var config = selection.ConfigName is null
             ? loaded.Configs[0]
@@ -87,7 +87,7 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         }
         if (string.IsNullOrWhiteSpace(selection.DeviceId))
         {
-            return new RunOutcome(RunOutcomeKind.NoDevice, "Pilih device dulu", config);
+            return new RunOutcome(RunOutcomeKind.NoDevice, "Select a device first", config);
         }
 
         var deviceId = selection.DeviceId;
@@ -95,7 +95,7 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         var tool = locator.Resolve(root, args);
         if (tool.Spec is null)
         {
-            return new RunOutcome(RunOutcomeKind.ToolError, tool.Error ?? "flutter tidak dapat dijalankan", config, deviceId);
+            return new RunOutcome(RunOutcomeKind.ToolError, tool.Error ?? "flutter can't be run", config, deviceId);
         }
 
         IReadOnlyList<DeviceInfo> connected;
@@ -105,11 +105,11 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         }
         catch (Exception ex) when (ToolFailure.IsExpected(ex))
         {
-            return new RunOutcome(RunOutcomeKind.DeviceRefreshFailed, $"Gagal membaca daftar device: {ex.Message}", config, deviceId, ex);
+            return new RunOutcome(RunOutcomeKind.DeviceRefreshFailed, $"Couldn't read the device list: {ex.Message}", config, deviceId, ex);
         }
         if (!connected.Any(d => string.Equals(d.Id, deviceId, StringComparison.OrdinalIgnoreCase)))
         {
-            return new RunOutcome(RunOutcomeKind.DeviceMissing, $"Device {deviceId} tidak tersedia, pilih device lain", config, deviceId);
+            return new RunOutcome(RunOutcomeKind.DeviceMissing, $"Device {deviceId} isn't available. Select another device", config, deviceId);
         }
 
         ct.ThrowIfCancellationRequested();
@@ -125,12 +125,12 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         catch (InvalidOperationException)
         {
             // Another start won the race (state checked above): not an error, the running session stays.
-            return new RunOutcome(RunOutcomeKind.SessionActive, "Sesi masih berjalan", config, deviceId);
+            return new RunOutcome(RunOutcomeKind.SessionActive, "A session is still running", config, deviceId);
         }
 
         var snapshot = session.Snapshot;
         return snapshot.State == SessionState.Failed && ReferenceEquals(snapshot.Request, request)
-            ? new RunOutcome(RunOutcomeKind.StartFailed, snapshot.FailureMessage ?? "Gagal menjalankan flutter", config, deviceId)
+            ? new RunOutcome(RunOutcomeKind.StartFailed, snapshot.FailureMessage ?? "Couldn't start flutter", config, deviceId)
             : new RunOutcome(RunOutcomeKind.Started, $"Run {config.Name} · {deviceId}", config, deviceId);
     }
 }

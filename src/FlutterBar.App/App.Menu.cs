@@ -47,7 +47,7 @@ public partial class App
                 controller.OpenManageProjects(ManageProjectsSection.Roots);
                 break;
             case MenuCommand.AddProject:
-                controller.Observe(controller.AddProjectFromMenuAsync(), "Tambah project");
+                controller.Observe(controller.AddProjectFromMenuAsync(), "Add project");
                 break;
             case MenuCommand.HiddenProjects:
                 controller.OpenManageProjects(ManageProjectsSection.Hidden);
@@ -59,7 +59,7 @@ public partial class App
                 _importFlow?.Open(controller.CurrentProject);
                 break;
             case MenuCommand.OpenLaunchJson:
-                controller.Observe(controller.OpenLaunchJsonFromMenuAsync(), "Buka launch.json");
+                controller.Observe(controller.OpenLaunchJsonFromMenuAsync(), "Open launch.json");
                 break;
             case MenuCommand.OpenLog:
                 OpenLog();
@@ -67,11 +67,11 @@ public partial class App
             case MenuCommand.AddToPath:
                 if (_system is { } system)
                 {
-                    controller.Observe(system.AddCliToPathAsync(), "Tambahkan CLI ke PATH");
+                    controller.Observe(system.AddCliToPathAsync(), "Add CLI to PATH");
                 }
                 break;
             case MenuCommand.Exit:
-                controller.Observe(RequestExitAsync(), "Keluar");
+                controller.Observe(RequestExitAsync(), "Exit");
                 break;
         }
     }
@@ -90,7 +90,7 @@ public partial class App
         SaveSettings($"size={_settings.Widget.Size} (widthOverride cleared)");
     }
 
-    /// <summary>"Keluar": with an active session the user confirms "Stop sesi dan keluar?" first; then stop and exit.</summary>
+    /// <summary>"Exit": with an active session the user confirms "Stop the session and exit?" first; then stop and exit.</summary>
     private async Task RequestExitAsync()
     {
         if (_exiting)
@@ -139,8 +139,8 @@ public partial class App
         _startup is null ? null : _startup != StartupState.Off,
         _startup switch
         {
-            null => "Status registry tidak terbaca (lihat diag.log)",
-            StartupState.OtherPath => "Terdaftar untuk FlutterBar.App.exe di folder lain: matikan lalu nyalakan lagi untuk memakai exe ini",
+            null => "Couldn't read the registry status (see diag.log)",
+            StartupState.OtherPath => "Registered for FlutterBar.App.exe in another folder: turn it off and on again to use this exe",
             _ => null,
         });
 

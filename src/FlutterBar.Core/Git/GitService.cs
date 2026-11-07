@@ -59,12 +59,12 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
     {
         if (string.IsNullOrWhiteSpace(branch) || branch.StartsWith('-'))
         {
-            return new GitResult(false, $"Nama branch tidak valid: {branch}");
+            return new GitResult(false, $"Invalid branch name: {branch}");
         }
 
         var result = await RunAsync(root, "switch", branch).ConfigureAwait(false);
         return result.ExitCode == 0
-            ? new GitResult(true, $"Pindah ke branch {branch}")
+            ? new GitResult(true, $"Switched to branch {branch}")
             : new GitResult(false, FailureText(result));
     }
 

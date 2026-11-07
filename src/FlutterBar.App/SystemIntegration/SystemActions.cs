@@ -8,7 +8,7 @@ using FlutterBar.Core.Orchestration;
 namespace FlutterBar.App.SystemIntegration;
 
 /// <summary>
-/// Menu items "Tambahkan CLI ke PATH" and "Start with Windows" (spec §7.4). Registry work and the environment broadcast
+/// Menu items "Add CLI to PATH" and "Start with Windows" (spec §7.4). Registry work and the environment broadcast
 /// run off the UI thread; failures are logged and toasted. The PATH/Run logic itself is <c>FlutterBar.Core.Integration</c>.
 /// </summary>
 internal sealed class SystemActions(AppController ui, IUserRegistry registry)
@@ -31,29 +31,29 @@ internal sealed class SystemActions(AppController ui, IUserRegistry registry)
         }
         catch (Exception ex) when (IsRegistryFailure(ex))
         {
-            Report("reading the user PATH failed", ex, $"PATH user tidak bisa dibaca: {ex.Message}");
+            Report("reading the user PATH failed", ex, $"Couldn't read the user PATH: {ex.Message}");
             return;
         }
         if (!exists)
         {
             AppLog.Write($"add to PATH: {CliExe} not found in {folder}");
-            ui.ShowToast($"{CliExe} tidak ditemukan di {folder}");
+            ui.ShowToast($"{CliExe} not found in {folder}");
             return;
         }
         if (present)
         {
             AppLog.Write($"add to PATH: {folder} already in the user PATH");
-            ui.ShowToast($"Folder CLI sudah ada di PATH user: {folder}");
+            ui.ShowToast($"CLI folder is already on the user PATH: {folder}");
             return;
         }
         if (!ui.CanShowToast)
         {
-            AppLog.Write("add to PATH: toast tidak bisa ditampilkan (widget hidden by fullscreen/auto-hide), PATH not changed");
+            AppLog.Write("add to PATH: toast couldn't be shown (widget hidden by fullscreen/auto-hide), PATH not changed");
             return;
         }
-        if (!await ui.ConfirmAsync($"Tambahkan {folder} ke PATH user?", "Tambahkan", UiText.ConfirmNo))
+        if (!await ui.ConfirmAsync($"Add {folder} to the user PATH?", "Add", UiText.ConfirmNo))
         {
-            AppLog.Write("add to PATH: dibatalkan user (Batal, closed, or replaced by another toast), PATH not changed");
+            AppLog.Write("add to PATH: cancelled by user (Cancel, closed, or replaced by another toast), PATH not changed");
             return;
         }
         try
@@ -69,7 +69,7 @@ internal sealed class SystemActions(AppController ui, IUserRegistry registry)
         }
         catch (Exception ex) when (IsRegistryFailure(ex))
         {
-            Report($"adding {folder} to the user PATH failed", ex, $"PATH user gagal diubah: {ex.Message}");
+            Report($"adding {folder} to the user PATH failed", ex, $"Couldn't update the user PATH: {ex.Message}");
         }
     }
 
@@ -107,7 +107,7 @@ internal sealed class SystemActions(AppController ui, IUserRegistry registry)
         }
         catch (Exception ex) when (IsRegistryFailure(ex))
         {
-            Report($"Start with Windows {(on ? "enable" : "disable")} failed", ex, $"Start with Windows gagal diubah: {ex.Message}");
+            Report($"Start with Windows {(on ? "enable" : "disable")} failed", ex, $"Couldn't change Start with Windows: {ex.Message}");
         }
         return await ReadStartupAsync();
     }

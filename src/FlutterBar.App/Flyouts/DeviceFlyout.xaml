@@ -1,12 +1,12 @@
 <UserControl x:Class="FlutterBar.App.Flyouts.DeviceFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Device flyout (spec §5.4): cached list first, refreshed in the background; "Terhubung" and "Emulator (offline)". -->
+    <!-- Device flyout (spec §5.4): cached list first, refreshed in the background; "Connected" and "Emulator (offline)". -->
     <StackPanel>
         <TextBlock Text="Device" Style="{StaticResource Fb.FlyoutHeader}" />
         <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Daftar device" />
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Device list" />
         <TextBlock x:Name="Message" Style="{StaticResource Fb.ErrorText}" Visibility="Collapsed" />
     </StackPanel>
 </UserControl>

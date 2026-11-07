@@ -35,16 +35,16 @@ public sealed record SessionControls(
     bool ShowStop,
     bool StopEnabled)
 {
-    public const string UnsupportedModeText = "Tidak didukung di mode release/profile";
-    public const string ReloadUnsupportedText = "Hot reload tidak didukung di device ini";
-    public const string RestartUnsupportedText = "Hot restart tidak didukung di device ini";
-    public const string BusyText = "Sedang reload";
+    public const string UnsupportedModeText = "Not supported in release/profile mode";
+    public const string ReloadUnsupportedText = "Hot reload isn't supported on this device";
+    public const string RestartUnsupportedText = "Hot restart isn't supported on this device";
+    public const string BusyText = "Reload in progress";
 
     public static SessionControls From(SessionSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         var releaseLike = snapshot.Request?.Config.Mode is RunMode.Profile or RunMode.Release;
-        var errorSuffix = snapshot.ErrorCount > 0 ? $" · {snapshot.ErrorCount} error" : snapshot.HasError ? " · ada error" : string.Empty;
+        var errorSuffix = snapshot.ErrorCount > 0 ? $" · {snapshot.ErrorCount} error" : snapshot.HasError ? " · has errors" : string.Empty;
 
         switch (snapshot.State)
         {
@@ -53,7 +53,7 @@ public sealed record SessionControls(
 
             case SessionState.Running:
                 {
-                    var c = Buttons(snapshot.HasError ? StatusDot.Error : StatusDot.Running, "Berjalan" + errorSuffix, progress: false, run: false, reload: true, stop: true);
+                    var c = Buttons(snapshot.HasError ? StatusDot.Error : StatusDot.Running, "Running" + errorSuffix, progress: false, run: false, reload: true, stop: true);
                     return c with
                     {
                         ReloadEnabled = snapshot.CanReload,
@@ -73,10 +73,10 @@ public sealed record SessionControls(
                 return Buttons(StatusDot.Stopping, "Menghentikan…", progress: false, run: false, reload: false, stop: false);
 
             case SessionState.Failed:
-                return Buttons(StatusDot.Error, snapshot.FailureMessage ?? "App berhenti", progress: false, run: true, reload: false, stop: false);
+                return Buttons(StatusDot.Error, snapshot.FailureMessage ?? "App stopped", progress: false, run: true, reload: false, stop: false);
 
             default:
-                return Buttons(snapshot.HasError ? StatusDot.Error : StatusDot.Idle, "Tidak ada sesi" + errorSuffix, progress: false, run: true, reload: false, stop: false);
+                return Buttons(snapshot.HasError ? StatusDot.Error : StatusDot.Idle, "No session" + errorSuffix, progress: false, run: true, reload: false, stop: false);
         }
     }
 

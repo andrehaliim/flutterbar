@@ -9,7 +9,7 @@ namespace FlutterBar.App.Docking;
 
 /// <summary>
 /// Docks a borderless WPF window onto the primary taskbar (spec §7.3), porting the technique proven by the docking spike
-/// v3.2 (findings doc "Catatan untuk Task 13"). Lifecycle, hooks, timer and the reassert loop live here; owner in
+/// v3.2 (findings doc "Notes for Task 13"). Lifecycle, hooks, timer and the reassert loop live here; owner in
 /// <c>TaskbarDocking.Owner.cs</c>, placement/auto-hide/UIA query in
 /// <c>TaskbarDocking.Placement.cs</c>, drag/resize in <c>TaskbarDocking.Drag.cs</c>, popup suspension in
 /// <c>TaskbarDocking.Popups.cs</c>. UI thread only, except the background UIA query. One instance per window: when the

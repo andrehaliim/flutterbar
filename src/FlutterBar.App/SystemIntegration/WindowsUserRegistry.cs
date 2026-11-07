@@ -4,7 +4,7 @@ using Microsoft.Win32;
 namespace FlutterBar.App.SystemIntegration;
 
 /// <summary>
-/// The real HKCU behind <see cref="IUserRegistry"/>. Only reached from the menu items "Tambahkan CLI ke PATH" and
+/// The real HKCU behind <see cref="IUserRegistry"/>. Only reached from the menu items "Add CLI to PATH" and
 /// "Start with Windows" (and reading the Start-with-Windows state and, on Rescan, PATH); call off the UI thread.
 /// </summary>
 internal sealed class WindowsUserRegistry : IUserRegistry

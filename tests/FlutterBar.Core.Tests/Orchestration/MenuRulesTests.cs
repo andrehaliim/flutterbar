@@ -8,9 +8,9 @@ namespace FlutterBar.Core.Tests.Orchestration;
 public sealed class MenuRulesTests
 {
     [Theory]
-    [InlineData(WidgetSize.Full, "Lengkap")]
-    [InlineData(WidgetSize.Compact, "Ringkas")]
-    [InlineData(WidgetSize.ButtonsOnly, "Tombol saja")]
+    [InlineData(WidgetSize.Full, "Full")]
+    [InlineData(WidgetSize.Compact, "Compact")]
+    [InlineData(WidgetSize.ButtonsOnly, "Buttons only")]
     public void SizeLabels_AreSpecCopy(WidgetSize size, string label) => Assert.Equal(label, WidgetSizeMenu.Label(size));
 
     [Fact]
@@ -57,8 +57,8 @@ public sealed class MenuRulesTests
     [Fact]
     public void ExitAndErrorCopy()
     {
-        Assert.Equal("Stop sesi dan keluar?", UiText.ConfirmExit);
-        Assert.Equal("FlutterBar mengalami error, detail di diag.log", UiText.UnexpectedError);
-        Assert.Equal("Buka terminal baru agar PATH terbaca", UiText.PathAdded);
+        Assert.Equal("Stop the session and exit?", UiText.ConfirmExit);
+        Assert.Equal("FlutterBar hit an error. Details are in diag.log", UiText.UnexpectedError);
+        Assert.Equal("Open a new terminal to pick up the PATH change", UiText.PathAdded);
     }
 }

@@ -102,7 +102,7 @@ public partial class App : Application
         _viewModel.OpenLogRequested += OpenLog;
         _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
         _importFlow = new ImportFlow(_controller);
-        _controller.ImportRequested += _importFlow.Open; // "Belum ada config → Import dari IDE"
+        _controller.ImportRequested += _importFlow.Open; // "No config yet → Import from IDE"
         _system = new SystemActions(_controller, new WindowsUserRegistry());
         CreateWidget("startup");
         _ = InitializeControllerAsync(_controller);
@@ -157,7 +157,7 @@ public partial class App : Application
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write("settings: load failed, using defaults", ex);
-            warning = $"settings.json tidak bisa dibaca, memakai default: {ex.Message}";
+            warning = $"Couldn't read settings.json, using defaults: {ex.Message}";
             return new AppSettings();
         }
     }
@@ -171,7 +171,7 @@ public partial class App : Application
         catch (Exception ex) // startup continuation: report, the widget itself keeps running
         {
             AppLog.Write("AppController initialization failed", ex);
-            controller.ShowToast($"Inisialisasi FlutterBar gagal: {ex.Message}");
+            controller.ShowToast($"FlutterBar failed to start: {ex.Message}");
         }
     }
 

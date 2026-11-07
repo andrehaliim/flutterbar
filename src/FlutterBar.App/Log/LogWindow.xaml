@@ -190,9 +190,9 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Style="{StaticResource Log.Chevron}" Click="OnToggleClick" ToolTip="Buka / lipat blok exception" />
+                <Button Grid.Column="0" Style="{StaticResource Log.Chevron}" Click="OnToggleClick" ToolTip="Expand / collapse exception block" />
                 <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Log.LineText}" />
-                <TextBlock Grid.Column="2" Text="{Binding Entry.LineCount, StringFormat=({0} baris)}" Style="{StaticResource Log.GroupCount}" />
+                <TextBlock Grid.Column="2" Text="{Binding Entry.LineCount, StringFormat=({0} lines)}" Style="{StaticResource Log.GroupCount}" />
             </Grid>
         </DataTemplate>
 
@@ -230,8 +230,8 @@
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0" Margin="0,0,8,0">
                 <TextBox x:Name="SearchBox" Style="{StaticResource Log.SearchBox}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         AutomationProperties.Name="Cari" />
-                <TextBlock Text="Cari…" Foreground="{DynamicResource Fb.Muted}" IsHitTestVisible="False" Margin="10,0,0,0" VerticalAlignment="Center">
+                         AutomationProperties.Name="Search" />
+                <TextBlock Text="Search…" Foreground="{DynamicResource Fb.Muted}" IsHitTestVisible="False" Margin="10,0,0,0" VerticalAlignment="Center">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -245,13 +245,13 @@
                 </TextBlock>
             </Grid>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <ToggleButton Style="{StaticResource Log.ToggleButton}" Content="Hanya error" IsChecked="{Binding ErrorsOnly}" />
-                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74A;" Click="OnPreviousErrorClick" ToolTip="Error sebelumnya (Shift+F3)"
-                        AutomationProperties.Name="Error sebelumnya" />
-                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74B;" Click="OnNextErrorClick" ToolTip="Error berikutnya (F3)"
-                        AutomationProperties.Name="Error berikutnya" />
-                <Button Style="{StaticResource Log.ToolButton}" Content="Bersihkan" Click="OnClearClick" ToolTip="Kosongkan tampilan (buffer tidak ikut kosong)" />
-                <Button Style="{StaticResource Log.ToolButton}" Content="Salin" Click="OnCopyClick" ToolTip="Salin baris terpilih, atau semua (Ctrl+C)" />
+                <ToggleButton Style="{StaticResource Log.ToggleButton}" Content="Errors only" IsChecked="{Binding ErrorsOnly}" />
+                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74A;" Click="OnPreviousErrorClick" ToolTip="Previous error (Shift+F3)"
+                        AutomationProperties.Name="Previous error" />
+                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74B;" Click="OnNextErrorClick" ToolTip="Next error (F3)"
+                        AutomationProperties.Name="Next error" />
+                <Button Style="{StaticResource Log.ToolButton}" Content="Clear" Click="OnClearClick" ToolTip="Clear the view (the buffer is kept)" />
+                <Button Style="{StaticResource Log.ToolButton}" Content="Copy" Click="OnCopyClick" ToolTip="Copy selected lines, or all (Ctrl+C)" />
             </StackPanel>
             <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource Fb.Muted}" HorizontalAlignment="Right"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />

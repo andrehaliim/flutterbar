@@ -6,7 +6,7 @@ namespace FlutterBar.Core.Ipc;
 
 /// <summary>
 /// Executes IPC commands against the session. reload/restart are not serialized: the session answers a second
-/// request immediately with "Sedang reload" (Busy), so queueing it behind the first would make it hang. status and logs
+/// request immediately with "Reload in progress" (Busy), so queueing it behind the first would make it hang. status and logs
 /// only read snapshots, so they are not serialized either (a stop can wait the whole stop grace, longer than the CLI's
 /// patience). stop and show run one at a time.
 /// </summary>
@@ -42,7 +42,7 @@ public sealed class CommandHandler(
             {
                 "stop" => await StopAsync(),
                 "show" => Show(),
-                _ => Error(ExitCodes.Usage, $"Perintah tidak dikenal: {request.Command}"),
+                _ => Error(ExitCodes.Usage, $"Unknown command: {request.Command}"),
             };
         }
         finally
@@ -60,8 +60,8 @@ public sealed class CommandHandler(
         var data = IpcJson.ToElement(info);
         return snapshot.State switch
         {
-            SessionState.Idle => new IpcResponse(false, ExitCodes.NoSession, data, "Tidak ada sesi aktif"),
-            SessionState.Failed => new IpcResponse(false, ExitCodes.Failed, data, snapshot.FailureMessage ?? "Sesi gagal"),
+            SessionState.Idle => new IpcResponse(false, ExitCodes.NoSession, data, "No active session"),
+            SessionState.Failed => new IpcResponse(false, ExitCodes.Failed, data, snapshot.FailureMessage ?? "Session failed"),
             _ => new IpcResponse(true, ExitCodes.Ok, data, string.Empty),
         };
     }
@@ -82,7 +82,7 @@ public sealed class CommandHandler(
             _ => ExitCodes.Failed,
         };
         var message = outcome.Failure == ReloadFailure.NoSession && string.IsNullOrWhiteSpace(outcome.Message)
-            ? "Tidak ada sesi aktif"
+            ? "No active session"
             : outcome.Message;
         return new IpcResponse(false, code, data, message);
     }
@@ -91,11 +91,11 @@ public sealed class CommandHandler(
     {
         if (session.Snapshot.State == SessionState.Idle)
         {
-            return Error(ExitCodes.NoSession, "Tidak ada sesi aktif");
+            return Error(ExitCodes.NoSession, "No active session");
         }
 
         await session.StopAsync();
-        return new IpcResponse(true, ExitCodes.Ok, null, "Sesi dihentikan");
+        return new IpcResponse(true, ExitCodes.Ok, null, "Session stopped");
     }
 
     private IpcResponse Show()
@@ -113,7 +113,7 @@ public sealed class CommandHandler(
         {
             if (!int.TryParse(tailText, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
             {
-                return Error(ExitCodes.Usage, $"Nilai --tail tidak valid: {tailText}");
+                return Error(ExitCodes.Usage, $"Invalid --tail value: {tailText}");
             }
             tail = n;
         }

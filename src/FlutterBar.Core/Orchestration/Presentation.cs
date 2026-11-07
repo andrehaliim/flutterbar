@@ -14,12 +14,12 @@ public static class ConfigPresentation
         ArgumentNullException.ThrowIfNull(result);
         if (!result.FileExists)
         {
-            return new ConfigChipState(UiText.NoConfig, false, "launch.json belum ada", null, []);
+            return new ConfigChipState(UiText.NoConfig, false, "launch.json doesn't exist yet", null, []);
         }
         if (result.Errors.Count > 0)
         {
             var lines = result.Errors.Select(FormatError).ToList();
-            return new ConfigChipState(UiText.ConfigInvalid, true, "launch.json tidak valid:\n" + string.Join('\n', lines), null, lines);
+            return new ConfigChipState(UiText.ConfigInvalid, true, "launch.json is invalid:\n" + string.Join('\n', lines), null, lines);
         }
         var selected = selectedName is null ? result.Configs.FirstOrDefault() : result.Configs.FirstOrDefault(c => c.Name == selectedName);
         if (selected is null)
@@ -30,7 +30,7 @@ public static class ConfigPresentation
         return new ConfigChipState(selected.Name, false, ToolTip(selected), selected, []);
     }
 
-    public static string NotFoundText(string name) => $"Config \"{name}\" tidak ada di launch.json";
+    public static string NotFoundText(string name) => $"Config \"{name}\" isn't in launch.json";
 
     public static string ToolTip(LaunchConfig config) =>
         $"program: {config.Program}\nflavor: {config.Flavor ?? "-"}\nmode: {ModeText(config.Mode)}";
@@ -42,7 +42,7 @@ public static class ConfigPresentation
     public static string FormatError(ConfigError error)
     {
         ArgumentNullException.ThrowIfNull(error);
-        var where = error.Line is { } line ? $"Baris {line}" : error.Field;
+        var where = error.Line is { } line ? $"Line {line}" : error.Field;
         return where is null ? error.Message : $"{where}: {error.Message}";
     }
 
@@ -51,7 +51,7 @@ public static class ConfigPresentation
 
 public static class DevicePresentation
 {
-    /// <summary>Device chip: the name from the last device list, else the stored id, else "Pilih device".</summary>
+    /// <summary>Device chip: the name from the last device list, else the stored id, else "Select device".</summary>
     public static string Label(string? deviceId, IReadOnlyList<DeviceInfo> cached)
     {
         if (string.IsNullOrWhiteSpace(deviceId))
@@ -110,7 +110,7 @@ public static class EmulatorFlow
         }
         catch (Exception ex) when (ToolFailure.IsExpected(ex))
         {
-            return new EmulatorOutcome(null, $"Gagal menyalakan emulator {emulatorId}: {ex.Message}", ex);
+            return new EmulatorOutcome(null, $"Couldn't start emulator {emulatorId}: {ex.Message}", ex);
         }
     }
 }

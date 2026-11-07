@@ -7,17 +7,17 @@ public sealed record ImportRow(ImportCandidate Candidate, string Title, string D
 public sealed record ImportDiscovery(IReadOnlyList<ImportRow> Rows, bool LaunchJsonExists, string? Error, Exception? Exception);
 
 /// <summary>
-/// "Import config dari IDE" (spec §4.2) without UI: discovery into checklist rows, and applying the selection through
+/// "Import config from IDE" (spec §4.2) without UI: discovery into checklist rows, and applying the selection through
 /// <see cref="IdeConfigImporter.Merge"/> and <see cref="LaunchConfigStore.Save"/>. A name already in launch.json is shown
-/// as "sudah ada", unchecked and disabled, because <see cref="IdeConfigImporter.Merge"/> skips existing names anyway. A config
+/// as "already exists", unchecked and disabled, because <see cref="IdeConfigImporter.Merge"/> skips existing names anyway. A config
 /// whose <c>program</c> file is missing is offered unchecked with <see cref="MissingProgramNote"/>: launch.json validation would reject the whole
 /// file because of it.
 /// </summary>
 public static class ImportPlan
 {
-    public const string AlreadyExistsNote = "sudah ada";
-    public const string MissingProgramNote = "file program tidak ada — config akan merah setelah diimport";
-    public const string NothingFoundText = "Tidak ada config Flutter di .idea/workspace.xml, .run/*.xml, atau .vscode/launch.json.";
+    public const string AlreadyExistsNote = "already exists";
+    public const string MissingProgramNote = "program file is missing — the config will show an error after import";
+    public const string NothingFoundText = "No Flutter configs found in .idea/workspace.xml, .run/*.xml or .vscode/launch.json.";
 
     public static string SourceLabel(string source) => source switch
     {
@@ -82,7 +82,7 @@ public static class ImportPlan
     }
 
     private static string InvalidLaunchJsonText(LaunchConfigLoadResult result) =>
-        "launch.json tidak valid, perbaiki dulu (menu Buka launch.json): " + result.Errors[0].Message;
+        "launch.json is invalid. Fix it first (menu: Open launch.json): " + result.Errors[0].Message;
 
     private static string Detail(ImportCandidate candidate)
     {

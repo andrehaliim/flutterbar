@@ -3,7 +3,7 @@ using FlutterBar.Core.Settings;
 namespace FlutterBar.Core.Projects;
 
 /// <summary>
-/// Edits <c>scanRoots</c>, <c>manualProjects</c> and <c>hiddenProjects</c> (spec §4.3) for the "Kelola project" dialog.
+/// Edits <c>scanRoots</c>, <c>manualProjects</c> and <c>hiddenProjects</c> (spec §4.3) for the "Manage projects" dialog.
 /// Paths are stored normalized (<see cref="PathKey"/>) and compared case-insensitively, so hand-written variants
 /// (<c>C:\Work\</c>, <c>c:\work</c>) count as one entry. Each method returns whether the list changed.
 /// </summary>
@@ -50,7 +50,7 @@ public static class ProjectListEditor
     {
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
         {
-            throw new ArgumentException($"Path folder harus absolut: \"{path}\"", nameof(path));
+            throw new ArgumentException($"Folder path must be absolute: \"{path}\"", nameof(path));
         }
         return PathKey.Normalize(path);
     }

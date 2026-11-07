@@ -97,8 +97,8 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
             var total = View.TotalLines;
             var filtered = View.SearchText.Length > 0 || View.ErrorsOnly;
             return filtered
-                ? string.Create(CultureInfo.CurrentCulture, $"{shown:N0} baris tampil, {total:N0} total")
-                : string.Create(CultureInfo.CurrentCulture, $"{total:N0} baris");
+                ? string.Create(CultureInfo.CurrentCulture, $"{shown:N0} lines shown, {total:N0} total")
+                : string.Create(CultureInfo.CurrentCulture, $"{total:N0} lines");
         }
     }
 

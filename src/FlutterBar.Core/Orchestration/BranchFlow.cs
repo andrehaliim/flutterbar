@@ -6,7 +6,7 @@ namespace FlutterBar.Core.Orchestration;
 public sealed record GitState(bool IsRepo, string? Branch, bool Unborn, string? Error)
 {
     public string ToolTip => Error is not null
-        ? $"Branch tidak terbaca: {Error}"
+        ? $"Couldn't read the branch: {Error}"
         : Unborn ? $"Branch {Branch} {UiText.NoCommitYet}" : $"Branch {Branch}";
 }
 

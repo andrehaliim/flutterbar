@@ -24,7 +24,7 @@ internal sealed partial class ConfigFlyout : UserControl
 
     public event Action<string>? ConfigChosen;
 
-    /// <summary>"Import dari IDE" (the import dialog belongs to Task 16).</summary>
+    /// <summary>"Import from IDE" (the import dialog belongs to Task 16).</summary>
     public event Action? ImportRequested;
 
     public event Action? CreateDefaultRequested;

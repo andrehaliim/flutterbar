@@ -4,6 +4,6 @@
     <!-- Combined flyout for the Compact / ButtonsOnly sizes (spec §7.1): the four dropdowns in one place. -->
     <StackPanel>
         <TextBlock Text="FlutterBar" Style="{StaticResource Fb.FlyoutHeader}" />
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Pilihan" />
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Options" />
     </StackPanel>
 </UserControl>

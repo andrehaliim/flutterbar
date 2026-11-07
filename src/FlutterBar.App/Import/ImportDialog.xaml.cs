@@ -7,7 +7,7 @@ namespace FlutterBar.App.Import;
 
 /// <summary>
 /// Checklist of <see cref="ImportCandidate"/>s (spec §4.2). Pure view: discovery and saving are done by
-/// <see cref="ImportFlow"/> off the UI thread. Rows already in launch.json are unchecked, disabled and labelled "sudah ada".
+/// <see cref="ImportFlow"/> off the UI thread. Rows already in launch.json are unchecked, disabled and labelled "already exists".
 /// </summary>
 internal sealed partial class ImportDialog : Window
 {
@@ -20,7 +20,7 @@ internal sealed partial class ImportDialog : Window
         InitializeComponent();
         ProjectText.Text = $"Project: {Path.GetFileName(projectRoot.TrimEnd('\\', '/'))}";
         ProjectText.ToolTip = projectRoot;
-        FootText.Text = "Mencari config di .idea/workspace.xml, .run/*.xml, dan .vscode/launch.json…";
+        FootText.Text = "Looking for configs in .idea/workspace.xml, .run/*.xml and .vscode/launch.json…";
     }
 
     public string ProjectRoot { get; }
@@ -41,9 +41,9 @@ internal sealed partial class ImportDialog : Window
         Rows.ItemsSource = _rows;
         SetError(discovery.Error);
         FootText.Text = discovery.Rows.Count == 0
-            ? "File IDE tidak pernah diubah."
-            : "Config yang dicentang ditambahkan ke .flutterbar/launch.json. File IDE tidak diubah."
-                + (discovery.LaunchJsonExists ? " Komentar di launch.json yang sudah ada akan hilang saat disimpan." : "");
+            ? "IDE files are never changed."
+            : "Checked configs are added to .flutterbar/launch.json. IDE files aren't changed."
+                + (discovery.LaunchJsonExists ? " Comments in the existing launch.json are lost when it is saved." : "");
         UpdateImportButton();
     }
 

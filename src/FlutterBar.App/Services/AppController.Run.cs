@@ -35,7 +35,7 @@ internal sealed partial class AppController
         AppLog.Write($"run [{outcome.ProjectRoot ?? "-"}]: {outcome.Kind} - {outcome.Message}", outcome.Error);
         if (outcome.Kind == RunOutcomeKind.Cancelled)
         {
-            return; // the selection change already said "Run dibatalkan"
+            return; // the selection change already said "Run cancelled"
         }
         if (outcome.ShouldPersist)
         {
@@ -83,7 +83,7 @@ internal sealed partial class AppController
         var outcome = await _session.ReloadAsync(full, ReloadTimeout);
         if (!outcome.Success)
         {
-            _vm.Notice = $"{label} gagal: {outcome.Message}";
+            _vm.Notice = $"{label} failed: {outcome.Message}";
             AppLog.Write($"{label} failed ({outcome.Failure}): {outcome.Message}");
             ShowToast(_vm.Notice);
         }

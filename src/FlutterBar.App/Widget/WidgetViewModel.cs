@@ -111,7 +111,7 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         set => Set(ref _effectiveSize, value);
     }
 
-    /// <summary>Nothing fits, not even ButtonsOnly: the widget shows "Taskbar penuh — gunakan Drag widget".</summary>
+    /// <summary>Nothing fits, not even ButtonsOnly: the widget shows "Taskbar is full — use Drag widget".</summary>
     public bool TaskbarFull
     {
         get => _taskbarFull;
@@ -206,7 +206,7 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     {
         get
         {
-            var text = _preparing ? "Menyiapkan run…" : _controls.StatusText;
+            var text = _preparing ? "Preparing run…" : _controls.StatusText;
             return _notice is null ? text : $"{text}\n{_notice}";
         }
     }

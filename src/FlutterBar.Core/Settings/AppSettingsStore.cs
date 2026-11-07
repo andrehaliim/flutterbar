@@ -55,7 +55,7 @@ public sealed class AppSettingsStore(string path)
 
         var backupPath = path + ".bak-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         File.Move(path, backupPath, overwrite: true);
-        warning = $"settings.json rusak, dicadangkan ke {Path.GetFileName(backupPath)} dan diganti default";
+        warning = $"settings.json is corrupt: backed up to {Path.GetFileName(backupPath)} and replaced with defaults";
         return new AppSettings();
     }
 

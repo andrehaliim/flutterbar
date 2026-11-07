@@ -36,7 +36,8 @@ deskband).
 | Topik | Keputusan |
 |---|---|
 | Bentuk | Widget yang menempel di taskbar, dengan perilaku seperti project referensi |
-| Layout | Adaptif: Lengkap, Ringkas, atau Tombol saja. User bisa memilih atau resize, dan widget menyusut otomatis kalau ruang kurang |
+| Layout | Adaptif: Full, Compact, atau Buttons only. User bisa memilih atau resize, dan widget menyusut otomatis kalau ruang kurang |
+| Bahasa teks | **Semua teks UI dan CLI berbahasa Inggris** (keputusan user 2026-11-08, menggantikan aturan awal teks UI Bahasa Indonesia): sentence case, singkat, tanpa "please", "successfully", atau tanda seru. Dokumen ini tetap berbahasa Indonesia, hanya teks yang dikutip dalam tanda kutip yang mengikuti copy di app |
 | Tombol | Idle: ▶ Run. Running: ⚡ Hot reload, 🔄 Hot restart, ⏹ Stop |
 | Log | `LogWindow` terpisah yang dibuka dari widget |
 | Run config | Milik FlutterBar sendiri, di `<project>/.flutterbar/launch.json` dengan format mirip `launch.json` VS Code. Bisa import sekali dari `.idea` dan `.vscode` |
@@ -149,14 +150,14 @@ dalam bahasa manusia.
 <flutter> run --machine -d <deviceId> -t <program> [--flavor <flavor>] --<mode> <args...>
 ```
 
-### 4.2 Import dari IDE (`IdeConfigImporter`)
+### 4.2 Import from IDE (`IdeConfigImporter`)
 
 | Sumber | Pemetaan |
 |---|---|
 | `.idea/workspace.xml` dan `.run/*.xml`: `<configuration type="FlutterRunConfigurationType">` | `name` → `name`. `filePath` (buang `$PROJECT_DIR$/`) → `program`. `buildFlavor` → `flavor`. `additionalArgs` di-*shell-split* (mendukung tanda kutip dan `&quot;`) → `args` |
 | `.vscode/launch.json`: item dengan `type: "dart"` | `name` → `name`. `program` → `program`. `flutterMode` → `mode`. `args`: pasangan `--flavor X` atau `--flavor=X` diangkat ke `flavor`, sisanya masuk ke `args` |
 
-- Import dipicu lewat menu klik kanan, atau tombol "Import dari IDE" saat `launch.json` belum ada.
+- Import dipicu lewat menu klik kanan, atau tombol "Import from IDE" saat `launch.json` belum ada.
 - Sebelum disimpan, tampil daftar config yang ditemukan dari semua sumber sebagai checklist. Item yang
   namanya sudah ada di `launch.json` ditandai dan tidak dicentang secara default.
 - Item yang dipilih **ditambahkan** ke `launch.json`. Nama yang bentrok antar sumber diberi akhiran,
@@ -194,7 +195,7 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
   dibuka kalau scan terakhir sudah lebih dari 10 menit lalu (hasil cache tampil dulu).
 - **Daftar akhir:** (hasil scan + `manualProjects`) − `hiddenProjects`, diurutkan menurut `lastUsed`
   terbaru lalu nama.
-- **Project yang hilang** (foldernya sudah tidak ada) ditandai "tidak tersedia" sampai scan berikutnya,
+- **Project yang hilang** (foldernya sudah tidak ada) ditandai "(unavailable)" sampai scan berikutnya,
   lalu dibuang dari daftar.
 - Nama yang ditampilkan adalah nama folder. Kalau ada dua project dengan nama folder yang sama, ditambah
   nama parent-nya, misalnya `gts-mobile (GTSmobile)`.
@@ -240,8 +241,8 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
 - **Pindah branch:** `git switch <branch>`. Kalau gagal, stderr git ditampilkan apa adanya di toast dan
   log.
 - **Pindah branch saat sesi berjalan:** `git diff --name-only <old> <new> -- pubspec.yaml pubspec.lock`
-  dijalankan. Kalau ada perubahan, muncul toast "pubspec berubah, stop lalu run ulang". Kalau tidak,
-  toast "Branch berganti, hot restart?" dengan tombol Hot restart.
+  dijalankan. Kalau ada perubahan, muncul toast "pubspec changed. Stop and run again.". Kalau tidak,
+  toast "Branch changed. Hot restart?" dengan tombol Hot restart.
 
 ## 6. Sesi run
 
@@ -279,7 +280,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 | Running | hijau | ⚡ 🔄 ⏹ |
 | Reloading | hijau, tombol yang ditekan berubah jadi spinner | ⚡ 🔄 ⏹ (request kedua ditolak selama masih reloading) |
 | Stopping | abu-abu berkedip | — |
-| Failed | merah, dengan label "Build gagal" atau "App berhenti" | ▶ |
+| Failed | merah, dengan label "Build failed" atau "App berhenti" | ▶ |
 
 - **Flag error** (titik merah) terpisah dari state. Flag ini menyala saat `app.log` dengan
   `error:true`, saat ada baris `════════ Exception caught by`, saat `daemon.logMessage` dengan
@@ -292,7 +293,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **Stop:** kirim `app.stop`. Kalau proses belum keluar dalam 5 detik, Job Object ditutup sehingga
   semua proses mati paksa.
 - **Satu sesi:** mengganti project, config, atau device saat sesi berjalan memunculkan konfirmasi
-  "Stop sesi sekarang dan ganti?". Kalau Ya, sesi dihentikan dan pilihan berubah, tapi app tidak
+  "Stop the current session and switch?". Kalau Stop, sesi dihentikan dan pilihan berubah, tapi app tidak
   otomatis di-run.
 - **Menutup FlutterBar (Exit):** kalau ada sesi berjalan, muncul konfirmasi, lalu Stop, lalu keluar.
 
@@ -306,10 +307,10 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 ## 7. Widget taskbar
 
 ### 7.1 Layout
-- **Lengkap:** `● [project▾] [⎇ branch▾] [config▾] [device▾] | tombol | 🖥 log`
-- **Ringkas:** `● project · config ▾ | tombol | 🖥 log`. Klik bagian nama untuk membuka flyout gabungan
+- **Full:** `● [project▾] [⎇ branch▾] [config▾] [device▾] | tombol | 🖥 log`
+- **Compact:** `● project · config ▾ | tombol | 🖥 log`. Klik bagian nama untuk membuka flyout gabungan
   yang berisi keempat dropdown.
-- **Tombol saja:** `● tombol`. Klik titik status untuk membuka flyout gabungan. Kalau titiknya merah,
+- **Buttons only:** `● tombol`. Klik titik status untuk membuka flyout gabungan. Kalau titiknya merah,
   klik membuka `LogWindow` di posisi error.
 - Hover chip config menampilkan tooltip berisi `program`, `flavor`, dan `mode`.
 - Flyout project dan branch punya kolom pencarian.
@@ -319,7 +320,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Ukuran pilihan user (`widget.size`) bisa diatur lewat menu Size, atau dengan drag tepi kiri widget
   (lebar disimpan di `widthOverride`).
 - Kalau area kosong taskbar lebih kecil dari lebar ukuran pilihan, widget turun satu tingkat, lalu
-  dicek lagi. Kalau "tombol saja" pun tidak muat (mode `auto`), widget TIDAK disembunyikan: tetap tampil di posisi
+  dicek lagi. Kalau "Buttons only" pun tidak muat (mode `auto`), widget TIDAK disembunyikan: tetap tampil di posisi
   valid terakhir (atau di kiri `TrayNotifyWnd` bila belum ada) dalam ukuran "tombol saja", dengan pesan
   "Taskbar penuh — gunakan Drag widget". Widget hanya disembunyikan untuk fullscreen dan auto-hide. Saat ruang
   cukup lagi, widget kembali ke ukuran pilihan.
@@ -367,13 +368,13 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Project referensi boleh dipelajari sebagai rujukan pendekatan, tapi kodenya tidak disalin.
 
 ### 7.4 Menu klik kanan
-- Size: Lengkap / Ringkas / Tombol saja
-- Drag widget (checkbox) / Reset to auto position (kedua label ini sengaja berbahasa Inggris, keputusan user)
-- Kelola project: Folder root…, Tambah project…, Project tersembunyi…, Rescan
-- Import config dari IDE…
-- Buka `launch.json`, yang membuka file dengan aplikasi default `.json`
-- Buka `LogWindow`
-- Tambahkan CLI ke PATH, yang menambah folder `flutterbar.exe` ke PATH user (`HKCU\Environment`) setelah
+- Size: Full / Compact / Buttons only
+- Drag widget (checkbox) / Reset to auto position
+- Manage projects: Root folders…, Add project…, Hidden projects…, Rescan
+- Import config from IDE…
+- Open launch.json, yang membuka file dengan aplikasi default `.json`
+- Open log (membuka `LogWindow`)
+- Add CLI to PATH…, yang menambah folder `flutterbar.exe` ke PATH user (`HKCU\Environment`) setelah
   konfirmasi
 - Start with Windows (`HKCU\...\Run`, toggle)
 - Exit
@@ -402,7 +403,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 | `flutterbar logs [--errors] [--tail N] [--since-last-reload]` | Mencetak log dari buffer | 0 |
 
 - Semua perintah mendukung `--json` untuk output terstruktur.
-- Kalau FlutterBar tidak berjalan (pipe tidak ada), exit code 2 dengan pesan "FlutterBar tidak berjalan".
+- Kalau FlutterBar tidak berjalan (pipe tidak ada), exit code 2 dengan pesan "FlutterBar is not running".
 - Argumen yang tidak dikenal menghasilkan exit code 64 dan menampilkan usage.
 - **Sengaja tidak ada `flutterbar run`.** Menjalankan app hanya lewat tombol ▶, supaya Claude tidak
   meluncurkan app sendiri.
@@ -412,7 +413,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Protokol: satu request JSON per koneksi, lalu satu response JSON:
   `{"command":"reload","args":{...}}` → `{"ok":true,"exitCode":0,"data":{...},"message":"..."}`.
 - Server menangani request secara berurutan. Request reload/restart yang datang saat state Reloading
-  langsung mendapat `exitCode 1` dengan pesan "Sedang reload".
+  langsung mendapat `exitCode 1` dengan pesan "Reload in progress".
 
 ## 10. Penanganan error
 
@@ -420,8 +421,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 |---|---|
 | Ada `.fvmrc` tapi `fvm` tidak ditemukan | Run dibatalkan dengan toast dan log berisi pesan jelas. Tidak ada fallback |
 | `flutter` atau `git` tidak ditemukan | Pesan yang jelas, dan fitur terkait dinonaktifkan |
-| `launch.json` belum ada | Chip menampilkan "Belum ada config", dengan aksi Import dari IDE atau Buat default |
-| `launch.json` tidak valid | Chip berwarna merah dan menampilkan error validasi (baris/field), dengan aksi Buka file |
+| `launch.json` belum ada | Chip menampilkan "No config yet", dengan aksi Import from IDE atau Create default |
+| `launch.json` tidak valid | Chip berwarna merah dan menampilkan error validasi (baris/field), dengan aksi Open file |
 | Folder project hilang | Ditandai tidak tersedia, lalu dibuang dari daftar pada scan berikutnya |
 | `git switch` gagal | stderr git ditampilkan apa adanya |
 | Device dicabut atau app crash | State Failed beserta pesannya |

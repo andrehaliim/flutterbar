@@ -169,7 +169,7 @@ internal sealed partial class AppController
         {
             if (generation == _generation && !_disposed)
             {
-                Fire(RefreshGitAsync(root, generation, watch: false), "Baca branch");
+                Fire(RefreshGitAsync(root, generation, watch: false), "Read branch");
             }
         });
         _headWatcher = watcher;
@@ -217,8 +217,8 @@ internal sealed partial class AppController
         if (flyout is null)
         {
             flyout = _projectFlyout = new ProjectFlyout();
-            flyout.ProjectChosen += path => Fire(SelectProjectAsync(path), "Pilih project");
-            flyout.AddRequested += () => Fire(AddProjectAsync(), "Tambah project");
+            flyout.ProjectChosen += path => Fire(SelectProjectAsync(path), "Select project");
+            flyout.AddRequested += () => Fire(AddProjectAsync(), "Add project");
         }
         flyout.Reset();
         flyout.SetNotice(notice);
@@ -226,7 +226,7 @@ internal sealed partial class AppController
         flyout.SetProjects(_catalog, Settings.CurrentProject, scanning); // cache first
         flyout.SetBusy(scanning);
         var token = ShowFlyout(WidgetChip.Project, flyout, flyout.FocusTarget);
-        Fire(RefreshProjectFlyoutAsync(flyout, token), "Scan project");
+        Fire(RefreshProjectFlyoutAsync(flyout, token), "Scan projects");
     }
 
     private async Task RefreshProjectFlyoutAsync(ProjectFlyout flyout, CancellationToken token)
@@ -253,11 +253,11 @@ internal sealed partial class AppController
         }
     }
 
-    /// <summary>"Tambah project…": a folder with a Flutter pubspec.yaml goes to <c>manualProjects</c> and is selected.</summary>
+    /// <summary>"Add project…": a folder with a Flutter pubspec.yaml goes to <c>manualProjects</c> and is selected.</summary>
     private async Task AddProjectAsync()
     {
         _flyout.Close();
-        var dialog = new OpenFolderDialog { Title = "Pilih folder project Flutter" };
+        var dialog = new OpenFolderDialog { Title = "Select a Flutter project folder" };
         string folder;
         using (var owner = new DialogOwnerWindow()) // never the taskbar-owned widget (see DialogOwnerWindow)
         {
@@ -269,7 +269,7 @@ internal sealed partial class AppController
         }
         if (!await IsFlutterProjectAsync(folder))
         {
-            ShowToast($"Bukan project Flutter (pubspec.yaml dengan flutter sdk tidak ada): {folder}");
+            ShowToast($"Not a Flutter project (pubspec.yaml with a flutter sdk dependency is missing): {folder}");
             return;
         }
         if (ProjectListEditor.AddManual(Settings, folder))
@@ -292,12 +292,12 @@ internal sealed partial class AppController
         if (flyout is null)
         {
             flyout = _branchFlyout = new BranchFlyout();
-            flyout.BranchChosen += branch => Fire(SwitchBranchAsync(branch), "Ganti branch");
+            flyout.BranchChosen += branch => Fire(SwitchBranchAsync(branch), "Switch branch");
         }
         flyout.Reset();
         flyout.SetBranches(_branches, _gitState.Branch);
         var token = ShowFlyout(WidgetChip.Branch, flyout, flyout.FocusTarget);
-        Fire(LoadBranchesAsync(flyout, root, _generation, token), "Daftar branch");
+        Fire(LoadBranchesAsync(flyout, root, _generation, token), "Branch list");
     }
 
     private async Task LoadBranchesAsync(BranchFlyout flyout, string root, int generation, CancellationToken token)

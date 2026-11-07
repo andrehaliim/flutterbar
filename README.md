@@ -23,19 +23,19 @@ dotnet build FlutterBar.sln -c Release
 | CLI | `src\FlutterBar.Cli\bin\Release\net10.0-windows\flutterbar.exe` (salinan juga ada di folder Release `FlutterBar.App`) |
 
 Untuk Debug, ganti `Release` dengan `Debug`. Hanya satu instance FlutterBar yang boleh jalan; menjalankannya lagi hanya
-mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Keluar". Log diagnostik: `%APPDATA%\FlutterBar\diag.log`.
+mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Exit". Log diagnostik: `%APPDATA%\FlutterBar\diag.log`.
 
 ## Pertama kali dipakai
 
 1. Jalankan `FlutterBar.App.exe`; widget menempel di taskbar, di kiri area tray/jam. Kalau posisi otomatis tidak cocok
    (mis. ada widget taskbar pihak ketiga seperti TrafficMonitor, yang tidak terlihat oleh deteksi otomatis), klik kanan > "Drag widget".
-2. Beri tahu FlutterBar di mana project Flutter Anda: klik kanan > Kelola project > "Folder root…" > tambah folder
-   (mis. `C:\Work`), atau "Tambah project…" untuk satu folder. Scan sedalam 3 tingkat mencari `pubspec.yaml` Flutter.
+2. Beri tahu FlutterBar di mana project Flutter Anda: klik kanan > Manage projects > "Root folders…" > tambah folder
+   (mis. `C:\Work`), atau "Add project…" untuk satu folder. Scan sedalam 3 tingkat mencari `pubspec.yaml` Flutter.
    Folder root juga bisa ditulis langsung di `%APPDATA%\FlutterBar\settings.json`: `"scanRoots": ["C:\\Work"]`.
 3. Pilih project, branch, config, dan device lewat chip di widget, lalu tekan ▶.
-4. Project belum punya `.flutterbar/launch.json`? Di flyout config pilih "Import dari IDE" (membaca run configuration Android Studio
-   `.idea/workspace.xml`, `.run/*.xml`, dan `.vscode/launch.json`) atau "Buat default".
-5. Opsional: klik kanan > "Tambahkan CLI ke PATH…" agar `flutterbar` bisa dipanggil dari terminal baru, dan "Start with Windows".
+4. Project belum punya `.flutterbar/launch.json`? Di flyout config pilih "Import from IDE" (membaca run configuration Android Studio
+   `.idea/workspace.xml`, `.run/*.xml`, dan `.vscode/launch.json`) atau "Create default".
+5. Opsional: klik kanan > "Add CLI to PATH…" agar `flutterbar` bisa dipanggil dari terminal baru, dan "Start with Windows".
 
 Project yang memakai fvm (`.fvmrc` atau `.fvm/fvm_config.json`) selalu dijalankan lewat `fvm flutter`, tanpa fallback ke flutter global.
 
@@ -82,7 +82,7 @@ Semua perintah mendukung `--json`. `flutterbar run` sengaja tidak ada: jalankan 
 | Exit code | Arti |
 |---|---|
 | 0 | OK |
-| 1 | Gagal (mis. reload gagal compile, "Sedang reload", sesi Failed) |
+| 1 | Gagal (mis. reload gagal compile, "Reload in progress", sesi Failed) |
 | 2 | FlutterBar tidak berjalan |
 | 3 | Tidak ada sesi aktif |
 | 4 | Timeout (reload/restart lebih dari 60 detik) |

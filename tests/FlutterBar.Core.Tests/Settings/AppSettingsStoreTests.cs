@@ -32,7 +32,7 @@ public sealed class AppSettingsStoreTests : IDisposable
         var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
 
         Assert.NotNull(warning);
-        Assert.Contains("settings.json rusak", warning);
+        Assert.Contains("settings.json is corrupt", warning);
         Assert.Equal(1, settings.Version);
         Assert.False(File.Exists(SettingsPath));
         var backups = Directory.GetFiles(_dir.FullName, "settings.json.bak-*");

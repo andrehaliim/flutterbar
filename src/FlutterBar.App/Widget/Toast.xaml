@@ -7,7 +7,7 @@
             Background="{DynamicResource Fb.Background}" BorderBrush="{DynamicResource Fb.Separator}">
         <DockPanel>
             <Button x:Name="CloseButton" DockPanel.Dock="Right" VerticalAlignment="Top" Style="{StaticResource Fb.IconButton}"
-                    Content="&#xE711;" ToolTip="Tutup" AutomationProperties.Name="Tutup notifikasi" Click="OnCloseClick" />
+                    Content="&#xE711;" ToolTip="Close" AutomationProperties.Name="Close notification" Click="OnCloseClick" />
             <StackPanel x:Name="Actions" DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button x:Name="PrimaryButton" Style="{StaticResource Fb.Button}" Click="OnPrimaryClick" />
                 <Button x:Name="SecondaryButton" Style="{StaticResource Fb.Button}" Margin="0" Click="OnSecondaryClick" />

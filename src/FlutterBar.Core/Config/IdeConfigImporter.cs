@@ -83,7 +83,7 @@ public static class IdeConfigImporter
         }
         catch (XmlException ex)
         {
-            throw new InvalidDataException($"File XML tidak valid: {path} ({ex.Message})", ex);
+            throw new InvalidDataException($"Invalid XML file: {path} ({ex.Message})", ex);
         }
 
         var configs = new List<LaunchConfig>();
@@ -130,7 +130,7 @@ public static class IdeConfigImporter
         }
         catch (JsonException ex)
         {
-            throw new InvalidDataException($"File JSON tidak valid: {path} ({ex.Message})", ex);
+            throw new InvalidDataException($"Invalid JSON file: {path} ({ex.Message})", ex);
         }
 
         using (doc)

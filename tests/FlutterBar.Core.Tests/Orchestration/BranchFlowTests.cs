@@ -60,10 +60,10 @@ public class BranchFlowTests
     {
         using var repo = await GitTestRepo.CreateAsync();
 
-        var outcome = await BranchFlow.SwitchAsync(repo.Service, repo.Root, "tidak-ada", sessionActive: true);
+        var outcome = await BranchFlow.SwitchAsync(repo.Service, repo.Root, "no-such-branch", sessionActive: true);
 
         Assert.False(outcome.Success);
-        Assert.Contains("tidak-ada", outcome.Message);
+        Assert.Contains("no-such-branch", outcome.Message);
         Assert.Null(outcome.Advice);
     }
 
@@ -113,7 +113,7 @@ public class BranchFlowTests
     [Fact]
     public void AdviceToast_UsesSpecCopy()
     {
-        Assert.Equal(("Branch berganti, hot restart?", "Hot restart"), BranchFlow.AdviceToast(BranchChangeAdvice.HotRestart));
-        Assert.Equal(("pubspec berubah, stop lalu run ulang", (string?)null), BranchFlow.AdviceToast(BranchChangeAdvice.RerunRequired));
+        Assert.Equal(("Branch changed. Hot restart?", "Hot restart"), BranchFlow.AdviceToast(BranchChangeAdvice.HotRestart));
+        Assert.Equal(("pubspec changed. Stop and run again.", (string?)null), BranchFlow.AdviceToast(BranchChangeAdvice.RerunRequired));
     }
 }

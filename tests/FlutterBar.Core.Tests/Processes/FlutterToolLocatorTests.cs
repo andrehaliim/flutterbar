@@ -91,7 +91,7 @@ public class FlutterToolLocatorTests
         var r = locator.Resolve(Root, ["run", "--dart-define=A=say \"hi\""]);
 
         Assert.Null(r.Spec);
-        Assert.Contains("tanda kutip", r.Error);
+        Assert.Contains("quotes", r.Error);
         Assert.Contains("say \"hi\"", r.Error);
     }
 

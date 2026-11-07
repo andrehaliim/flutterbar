@@ -199,7 +199,7 @@ internal sealed class ToastHost
         catch (Exception ex) // fire-and-forget button: report here, never let it go unobserved
         {
             AppLog.Write("toast action threw", ex);
-            Show($"Aksi gagal: {ex.Message}");
+            Show($"Action failed: {ex.Message}");
         }
     }
 }

@@ -14,7 +14,7 @@ internal enum ManageProjectsSection
 }
 
 /// <summary>
-/// "Kelola project" (spec §7.4): scan roots, manual projects, hiding and unhiding, Rescan. Pure view: it raises events
+/// "Manage projects" (spec §7.4): scan roots, manual projects, hiding and unhiding, Rescan. Pure view: it raises events
 /// with absolute folder paths and the app edits <c>settings.json</c> (normalized paths) and calls <see cref="SetData"/>.
 /// </summary>
 internal sealed partial class ManageProjectsDialog : Window
@@ -45,7 +45,7 @@ internal sealed partial class ManageProjectsDialog : Window
         ProjectsList.ItemsSource = catalog.Select(p => new FlyoutItem
         {
             Title = p.DisplayName,
-            Detail = p.Available ? p.Path : p.Path + " (tidak tersedia)",
+            Detail = p.Available ? p.Path : p.Path + " (unavailable)",
             ToolTip = p.Path,
             Value = p.Path,
         }).ToList();
@@ -60,7 +60,7 @@ internal sealed partial class ManageProjectsDialog : Window
         StatusText.Text = status ?? "";
     }
 
-    /// <summary>Brings a section into view: "Folder root…" and "Project tersembunyi…" open the same dialog.</summary>
+    /// <summary>Brings a section into view: "Root folders…" and "Hidden projects…" open the same dialog.</summary>
     public void Reveal(ManageProjectsSection section)
     {
         var (header, list) = section == ManageProjectsSection.Hidden ? (HiddenHeader, HiddenList) : (RootsHeader, RootsList);
@@ -99,7 +99,7 @@ internal sealed partial class ManageProjectsDialog : Window
 
     private void OnAddRootClick(object sender, RoutedEventArgs e)
     {
-        if (PickFolder("Pilih folder root (berisi project Flutter)") is { } folder)
+        if (PickFolder("Select a root folder (containing Flutter projects)") is { } folder)
         {
             AddRootRequested?.Invoke(folder);
         }
@@ -115,7 +115,7 @@ internal sealed partial class ManageProjectsDialog : Window
 
     private void OnAddManualClick(object sender, RoutedEventArgs e)
     {
-        if (PickFolder("Pilih folder project Flutter") is { } folder)
+        if (PickFolder("Select a Flutter project folder") is { } folder)
         {
             AddManualRequested?.Invoke(folder);
         }

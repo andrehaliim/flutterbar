@@ -101,7 +101,7 @@ public sealed class LogRow : INotifyPropertyChanged
     public bool IsHeader => Role == LogRowRole.GroupHeader;
 
     /// <summary>Display text: the line, with a "(lanjutan)" prefix on the header of a split block.</summary>
-    public string Text => Role == LogRowRole.GroupHeader && Entry.IsContinuation ? "(lanjutan) " + Line.Text : Line.Text;
+    public string Text => Role == LogRowRole.GroupHeader && Entry.IsContinuation ? "(continued) " + Line.Text : Line.Text;
 }
 
 /// <summary>

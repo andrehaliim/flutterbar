@@ -197,7 +197,7 @@ public sealed class RunOrchestratorTests : IDisposable
         var outcome = await Create().RunAsync(Selection(), CancellationToken.None);
 
         Assert.Equal(RunOutcomeKind.ToolError, outcome.Kind);
-        Assert.Contains("kutip", outcome.Message);
+        Assert.Contains("quotes", outcome.Message);
         Assert.Empty(_launcher.Starts);
     }
 

@@ -141,7 +141,7 @@ internal sealed partial class AppController
             if (generation == _generation)
             {
                 _vm.ConfigHasError = true;
-                _vm.ConfigToolTip = $"launch.json tidak terbaca: {ex.Message}";
+                _vm.ConfigToolTip = $"Couldn't read launch.json: {ex.Message}";
             }
             return null;
         }
@@ -171,15 +171,15 @@ internal sealed partial class AppController
         if (flyout is null)
         {
             flyout = _configFlyout = new ConfigFlyout();
-            flyout.ConfigChosen += name => Fire(SelectConfigAsync(name), "Pilih config");
-            flyout.CreateDefaultRequested += () => Fire(CreateDefaultConfigAsync(), "Buat default");
-            flyout.OpenFileRequested += () => Fire(OpenLaunchJsonAsync(), "Buka file");
+            flyout.ConfigChosen += name => Fire(SelectConfigAsync(name), "Select config");
+            flyout.CreateDefaultRequested += () => Fire(CreateDefaultConfigAsync(), "Create default");
+            flyout.OpenFileRequested += () => Fire(OpenLaunchJsonAsync(), "Open file");
             flyout.ImportRequested += OnImportRequested;
         }
         flyout.Reset(); // never show the previous project's configs while launch.json is re-read
         flyout.SetNotice(notice);
         var token = ShowFlyout(WidgetChip.Config, flyout, flyout.FocusTarget);
-        Fire(LoadConfigFlyoutAsync(flyout, root, token), "Baca launch.json");
+        Fire(LoadConfigFlyoutAsync(flyout, root, token), "Read launch.json");
     }
 
     private async Task LoadConfigFlyoutAsync(ConfigFlyout flyout, string root, CancellationToken token)
@@ -222,7 +222,7 @@ internal sealed partial class AppController
         }
         else
         {
-            AppLog.Write($"Import dari IDE requested for {root}: no ImportRequested handler");
+            AppLog.Write($"Import from IDE requested for {root}: no ImportRequested handler");
         }
     }
 
@@ -269,7 +269,7 @@ internal sealed partial class AppController
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             AppLog.Write($"opening {path} failed", ex);
-            ShowToast($"Tidak bisa membuka {path}: {ex.Message}");
+            ShowToast($"Couldn't open {path}: {ex.Message}");
         }
     }
 
@@ -285,13 +285,13 @@ internal sealed partial class AppController
         if (flyout is null)
         {
             flyout = _deviceFlyout = new DeviceFlyout();
-            flyout.DeviceChosen += device => Fire(SelectDeviceAsync(device.Id), "Pilih device");
-            flyout.EmulatorChosen += emulator => Fire(LaunchEmulatorAsync(emulator.Id), "Nyalakan emulator");
+            flyout.DeviceChosen += device => Fire(SelectDeviceAsync(device.Id), "Select device");
+            flyout.EmulatorChosen += emulator => Fire(LaunchEmulatorAsync(emulator.Id), "Start emulator");
         }
         flyout.SetMessage(null);
         flyout.SetNotice(notice);
         var token = ShowFlyout(WidgetChip.Device, flyout, flyout.FocusTarget);
-        Fire(RefreshDeviceFlyoutAsync(flyout, root, token), "Daftar device");
+        Fire(RefreshDeviceFlyoutAsync(flyout, root, token), "Device list");
     }
 
     // Cached list immediately, then devices and emulators refreshed (cancelled when the flyout closes).
@@ -357,7 +357,7 @@ internal sealed partial class AppController
         _launchingEmulator = true;
         try
         {
-            ShowToast($"Menyalakan emulator {emulatorId}…");
+            ShowToast($"Starting emulator {emulatorId}…");
             var devices = (await _tools).Devices;
             var outcome = await Task.Run(() => EmulatorFlow.LaunchAsync(devices, root, emulatorId, EmulatorFlow.PollInterval, EmulatorFlow.Timeout, _lifetime.Token));
             if (!SameProject(root, Settings.CurrentProject))
@@ -370,7 +370,7 @@ internal sealed partial class AppController
             {
                 AppLog.Write($"emulator {emulatorId} ready as {device.Id}");
                 await SelectDeviceAsync(device.Id);
-                ShowToast($"Emulator siap: {device.Name}");
+                ShowToast($"Emulator ready: {device.Name}");
             }
             else
             {

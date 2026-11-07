@@ -17,7 +17,7 @@ namespace FlutterBar.App.Widget;
 /// </summary>
 internal sealed partial class TaskbarWidget : Window
 {
-    public const string TaskbarFullText = "Taskbar penuh — gunakan Drag widget";
+    public const string TaskbarFullText = "Taskbar is full — use Drag widget";
 
     private readonly WidgetViewModel _vm;
     private readonly DispatcherTimer _blink;

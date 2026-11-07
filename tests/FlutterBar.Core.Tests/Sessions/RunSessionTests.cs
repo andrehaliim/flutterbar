@@ -173,7 +173,7 @@ public sealed class RunSessionTests : IDisposable
         var failed = await WaitForStateAsync(session, SessionState.Failed);
 
         Assert.NotNull(failed.FailureMessage);
-        Assert.Contains("Build gagal", failed.FailureMessage);
+        Assert.Contains("Build failed", failed.FailureMessage);
         Assert.Contains("1", failed.FailureMessage);
         Assert.Contains("Failed to compile application.", failed.FailureMessage);
         Assert.False(failed.CanReload);
@@ -380,7 +380,7 @@ public sealed class RunSessionTests : IDisposable
         var second = await session.ReloadAsync(true, Wait).WaitAsync(TimeSpan.FromSeconds(1));
 
         Assert.Equal(ReloadFailure.Busy, second.Failure);
-        Assert.Equal("Sedang reload", second.Message);
+        Assert.Equal("Reload in progress", second.Message);
         Assert.Single(handle.Writes);
         handle.EmitStdout($$$"""[{"id":{{{RequestId(writes[0])}}},"result":{"code":0,"message":""}}]""");
         Assert.True((await first.WaitAsync(Wait)).Success);
@@ -797,7 +797,7 @@ public sealed class RunSessionTests : IDisposable
         handle.Exit(1);
         var failed = await WaitForStateAsync(session, SessionState.Failed);
 
-        Assert.Contains("App berhenti", failed.FailureMessage);
+        Assert.Contains("App stopped", failed.FailureMessage);
         Assert.False(failed.CanReload);
         Assert.False(failed.CanRestart);
         Assert.Equal(ReloadFailure.NoSession, (await session.ReloadAsync(false, Wait)).Failure);

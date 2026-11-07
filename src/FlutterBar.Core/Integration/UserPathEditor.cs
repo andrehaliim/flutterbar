@@ -9,7 +9,7 @@ public enum PathAddOutcome
 }
 
 /// <summary>
-/// "Tambahkan CLI ke PATH" (spec §7.4): appends a folder to the user PATH (<c>HKCU\Environment\Path</c>) only when it is
+/// "Add CLI to PATH" (spec §7.4): appends a folder to the user PATH (<c>HKCU\Environment\Path</c>) only when it is
 /// not there yet. The existing text is kept verbatim (no reordering, no truncation, empty segments and <c>%VAR%</c> kept
 /// unexpanded) and the value kind is preserved; a missing value is created as REG_EXPAND_SZ.
 /// </summary>
@@ -70,7 +70,7 @@ public static class UserPathEditor
         var current = registry.Read(SubKey, ValueName);
         if (current is not null && current.Kind is not (RegistryValueKind.String or RegistryValueKind.ExpandString))
         {
-            throw new InvalidDataException($"PATH user bertipe {current.Kind}, bukan teks: tidak diubah");
+            throw new InvalidDataException($"User PATH has type {current.Kind}, not text: left unchanged");
         }
         if (Contains(current?.Data, folder, expand))
         {
@@ -84,7 +84,7 @@ public static class UserPathEditor
     {
         if (string.IsNullOrWhiteSpace(folder) || !Path.IsPathFullyQualified(folder) || folder.Contains(';') || folder.Contains('"'))
         {
-            throw new ArgumentException($"Folder tidak bisa dimasukkan ke PATH: \"{folder}\"", nameof(folder));
+            throw new ArgumentException($"Folder can't be added to PATH: \"{folder}\"", nameof(folder));
         }
     }
 

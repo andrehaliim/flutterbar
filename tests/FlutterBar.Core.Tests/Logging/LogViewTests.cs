@@ -538,7 +538,7 @@ public class LogViewTests
         Assert.Equal(LogView.MaxGroupLines, groups[0].LineCount);
         Assert.Equal(lines.Count - 1 - LogView.MaxGroupLines, groups[1].LineCount); // all but "after"
         Assert.True(groups[1].Closed);
-        Assert.StartsWith("(lanjutan) frame", view.Rows.First(r => r.Entry == groups[1]).Text, StringComparison.Ordinal);
+        Assert.StartsWith("(continued) frame", view.Rows.First(r => r.Entry == groups[1]).Text, StringComparison.Ordinal);
         Assert.Equal(DeviceHeader, view.Rows[0].Text);
         Assert.Equal("after", view.Rows[^1].Text);
     }

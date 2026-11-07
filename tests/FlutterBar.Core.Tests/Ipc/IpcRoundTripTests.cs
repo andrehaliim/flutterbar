@@ -86,7 +86,7 @@ public sealed class IpcRoundTripTests : IDisposable
 
         Assert.NotNull(response);
         Assert.Equal(ExitCodes.Timeout, response.ExitCode);
-        Assert.Contains("Timeout", response.Message);
+        Assert.Contains("Timed out", response.Message);
     }
 
     [Fact]

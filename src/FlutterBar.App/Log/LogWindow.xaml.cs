@@ -295,7 +295,7 @@ public partial class LogWindow : Window
         var index = view.FindError(anchor, forward);
         if (index < 0)
         {
-            _vm.SetStatus("Tidak ada error");
+            _vm.SetStatus("No errors");
             return;
         }
         _vm.SetStatus(null);
@@ -317,12 +317,12 @@ public partial class LogWindow : Window
         {
             // Owned by this window (not NULL), bounded retry (about 100 ms).
             ClipboardText.Set(new System.Windows.Interop.WindowInteropHelper(this).Handle, LogView.FormatForCopy(lines));
-            _vm.SetStatus($"{lines.Count:N0} baris disalin");
+            _vm.SetStatus($"{lines.Count:N0} lines copied");
         }
         catch (System.ComponentModel.Win32Exception ex) // clipboard locked by another app, or not writable
         {
             AppLog.Write("LogWindow: copy failed", ex);
-            _vm.SetStatus("Gagal menyalin: clipboard sedang dipakai aplikasi lain");
+            _vm.SetStatus("Copy failed: the clipboard is in use by another app");
         }
     }
 

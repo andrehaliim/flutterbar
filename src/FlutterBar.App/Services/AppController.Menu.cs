@@ -9,7 +9,7 @@ using FlutterBar.Core.Projects;
 
 namespace FlutterBar.App.Services;
 
-/// <summary>Right-click menu actions that need the controller's state (Task 16): Kelola project, Rescan, launch.json, import refresh.</summary>
+/// <summary>Right-click menu actions that need the controller's state (Task 16): Manage projects, Rescan, launch.json, import refresh.</summary>
 internal sealed partial class AppController
 {
     private ManageProjectsDialog? _manageDialog;
@@ -31,7 +31,7 @@ internal sealed partial class AppController
         await RefreshProcessPathAsync();
         _paths.ClearCache();
         AppLog.Write("rescan requested: PATH lookup cache cleared");
-        _manageDialog?.SetBusy(true, "Mencari project…");
+        _manageDialog?.SetBusy(true, "Scanning for projects…");
         try
         {
             await ScanFreshAsync();
@@ -41,7 +41,7 @@ internal sealed partial class AppController
             _manageDialog?.SetBusy(false, null);
         }
         RefreshManageDialog();
-        ShowToast($"Rescan selesai: {_catalog.Count} project");
+        ShowToast($"Rescan finished: {_catalog.Count} projects");
     }
 
     /// <summary>
@@ -69,10 +69,10 @@ internal sealed partial class AppController
         }
     }
 
-    /// <summary>"Tambah project…" from the menu: the same flow as the project flyout's button (added and selected).</summary>
+    /// <summary>"Add project…" from the menu: the same flow as the project flyout's button (added and selected).</summary>
     public Task AddProjectFromMenuAsync() => AddProjectAsync();
 
-    /// <summary>"Folder root…" and "Project tersembunyi…": one dialog, scrolled to the section.</summary>
+    /// <summary>"Root folders…" and "Hidden projects…": one dialog, scrolled to the section.</summary>
     public void OpenManageProjects(ManageProjectsSection section)
     {
         var dialog = _manageDialog;
@@ -81,7 +81,7 @@ internal sealed partial class AppController
             dialog = _manageDialog = new ManageProjectsDialog();
             dialog.AddRootRequested += path => EditLists(p => ProjectListEditor.AddScanRoot(Settings, p), path, "scan root added", rescan: true);
             dialog.RemoveRootRequested += path => EditLists(p => ProjectListEditor.RemoveScanRoot(Settings, p), path, "scan root removed", rescan: true);
-            dialog.AddManualRequested += path => Fire(AddManualFromDialogAsync(path), "Tambah project");
+            dialog.AddManualRequested += path => Fire(AddManualFromDialogAsync(path), "Add project");
             dialog.RemoveManualRequested += path => EditLists(p => ProjectListEditor.RemoveManual(Settings, p), path, "manual project removed", rescan: false);
             dialog.HideRequested += path => EditLists(p => ProjectListEditor.Hide(Settings, p), path, "project hidden", rescan: false);
             dialog.UnhideRequested += path => EditLists(p => ProjectListEditor.Unhide(Settings, p), path, "project unhidden", rescan: false);
@@ -96,7 +96,7 @@ internal sealed partial class AppController
 
     public void CloseDialogs() => _manageDialog?.Close();
 
-    /// <summary>"Buka launch.json": opens it with the default .json app; when it does not exist yet, offers "Buat default".</summary>
+    /// <summary>"Open launch.json": opens it with the default .json app; when it does not exist yet, offers "Create default".</summary>
     public async Task OpenLaunchJsonFromMenuAsync()
     {
         if (Settings.CurrentProject is not { } root)
@@ -111,7 +111,7 @@ internal sealed partial class AppController
             return;
         }
         AppLog.Write($"open launch.json: {path} does not exist, offering the default");
-        ShowToast("Belum ada launch.json di project ini", UiText.CreateDefault, async () =>
+        ShowToast("No launch.json in this project yet", UiText.CreateDefault, async () =>
         {
             await CreateDefaultConfigAsync();
             await OpenLaunchJsonAsync();
@@ -164,12 +164,12 @@ internal sealed partial class AppController
         }
         _saver.Save(what);
         AppLog.Write($"{what}: {path}");
-        Fire(AfterListEditAsync(rescan), rescan ? "Scan project" : "Daftar project");
+        Fire(AfterListEditAsync(rescan), rescan ? "Scan projects" : "Project list");
     }
 
     private async Task AfterListEditAsync(bool rescan)
     {
-        _manageDialog?.SetBusy(true, rescan ? "Mencari project…" : null);
+        _manageDialog?.SetBusy(true, rescan ? "Scanning for projects…" : null);
         try
         {
             if (rescan)
@@ -192,7 +192,7 @@ internal sealed partial class AppController
     {
         if (!await IsFlutterProjectAsync(folder))
         {
-            ShowToast($"Bukan project Flutter (pubspec.yaml dengan flutter sdk tidak ada): {folder}");
+            ShowToast($"Not a Flutter project (pubspec.yaml with a flutter sdk dependency is missing): {folder}");
             return;
         }
         EditLists(p => ProjectListEditor.AddManual(Settings, p), folder, "manual project added", rescan: false);

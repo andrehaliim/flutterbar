@@ -23,7 +23,7 @@ internal sealed partial class ProjectFlyout : UserControl
 
     public event Action<string>? ProjectChosen;
 
-    /// <summary>"Tambah project…": pick a folder and add it to <c>manualProjects</c>.</summary>
+    /// <summary>"Add project…": pick a folder and add it to <c>manualProjects</c>.</summary>
     public event Action? AddRequested;
 
     public IInputElement FocusTarget => _list.Focus;
@@ -44,13 +44,13 @@ internal sealed partial class ProjectFlyout : UserControl
         _list.SetItems([.. projects.Select(p => new FlyoutItem
         {
             Title = p.DisplayName,
-            Detail = p.Available ? p.Path : p.Path + " (tidak tersedia)",
+            Detail = p.Available ? p.Path : p.Path + " (unavailable)",
             ToolTip = p.Path,
             IsEnabled = p.Available,
             IsCurrent = current is not null && string.Equals(p.Path, current, StringComparison.OrdinalIgnoreCase),
             Value = p.Path,
         })]);
-        Empty.Text = scanning ? "Mencari project…" : "Belum ada project. Tambah project atau isi folder root (scanRoots) di settings.json.";
+        Empty.Text = scanning ? "Scanning for projects…" : "No projects yet. Add a project or set root folders (scanRoots) in settings.json.";
         Empty.Visibility = projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 

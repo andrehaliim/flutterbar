@@ -75,14 +75,14 @@ public sealed class DeviceService(IProcessRunner runner, FlutterToolLocator loca
         var resolution = locator.Resolve(projectRoot, args);
         if (resolution.Spec is null)
         {
-            throw new InvalidOperationException(resolution.Error ?? "flutter tidak dapat dijalankan");
+            throw new InvalidOperationException(resolution.Error ?? "flutter can't be run");
         }
 
         var result = await runner.RunAsync(resolution.Spec, timeout, ct);
         if (result.ExitCode != 0)
         {
             var detail = string.IsNullOrWhiteSpace(result.Stderr) ? result.Stdout : result.Stderr;
-            throw new InvalidOperationException($"flutter {string.Join(' ', args)} gagal (exit {result.ExitCode}): {detail.Trim()}");
+            throw new InvalidOperationException($"flutter {string.Join(' ', args)} failed (exit {result.ExitCode}): {detail.Trim()}");
         }
         return result;
     }

@@ -33,23 +33,23 @@ public sealed class CliAppTests
         new(true, 0, data is null ? null : IpcJson.ToElement(data), message);
 
     [Fact]
-    public async Task NotRunning_Exit2_PrintsFlutterBarTidakBerjalan()
+    public async Task NotRunning_Exit2_PrintsNotRunning()
     {
         var r = await RunAsync(null, "status");
 
         Assert.Equal(ExitCodes.NotRunning, r.Code);
-        Assert.Contains("FlutterBar tidak berjalan", r.Err);
+        Assert.Contains("FlutterBar is not running", r.Err);
     }
 
     [Fact]
     public async Task Reload_JsonFlag_PrintsResponseJson()
     {
-        var response = new IpcResponse(false, 1, IpcJson.ToElement(new { success = false, message = "gagal" }), "gagal");
+        var response = new IpcResponse(false, 1, IpcJson.ToElement(new { success = false, message = "failed" }), "failed");
 
         var r = await RunAsync(response, "reload", "--json");
 
         Assert.Equal(1, r.Code);
-        Assert.Equal("{\"ok\":false,\"exitCode\":1,\"data\":{\"success\":false,\"message\":\"gagal\"},\"message\":\"gagal\"}", r.Out.Trim());
+        Assert.Equal("{\"ok\":false,\"exitCode\":1,\"data\":{\"success\":false,\"message\":\"failed\"},\"message\":\"failed\"}", r.Out.Trim());
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public sealed class CliAppTests
     public async Task Status_HumanOutput_IncludesBranch_AndIdleExit3()
     {
         var data = new StatusInfo("Idle", "gts-mobile", "main", "beta", null, 2);
-        var response = new IpcResponse(false, 3, IpcJson.ToElement(data), "Tidak ada sesi aktif");
+        var response = new IpcResponse(false, 3, IpcJson.ToElement(data), "No active session");
 
         var r = await RunAsync(response, "status");
 
@@ -161,7 +161,7 @@ public sealed class CliAppTests
 
         Assert.Equal(ExitCodes.Usage, r.Code);
         Assert.Contains("run", r.Err);
-        Assert.Contains("tidak didukung", r.Err);
+        Assert.Contains("isn't supported", r.Err);
         Assert.Equal(0, r.Client.Calls);
     }
 }

@@ -7,8 +7,8 @@
         <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
         <Grid>
-            <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Cari project" />
-            <TextBlock Text="Cari project…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
+            <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Search projects" />
+            <TextBlock Text="Search projects…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -21,10 +21,10 @@
                 </TextBlock.Style>
             </TextBlock>
         </Grid>
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Daftar project" />
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Project list" />
         <TextBlock x:Name="Empty" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-            <Button x:Name="AddButton" Style="{StaticResource Fb.Button}" Content="Tambah project…" Click="OnAddClick" />
+            <Button x:Name="AddButton" Style="{StaticResource Fb.Button}" Content="Add project…" Click="OnAddClick" />
         </StackPanel>
     </StackPanel>
 </UserControl>

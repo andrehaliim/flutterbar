@@ -14,7 +14,7 @@ public static class PlacementPlanner
     public const double Inset = 8;
 
     /// <summary>
-    /// Rightmost-gap rule (spec §7.3 "tepat di kiri area tray/jam"): walk the gaps from RIGHT to LEFT; in each gap take the
+    /// Rightmost-gap rule (spec §7.3 "right next to the tray/clock area"): walk the gaps from RIGHT to LEFT; in each gap take the
     /// largest size that fits, stepping down from <paramref name="preferred"/> (<see cref="WidgetLayoutPolicy.Choose"/>); the
     /// first gap where any size fits wins and the widget docks at its right end. So a smaller size next to the tray beats a
     /// larger size in a gap further left. Nothing fits anywhere: ButtonsOnly at <paramref name="lastValidX"/>, else left of

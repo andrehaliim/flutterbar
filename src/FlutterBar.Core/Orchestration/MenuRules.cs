@@ -9,9 +9,9 @@ public static class WidgetSizeMenu
 {
     public static string Label(WidgetSize size) => size switch
     {
-        WidgetSize.Compact => "Ringkas",
-        WidgetSize.ButtonsOnly => "Tombol saja",
-        _ => "Lengkap",
+        WidgetSize.Compact => "Compact",
+        WidgetSize.ButtonsOnly => "Buttons only",
+        _ => "Full",
     };
 
     /// <summary>
@@ -31,7 +31,7 @@ public static class WidgetSizeMenu
     }
 }
 
-/// <summary>"Keluar" (spec §7.4): with an active session the user confirms <see cref="UiText.ConfirmExit"/> first, then the session is stopped.</summary>
+/// <summary>"Exit" (spec §7.4): with an active session the user confirms <see cref="UiText.ConfirmExit"/> first, then the session is stopped.</summary>
 public static class ExitFlow
 {
     public static bool NeedsConfirmation(SessionState state) => SessionGuard.NeedsStopConfirmation(state);

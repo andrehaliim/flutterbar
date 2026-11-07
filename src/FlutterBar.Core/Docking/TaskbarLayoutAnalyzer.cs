@@ -22,7 +22,7 @@ public enum ElementRole
 
 public sealed record ElementVerdict(ElementRole Role, string Reason);
 
-/// <summary>Occupied-element rule from spike v3.1 (findings doc "Spike v3.1" item 3, spec §7.3 "Stabilitas").</summary>
+/// <summary>Occupied-element rule from spike v3.1 (findings doc "Spike v3.1" item 3, spec §7.3 "Stability").</summary>
 public static class TaskbarElementClassifier
 {
     public const double RectSlack = 2;

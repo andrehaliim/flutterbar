@@ -89,7 +89,7 @@ public sealed class IpcServer(string pipeName, Func<IpcRequest, CancellationToke
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 DiagLog.Write("IPC handler failed", ex);
-                response = new IpcResponse(false, ExitCodes.Failed, null, "Kesalahan internal: " + ex.Message);
+                response = new IpcResponse(false, ExitCodes.Failed, null, "Internal error: " + ex.Message);
             }
 
             var bytes = Utf8.GetBytes(JsonSerializer.Serialize(response, IpcJson.Options) + "\n");
@@ -118,13 +118,13 @@ public sealed class IpcServer(string pipeName, Func<IpcRequest, CancellationToke
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                return new IpcResponse(false, ExitCodes.Usage, null, "Request tidak diterima tepat waktu");
+                return new IpcResponse(false, ExitCodes.Usage, null, "Request wasn't received in time");
             }
         }
 
         if (string.IsNullOrWhiteSpace(line) || line.Length > MaxRequestChars)
         {
-            return new IpcResponse(false, ExitCodes.Usage, null, "Request kosong atau tidak valid");
+            return new IpcResponse(false, ExitCodes.Usage, null, "Request is empty or invalid");
         }
 
         IpcRequest? request;
@@ -135,12 +135,12 @@ public sealed class IpcServer(string pipeName, Func<IpcRequest, CancellationToke
         catch (JsonException ex)
         {
             DiagLog.Write("IPC received malformed request", ex);
-            return new IpcResponse(false, ExitCodes.Usage, null, "Request bukan JSON yang valid");
+            return new IpcResponse(false, ExitCodes.Usage, null, "Request isn't valid JSON");
         }
 
         if (request is null || string.IsNullOrWhiteSpace(request.Command))
         {
-            return new IpcResponse(false, ExitCodes.Usage, null, "Request tidak punya command");
+            return new IpcResponse(false, ExitCodes.Usage, null, "Request has no command");
         }
 
         return await handler(request, ct);

@@ -131,7 +131,7 @@
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                     <Rectangle Style="{StaticResource Style.Separator}" />
                     <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE7F4;"
-                            ToolTip="Buka log" AutomationProperties.Name="Buka log" />
+                            ToolTip="Open log" AutomationProperties.Name="Open log" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
                     <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
@@ -164,10 +164,10 @@
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                     <Rectangle Style="{StaticResource Style.Separator}" />
                     <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE7F4;"
-                            ToolTip="Buka log" AutomationProperties.Name="Buka log" />
+                            ToolTip="Open log" AutomationProperties.Name="Open log" />
                 </StackPanel>
                 <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" ContentTemplate="{x:Null}"
-                        HorizontalAlignment="Left" ToolTip="Project, branch, config, device" AutomationProperties.Name="Pilihan">
+                        HorizontalAlignment="Left" ToolTip="Project, branch, config, device" AutomationProperties.Name="Options">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding ProjectName}" MaxWidth="110" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                         <TextBlock Text=" · " Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />

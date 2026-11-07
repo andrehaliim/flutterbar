@@ -80,7 +80,7 @@ public class DeviceServiceTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => svc.RefreshDevicesAsync(Root, CancellationToken.None));
 
-        Assert.Contains("flutter tidak ditemukan", ex.Message);
+        Assert.Contains("flutter wasn't found", ex.Message);
         Assert.Empty(svc.CachedDevices);
     }
 

@@ -7,14 +7,14 @@
         <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
         <StackPanel x:Name="MissingPanel" Visibility="Collapsed">
-            <TextBlock Text="Belum ada config" Style="{StaticResource Fb.MutedText}" />
+            <TextBlock Text="No config yet" Style="{StaticResource Fb.MutedText}" />
             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                <Button x:Name="ImportButton" Style="{StaticResource Fb.Button}" Content="Import dari IDE" Click="OnImportClick" />
-                <Button x:Name="DefaultButton" Style="{StaticResource Fb.Button}" Content="Buat default" Click="OnCreateDefaultClick" />
+                <Button x:Name="ImportButton" Style="{StaticResource Fb.Button}" Content="Import from IDE" Click="OnImportClick" />
+                <Button x:Name="DefaultButton" Style="{StaticResource Fb.Button}" Content="Create default" Click="OnCreateDefaultClick" />
             </StackPanel>
         </StackPanel>
         <StackPanel x:Name="ErrorPanel" Visibility="Collapsed">
-            <TextBlock Text="launch.json tidak valid:" Style="{StaticResource Fb.ErrorText}" FontWeight="SemiBold" />
+            <TextBlock Text="launch.json is invalid:" Style="{StaticResource Fb.ErrorText}" FontWeight="SemiBold" />
             <ItemsControl x:Name="Errors">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -23,10 +23,10 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Daftar config" />
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Config list" />
         <TextBlock x:Name="Message" Style="{StaticResource Fb.ErrorText}" Visibility="Collapsed" />
         <StackPanel x:Name="FileActions" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
-            <Button x:Name="OpenButton" Style="{StaticResource Fb.Button}" Content="Buka file" Click="OnOpenClick" />
+            <Button x:Name="OpenButton" Style="{StaticResource Fb.Button}" Content="Open file" Click="OnOpenClick" />
         </StackPanel>
     </StackPanel>
 </UserControl>

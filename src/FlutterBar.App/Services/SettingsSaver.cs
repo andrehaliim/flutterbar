@@ -35,7 +35,7 @@ internal sealed class SettingsSaver(AppSettingsStore store, AppSettings settings
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 AppLog.Write($"settings save failed ({what})", ex);
-                SaveFailed?.Invoke($"Settings gagal disimpan: {ex.Message}");
+                SaveFailed?.Invoke($"Couldn't save settings: {ex.Message}");
             }
         }, TaskScheduler.Default);
     }

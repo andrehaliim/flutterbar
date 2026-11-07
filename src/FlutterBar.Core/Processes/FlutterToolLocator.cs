@@ -14,7 +14,7 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
             {
                 return new ToolResolution(
                     null,
-                    $"Argumen berisi tanda kutip (\") tidak didukung saat menjalankan flutter: {arg}. Gunakan --dart-define-from-file untuk nilai kompleks.");
+                    $"Arguments with quotes (\") aren't supported: {arg}. Use --dart-define-from-file for complex values.");
             }
         }
 
@@ -33,7 +33,7 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
             var fvm = paths.Find("fvm");
             if (fvm is null)
             {
-                return new ToolResolution(null, $"Project memakai fvm ({fvmMarker}) tetapi fvm tidak ditemukan di PATH");
+                return new ToolResolution(null, $"Project uses fvm ({fvmMarker}) but fvm wasn't found on PATH");
             }
             return new ToolResolution(new ProcessSpec(fvm, ["flutter", .. flutterArgs], projectRoot), null);
         }
@@ -41,7 +41,7 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
         var flutter = paths.Find("flutter");
         if (flutter is null)
         {
-            return new ToolResolution(null, "flutter tidak ditemukan di PATH");
+            return new ToolResolution(null, "flutter wasn't found on PATH");
         }
 
         if (ProcessLauncher.IsBatchFile(flutter))

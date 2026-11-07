@@ -72,8 +72,8 @@ public sealed class SessionControlsTests
         Assert.True(c.ShowReload);
         Assert.False(c.ReloadEnabled);
         Assert.False(c.RestartEnabled);
-        Assert.Equal("Tidak didukung di mode release/profile", c.ReloadToolTip);
-        Assert.Equal("Tidak didukung di mode release/profile", c.RestartToolTip);
+        Assert.Equal("Not supported in release/profile mode", c.ReloadToolTip);
+        Assert.Equal("Not supported in release/profile mode", c.RestartToolTip);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class SessionControlsTests
         var c = SessionControls.From(Snap(SessionState.Running, canReload: false, canRestart: true));
 
         Assert.False(c.ReloadEnabled);
-        Assert.Equal("Hot reload tidak didukung di device ini", c.ReloadToolTip);
+        Assert.Equal("Hot reload isn't supported on this device", c.ReloadToolTip);
         Assert.True(c.RestartEnabled);
     }
 
@@ -92,7 +92,7 @@ public sealed class SessionControlsTests
         var c = SessionControls.From(Snap(SessionState.Running, canReload: true, canRestart: false));
 
         Assert.False(c.RestartEnabled);
-        Assert.Equal("Hot restart tidak didukung di device ini", c.RestartToolTip);
+        Assert.Equal("Hot restart isn't supported on this device", c.RestartToolTip);
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class SessionControlsTests
         Assert.Equal(StatusDot.Running, c.Dot);
         Assert.True(c.ShowReload && c.ShowRestart && c.ShowStop);
         Assert.False(c.ReloadEnabled || c.RestartEnabled);
-        Assert.Equal("Sedang reload", c.ReloadToolTip);
+        Assert.Equal("Reload in progress", c.ReloadToolTip);
         Assert.True(c.StopEnabled);
     }
 
@@ -128,10 +128,10 @@ public sealed class SessionControlsTests
     [Fact]
     public void Failed_RedDot_RunAndMessage()
     {
-        var c = SessionControls.From(Snap(SessionState.Failed, failure: "Build gagal"));
+        var c = SessionControls.From(Snap(SessionState.Failed, failure: "Build failed"));
 
         Assert.Equal(StatusDot.Error, c.Dot);
         Assert.True(c.ShowRun);
-        Assert.Equal("Build gagal", c.StatusText);
+        Assert.Equal("Build failed", c.StatusText);
     }
 }

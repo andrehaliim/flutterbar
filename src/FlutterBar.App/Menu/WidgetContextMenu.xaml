@@ -5,26 +5,26 @@
     <!-- Right-click menu (spec §7.4). "Drag widget" / "Reset to auto position" are English on purpose (user decision).
          Opening/closing is tracked by TaskbarDocking (class handlers): topmost reassert suspended, menu HWND topmost. -->
     <MenuItem Header="Size">
-        <MenuItem x:Name="SizeFull" Header="Lengkap" Click="OnSizeClick" />
-        <MenuItem x:Name="SizeCompact" Header="Ringkas" Click="OnSizeClick" />
-        <MenuItem x:Name="SizeButtons" Header="Tombol saja" Click="OnSizeClick" />
+        <MenuItem x:Name="SizeFull" Header="Full" Click="OnSizeClick" />
+        <MenuItem x:Name="SizeCompact" Header="Compact" Click="OnSizeClick" />
+        <MenuItem x:Name="SizeButtons" Header="Buttons only" Click="OnSizeClick" />
     </MenuItem>
     <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick" />
     <MenuItem Header="Reset to auto position" Click="OnResetClick" />
     <Separator />
-    <MenuItem Header="Kelola project">
-        <MenuItem Header="Folder root…" Click="OnScanRootsClick" />
-        <MenuItem Header="Tambah project…" Click="OnAddProjectClick" />
-        <MenuItem Header="Project tersembunyi…" Click="OnHiddenProjectsClick" />
+    <MenuItem Header="Manage projects">
+        <MenuItem Header="Root folders…" Click="OnScanRootsClick" />
+        <MenuItem Header="Add project…" Click="OnAddProjectClick" />
+        <MenuItem Header="Hidden projects…" Click="OnHiddenProjectsClick" />
         <Separator />
         <MenuItem Header="Rescan" Click="OnRescanClick" />
     </MenuItem>
-    <MenuItem x:Name="ImportItem" Header="Import config dari IDE…" Click="OnImportClick" />
-    <MenuItem x:Name="LaunchJsonItem" Header="Buka launch.json" Click="OnOpenLaunchJsonClick" />
-    <MenuItem Header="Buka log" Click="OnOpenLogClick" />
+    <MenuItem x:Name="ImportItem" Header="Import config from IDE…" Click="OnImportClick" />
+    <MenuItem x:Name="LaunchJsonItem" Header="Open launch.json" Click="OnOpenLaunchJsonClick" />
+    <MenuItem Header="Open log" Click="OnOpenLogClick" />
     <Separator />
-    <MenuItem Header="Tambahkan CLI ke PATH…" Click="OnAddToPathClick" />
+    <MenuItem Header="Add CLI to PATH…" Click="OnAddToPathClick" />
     <MenuItem x:Name="StartupItem" Header="Start with Windows" IsCheckable="True" Click="OnStartupClick" />
     <Separator />
-    <MenuItem Header="Keluar" Click="OnExitClick" />
+    <MenuItem Header="Exit" Click="OnExitClick" />
 </ContextMenu>

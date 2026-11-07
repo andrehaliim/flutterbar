@@ -188,7 +188,7 @@ public sealed class CommandHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task Reload_WhileReloading_Exit1_SedangReload()
+    public async Task Reload_WhileReloading_Exit1_ReloadInProgress()
     {
         var (session, handle) = await RunningAsync(FakeProcessHandle.FromFixture("start-ok"));
         await using var lifetime = session;
@@ -200,7 +200,7 @@ public sealed class CommandHandlerTests : IDisposable
         var second = await handler.HandleAsync(Req("reload"), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
 
         Assert.Equal(ExitCodes.Failed, second.ExitCode);
-        Assert.Equal("Sedang reload", second.Message);
+        Assert.Equal("Reload in progress", second.Message);
         handle.EmitStdout($$$"""[{"id":{{{id}}},"result":{"code":0,"message":""}}]""");
         Assert.Equal(ExitCodes.Ok, (await first.WaitAsync(Wait)).ExitCode);
     }

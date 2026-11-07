@@ -145,7 +145,7 @@ public sealed class RunCoordinatorTests : IDisposable
         Assert.Equal(PreparationCancel.Launching, decision);
         Assert.Equal(RunOutcomeKind.Started, outcome.Kind);
         Assert.Single(_launcher.Starts);
-        Assert.Equal(SessionState.Starting, session.Snapshot.State); // left to the user's "Stop sesi sekarang dan ganti?"
+        Assert.Equal(SessionState.Starting, session.Snapshot.State); // left to the user's "Stop the current session and switch?"
         Assert.True(_settings.TryGetProject(_a.Root, out var a));
         Assert.Equal(Now, a.LastUsed);
         Assert.Equal(PreparationCancel.None, coordinator.CancelPreparation());

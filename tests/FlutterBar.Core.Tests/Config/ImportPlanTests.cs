@@ -58,7 +58,7 @@ public sealed class ImportPlanTests : IDisposable
 
         Assert.False(row.IsChecked);
         Assert.False(row.IsEnabled);
-        Assert.Equal("sudah ada", row.Note);
+        Assert.Equal("already exists", row.Note);
         Assert.StartsWith("VS Code", row.Detail);
     }
 
@@ -104,7 +104,7 @@ public sealed class ImportPlanTests : IDisposable
 
         Assert.False(row.IsChecked);
         Assert.True(row.IsEnabled);
-        Assert.Equal("file program tidak ada — config akan merah setelah diimport", row.Note);
+        Assert.Equal("program file is missing — the config will show an error after import", row.Note);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class ImportPlanTests : IDisposable
         var row = Assert.Single(ImportPlan.Rows([Candidate("beta", "idea", exists: true)], _ => false));
 
         Assert.False(row.IsEnabled);
-        Assert.Equal("sudah ada", row.Note);
+        Assert.Equal("already exists", row.Note);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class ImportPlanTests : IDisposable
         Assert.True(discovery.LaunchJsonExists);
         var beta = Assert.Single(discovery.Rows, r => r.Title == "beta");
         Assert.False(beta.IsChecked);
-        Assert.Equal("sudah ada", beta.Note);
+        Assert.Equal("already exists", beta.Note);
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class ImportPlanTests : IDisposable
         var discovery = ImportPlan.Discover(Root);
 
         Assert.Empty(discovery.Rows);
-        Assert.Contains("launch.json tidak valid", discovery.Error);
+        Assert.Contains("launch.json is invalid", discovery.Error);
     }
 
     [Fact]

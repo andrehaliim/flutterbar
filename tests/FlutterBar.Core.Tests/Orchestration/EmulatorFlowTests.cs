@@ -20,7 +20,7 @@ public class EmulatorFlowTests
     {
         Assert.Equal(TimeSpan.FromSeconds(5), EmulatorFlow.PollInterval);
         Assert.Equal(TimeSpan.FromSeconds(120), EmulatorFlow.Timeout);
-        Assert.Equal("Emulator belum siap setelah 2 menit", UiText.EmulatorTimeout);
+        Assert.Equal("Emulator isn't ready after 2 minutes", UiText.EmulatorTimeout);
     }
 
     [Fact]

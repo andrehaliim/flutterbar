@@ -54,7 +54,7 @@ public static class StartupRegistration
     {
         if (string.IsNullOrWhiteSpace(exePath) || !Path.IsPathFullyQualified(exePath) || exePath.Contains('"'))
         {
-            throw new ArgumentException($"Path exe tidak valid untuk Start with Windows: \"{exePath}\"", nameof(exePath));
+            throw new ArgumentException($"Invalid exe path for Start with Windows: \"{exePath}\"", nameof(exePath));
         }
     }
 }

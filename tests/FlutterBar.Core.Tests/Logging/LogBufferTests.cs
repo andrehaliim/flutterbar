@@ -37,7 +37,7 @@ public class LogBufferTests
     public void SinceLastReload_ReturnsLinesAfterMarker()
     {
         var buf = new LogBuffer();
-        buf.MarkSessionStart("Sesi");
+        buf.MarkSessionStart("Session");
         buf.Append(LogKind.App, "before");
         buf.MarkReload("Hot reload");
         buf.Append(LogKind.App, "after1");
@@ -50,7 +50,7 @@ public class LogBufferTests
     {
         var buf = new LogBuffer();
         buf.Append(LogKind.App, "old");
-        buf.MarkSessionStart("Sesi");
+        buf.MarkSessionStart("Session");
         buf.Append(LogKind.App, "new1");
         buf.Append(LogKind.App, "new2");
         Assert.Equal(["new1", "new2"], buf.SinceLastReload().Select(l => l.Text).ToArray());

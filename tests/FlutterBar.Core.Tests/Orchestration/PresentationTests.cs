@@ -33,7 +33,7 @@ public class PresentationTests
         Assert.Equal(expected, SessionGuard.IsLive(state));
 
     [Fact]
-    public void ConfirmText_IsSpecCopy() => Assert.Equal("Stop sesi sekarang dan ganti?", UiText.ConfirmSwitch);
+    public void ConfirmText_IsSpecCopy() => Assert.Equal("Stop the current session and switch?", UiText.ConfirmSwitch);
 
     [Fact]
     public void RecordRun_StoresUnderNormalizedKey()
@@ -90,7 +90,7 @@ public class PresentationTests
     {
         var chip = ConfigPresentation.Chip(new LaunchConfigLoadResult(false, [], []), "beta");
 
-        Assert.Equal("Belum ada config", chip.Text);
+        Assert.Equal("No config yet", chip.Text);
         Assert.False(chip.IsError);
         Assert.Null(chip.Selected);
     }
@@ -99,16 +99,16 @@ public class PresentationTests
     public void ConfigChip_Errors_RedWithLines()
     {
         var result = new LaunchConfigLoadResult(true, [], [
-            new ConfigError("JSON tidak valid: x", null, 4),
-            new ConfigError("\"mode\" tidak dikenal.", "configurations[0].mode", null),
+            new ConfigError("Invalid JSON: x", null, 4),
+            new ConfigError("\"mode\" is unknown.", "configurations[0].mode", null),
         ]);
 
         var chip = ConfigPresentation.Chip(result, "beta");
 
         Assert.True(chip.IsError);
         Assert.Null(chip.Selected);
-        Assert.Equal(["Baris 4: JSON tidak valid: x", "configurations[0].mode: \"mode\" tidak dikenal."], chip.ErrorLines);
-        Assert.Contains("Baris 4", chip.ToolTip);
+        Assert.Equal(["Line 4: Invalid JSON: x", "configurations[0].mode: \"mode\" is unknown."], chip.ErrorLines);
+        Assert.Contains("Line 4", chip.ToolTip);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class PresentationTests
         Assert.True(chip.IsError);
         Assert.Equal("staging", chip.Text);
         Assert.Null(chip.Selected);
-        Assert.Contains("tidak ada di launch.json", chip.ToolTip);
+        Assert.Contains("isn't in launch.json", chip.ToolTip);
     }
 
     [Fact]

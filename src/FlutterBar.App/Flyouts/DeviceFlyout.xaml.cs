@@ -55,12 +55,12 @@ internal sealed partial class DeviceFlyout : UserControl
         }));
         if (devices.Count == 0)
         {
-            items.Add(new FlyoutItem { Title = refreshing ? "Memuat…" : "Tidak ada device terhubung", IsEnabled = false });
+            items.Add(new FlyoutItem { Title = refreshing ? "Loading…" : "No devices connected", IsEnabled = false });
         }
         if (offline.Count > 0)
         {
             items.Add(FlyoutItem.Header(UiText.OfflineEmulators));
-            items.AddRange(offline.Select(e => new FlyoutItem { Title = e.Name, Detail = e.Id, ToolTip = "Nyalakan emulator", Value = e }));
+            items.AddRange(offline.Select(e => new FlyoutItem { Title = e.Name, Detail = e.Id, ToolTip = "Start emulator", Value = e }));
         }
         _list.SetItems(items);
     }

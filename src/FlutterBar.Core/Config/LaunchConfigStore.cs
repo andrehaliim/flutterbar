@@ -49,7 +49,7 @@ public static class LaunchConfigStore
         {
             // JsonException.LineNumber is 0-based; ConfigError.Line is 1-based.
             long? line = ex.LineNumber is { } n ? n + 1 : null;
-            return new LaunchConfigLoadResult(true, [], [new ConfigError($"JSON tidak valid: {ex.Message}", null, line)]);
+            return new LaunchConfigLoadResult(true, [], [new ConfigError($"Invalid JSON: {ex.Message}", null, line)]);
         }
 
         using (doc)
@@ -108,7 +108,7 @@ public static class LaunchConfigStore
         var configs = new List<LaunchConfig>();
         if (root.ValueKind != JsonValueKind.Object)
         {
-            errors.Add(new ConfigError("Isi file harus berupa objek JSON.", null, null));
+            errors.Add(new ConfigError("The file content must be a JSON object.", null, null));
             return configs;
         }
 
@@ -117,14 +117,14 @@ public static class LaunchConfigStore
             || !version.TryGetInt32(out var v)
             || v != 1)
         {
-            errors.Add(new ConfigError("\"version\" harus bernilai 1.", "version", null));
+            errors.Add(new ConfigError("\"version\" must be 1.", "version", null));
         }
 
         if (!root.TryGetProperty("configurations", out var list)
             || list.ValueKind != JsonValueKind.Array
             || list.GetArrayLength() == 0)
         {
-            errors.Add(new ConfigError("\"configurations\" harus berisi minimal satu config.", "configurations", null));
+            errors.Add(new ConfigError("\"configurations\" must contain at least one config.", "configurations", null));
             return configs;
         }
 
@@ -136,19 +136,19 @@ public static class LaunchConfigStore
             index++;
             if (item.ValueKind != JsonValueKind.Object)
             {
-                errors.Add(new ConfigError("Config harus berupa objek.", prefix, null));
+                errors.Add(new ConfigError("Each config must be an object.", prefix, null));
                 continue;
             }
 
             var name = ReadString(item, "name", prefix, errors, out var nameTypeOk);
             if (nameTypeOk && string.IsNullOrWhiteSpace(name))
             {
-                errors.Add(new ConfigError("\"name\" wajib diisi.", $"{prefix}.name", null));
+                errors.Add(new ConfigError("\"name\" is required.", $"{prefix}.name", null));
                 name = null;
             }
             else if (name is not null && !names.Add(name))
             {
-                errors.Add(new ConfigError($"Nama \"{name}\" sudah dipakai config lain.", $"{prefix}.name", null));
+                errors.Add(new ConfigError($"Name \"{name}\" is already used by another config.", $"{prefix}.name", null));
             }
 
             var program = ReadString(item, "program", prefix, errors, out var programTypeOk) ?? DefaultProgram;
@@ -156,11 +156,11 @@ public static class LaunchConfigStore
             {
                 if (string.IsNullOrWhiteSpace(program))
                 {
-                    errors.Add(new ConfigError("\"program\" tidak boleh kosong.", $"{prefix}.program", null));
+                    errors.Add(new ConfigError("\"program\" must not be empty.", $"{prefix}.program", null));
                 }
                 else if (!File.Exists(Path.Combine(projectRoot, program)))
                 {
-                    errors.Add(new ConfigError($"File program \"{program}\" tidak ditemukan.", $"{prefix}.program", null));
+                    errors.Add(new ConfigError($"Program file \"{program}\" not found.", $"{prefix}.program", null));
                 }
             }
 
@@ -177,7 +177,7 @@ public static class LaunchConfigStore
                     case "release": mode = RunMode.Release; break;
                     default:
                         errors.Add(new ConfigError(
-                            $"Mode \"{modeText}\" tidak dikenal. Gunakan debug, profile, atau release.",
+                            $"Unknown mode \"{modeText}\". Use debug, profile or release.",
                             $"{prefix}.mode", null));
                         break;
                 }
@@ -204,7 +204,7 @@ public static class LaunchConfigStore
         if (value.ValueKind != JsonValueKind.String)
         {
             typeOk = false;
-            errors.Add(new ConfigError($"\"{property}\" harus berupa teks.", $"{prefix}.{property}", null));
+            errors.Add(new ConfigError($"\"{property}\" must be a string.", $"{prefix}.{property}", null));
             return null;
         }
         return value.GetString();
@@ -219,7 +219,7 @@ public static class LaunchConfigStore
         }
         if (value.ValueKind != JsonValueKind.Array)
         {
-            errors.Add(new ConfigError("\"args\" harus berupa daftar teks.", $"{prefix}.args", null));
+            errors.Add(new ConfigError("\"args\" must be a list of strings.", $"{prefix}.args", null));
             return args;
         }
         var i = 0;
@@ -227,7 +227,7 @@ public static class LaunchConfigStore
         {
             if (arg.ValueKind != JsonValueKind.String)
             {
-                errors.Add(new ConfigError("Setiap argumen harus berupa teks.", $"{prefix}.args[{i}]", null));
+                errors.Add(new ConfigError("Each argument must be a string.", $"{prefix}.args[{i}]", null));
             }
             else
             {

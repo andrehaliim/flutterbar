@@ -16,14 +16,14 @@ public sealed class ToastSlotTests
     [Fact]
     public void PlainToast_DuringConfirmation_WaitsAndShowsAfterAnswer()
     {
-        // A "Sesi gagal" / settings-save toast must not silently answer "Stop sesi dan keluar?" with no.
+        // A "Session failed" / settings-save toast must not silently answer "Stop the session and exit?" with no.
         var slot = new ToastSlot<string>();
         slot.ConfirmationShown();
 
-        Assert.False(slot.OfferPlain("Sesi gagal: boom"));
+        Assert.False(slot.OfferPlain("Session failed: boom"));
         Assert.True(slot.ConfirmationPending);
 
-        Assert.Equal("Sesi gagal: boom", slot.ConfirmationResolved());
+        Assert.Equal("Session failed: boom", slot.ConfirmationResolved());
         Assert.False(slot.ConfirmationPending);
         Assert.True(slot.OfferPlain("next"));
     }

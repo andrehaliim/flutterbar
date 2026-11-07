@@ -17,7 +17,7 @@ public static class CliApp
           flutterbar stop
           flutterbar logs [--errors] [--tail N] [--since-last-reload]
 
-        Semua perintah mendukung --json.
+        All commands support --json.
         """;
 
     public static async Task<int> RunAsync(string[] args, IIpcClient client, TextWriter stdout, TextWriter stderr)
@@ -32,7 +32,7 @@ public static class CliApp
         var command = rest[0];
         if (command == "run")
         {
-            stderr.WriteLine("Perintah 'run' sengaja tidak didukung: jalankan app lewat tombol ▶ di FlutterBar.");
+            stderr.WriteLine("The 'run' command isn't supported on purpose: start the app with the ▶ button in FlutterBar.");
             return ExitCodes.Usage;
         }
 
@@ -42,7 +42,7 @@ public static class CliApp
             case "status" or "reload" or "restart" or "stop":
                 if (rest.Length > 1)
                 {
-                    return Usage(stderr, $"Argumen tidak dikenal: {rest[1]}");
+                    return Usage(stderr, $"Unknown argument: {rest[1]}");
                 }
                 request = new IpcRequest(command, null);
                 break;
@@ -54,14 +54,14 @@ public static class CliApp
                 request = new IpcRequest(command, logArgs);
                 break;
             default:
-                return Usage(stderr, $"Perintah tidak dikenal: {command}");
+                return Usage(stderr, $"Unknown command: {command}");
         }
 
         var timeout = command is "reload" or "restart" ? ReloadTimeout : DefaultTimeout;
         var response = await client.SendAsync(request, timeout, CancellationToken.None);
         if (response is null)
         {
-            stderr.WriteLine("FlutterBar tidak berjalan. Jalankan FlutterBar terlebih dahulu.");
+            stderr.WriteLine("FlutterBar is not running");
             return ExitCodes.NotRunning;
         }
 
@@ -103,13 +103,13 @@ public static class CliApp
                 case "--tail":
                     if (i + 1 >= args.Length || !int.TryParse(args[i + 1], NumberStyles.None, CultureInfo.InvariantCulture, out _))
                     {
-                        error = "--tail membutuhkan angka bulat positif";
+                        error = "--tail needs a positive whole number";
                         return false;
                     }
                     result["tail"] = args[++i];
                     break;
                 default:
-                    error = $"Argumen tidak dikenal: {args[i]}";
+                    error = $"Unknown argument: {args[i]}";
                     return false;
             }
         }

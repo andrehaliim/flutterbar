@@ -83,7 +83,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
     }
 
     /// <summary>
-    /// "Import dari IDE" in the config flyout, with the project root. The app opens the import dialog
+    /// "Import from IDE" in the config flyout, with the project root. The app opens the import dialog
     /// (<c>Import/ImportFlow</c>); without a subscriber the request is only written to diag.log.
     /// </summary>
     public event Action<string>? ImportRequested;
@@ -98,11 +98,11 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             ShowToast(_settingsWarning);
         }
         StartIpc();
-        Fire(ScanAsync(), "Scan project");
+        Fire(ScanAsync(), "Scan projects");
         var tools = await _tools;
         if (tools.Git is null)
         {
-            ShowToast("git tidak ditemukan di PATH: chip branch dinonaktifkan");
+            ShowToast("git wasn't found on PATH: branch chip disabled");
         }
         await ApplyProjectAsync(_saver.Settings.CurrentProject);
     }
@@ -196,7 +196,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             AppLog.Write("IPC server failed", ex);
             if (!_lifetime.IsCancellationRequested)
             {
-                ShowToast($"CLI flutterbar tidak tersedia: {ex.Message}");
+                ShowToast($"flutterbar CLI isn't available: {ex.Message}");
             }
         }
     }
@@ -215,7 +215,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         return hwnd != IntPtr.Zero && NativeMethods.IsWindowVisible(hwnd);
     }
 
-    // Widget hidden: nothing may stay above a fullscreen app; a pending confirmation answers "Batal".
+    // Widget hidden: nothing may stay above a fullscreen app; a pending confirmation answers "Cancel".
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(WidgetViewModel.IsHidden) && _vm.IsHidden && (_flyout.IsOpen || _toast.IsOpen))
@@ -230,7 +230,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
 
     /// <summary>
     /// One-session rule for a selection change (brief Step 7). While ▶ is still being prepared nothing runs yet: the run
-    /// is cancelled ("Run dibatalkan"). Once flutter is being launched, wait for the launch and ask like for any session:
+    /// is cancelled ("Run cancelled"). Once flutter is being launched, wait for the launch and ask like for any session:
     /// Ya = stop, Batal = keep the session and the old selection. True = the caller may change the selection.
     /// </summary>
     private async Task<bool> MayChangeSelectionAsync(string what)
@@ -240,7 +240,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         {
             case PreparationCancel.Cancelled:
                 AppLog.Write($"run preparation cancelled: {what} changed before flutter was launched");
-                ShowToast("Run dibatalkan");
+                ShowToast("Run cancelled");
                 return true;
             case PreparationCancel.Launching:
                 AppLog.Write($"{what} changed while flutter is being launched: waiting for the launch, then asking");
@@ -256,7 +256,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         var snapshot = _session.Snapshot;
         if (snapshot.State == SessionState.Failed && _lastState != SessionState.Failed && !_disposed)
         {
-            ShowToast($"Sesi gagal: {snapshot.FailureMessage ?? "flutter berhenti"}");
+            ShowToast($"Session failed: {snapshot.FailureMessage ?? "flutter stopped"}");
         }
         _lastState = snapshot.State;
     });
@@ -279,7 +279,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             AppLog.Write($"{what} failed", ex);
             if (!_disposed)
             {
-                ShowToast($"{what} gagal: {ex.Message}");
+                ShowToast($"{what} failed: {ex.Message}");
             }
         }
     }

@@ -7,7 +7,7 @@ using FlutterBar.Core.Orchestration;
 namespace FlutterBar.App.Import;
 
 /// <summary>
-/// "Import config dari IDE" (spec §4.2), from the menu and from "Belum ada config → Import dari IDE"
+/// "Import config from IDE" (spec §4.2), from the menu and from "No config yet → Import from IDE"
 /// (<see cref="AppController.ImportRequested"/>). One dialog at a time; discovery and saving run off the UI thread, and the
 /// config chip/flyout are refreshed after a save.
 /// </summary>
@@ -44,7 +44,7 @@ internal sealed class ImportFlow(AppController controller)
         dialog.Show();
         dialog.Activate();
         AppLog.Write($"import dialog opened for {projectRoot}");
-        controller.Observe(LoadAsync(dialog), "Cari config IDE");
+        controller.Observe(LoadAsync(dialog), "Search IDE configs");
     }
 
     public void CloseIfOpen() => _dialog?.Close();
@@ -84,7 +84,7 @@ internal sealed class ImportFlow(AppController controller)
         catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
         {
             AppLog.Write($"import into {root} failed", ex);
-            dialog.SetError($"Gagal menyimpan launch.json: {ex.Message}");
+            dialog.SetError($"Couldn't save launch.json: {ex.Message}");
             return;
         }
         finally
@@ -94,8 +94,8 @@ internal sealed class ImportFlow(AppController controller)
         AppLog.Write($"import into {root}: added [{string.Join(", ", added)}]");
         dialog.Close();
         controller.ShowToast(added.Count == 0
-            ? "Tidak ada config baru: semua nama sudah ada di launch.json"
-            : $"{added.Count} config diimpor: {string.Join(", ", added)}");
+            ? "No new configs: all names already exist in launch.json"
+            : $"{added.Count} configs imported: {string.Join(", ", added)}");
         await controller.ReloadConfigAsync(root);
     }
 }

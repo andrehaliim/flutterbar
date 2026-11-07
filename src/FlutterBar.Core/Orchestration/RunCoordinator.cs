@@ -13,7 +13,7 @@ public enum PreparationCancel
 
     /// <summary>
     /// flutter is already being launched: nothing was cancelled. Wait for <see cref="RunCoordinator.WaitForLaunchAsync"/>,
-    /// then ask "Stop sesi sekarang dan ganti?" like for any running session.
+    /// then ask "Stop the current session and switch?" like for any running session.
     /// </summary>
     Launching,
 }
@@ -89,7 +89,7 @@ public sealed class RunCoordinator(RunOrchestrator orchestrator)
         {
             if (_preparation is not null)
             {
-                return new RunOutcome(RunOutcomeKind.SessionActive, "Run sedang disiapkan") { ProjectRoot = root };
+                return new RunOutcome(RunOutcomeKind.SessionActive, "Run is being prepared") { ProjectRoot = root };
             }
             _preparation = cts;
             _committed = false;
@@ -141,5 +141,5 @@ public sealed class RunCoordinator(RunOrchestrator orchestrator)
     }
 
     private static RunOutcome Cancelled(string? root) =>
-        new(RunOutcomeKind.Cancelled, "Run dibatalkan") { ProjectRoot = root };
+        new(RunOutcomeKind.Cancelled, "Run cancelled") { ProjectRoot = root };
 }

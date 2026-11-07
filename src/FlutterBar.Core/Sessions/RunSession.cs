@@ -24,7 +24,7 @@ namespace FlutterBar.Core.Sessions;
 public sealed class RunSession(
     IProcessLauncher launcher, LogBuffer log, TimeSpan? stopGrace = null, RetainedJobs? retainedJobs = null) : IAsyncDisposable
 {
-    private const string BusyMessage = "Sedang reload";
+    private const string BusyMessage = "Reload in progress";
 
     private static readonly SessionSnapshot IdleSnapshot = new(SessionState.Idle, false, 0, null, null, false, false, null);
 
@@ -107,7 +107,7 @@ public sealed class RunSession(
         {
             // Reported to the user through FailureMessage and the log, and to diag.log.
             DiagLog.Write($"RunSession: failed to launch {request.Spec.FileName}", ex);
-            var message = $"Gagal menjalankan flutter: {ex.Message}";
+            var message = $"Couldn't start flutter: {ex.Message}";
             lock (_gate)
             {
                 changed = null;
@@ -170,15 +170,15 @@ public sealed class RunSession(
             }
             if (_state != SessionState.Running || _ctx is not { AppId: { } id, Handle: { } h } c)
             {
-                return new ReloadOutcome(false, "Tidak ada sesi yang berjalan", ReloadFailure.NoSession);
+                return new ReloadOutcome(false, "No session running", ReloadFailure.NoSession);
             }
             if (c.Request.Config.Mode != RunMode.Debug)
             {
-                return new ReloadOutcome(false, "Tidak didukung di mode release/profile", ReloadFailure.Unsupported);
+                return new ReloadOutcome(false, "Not supported in release/profile mode", ReloadFailure.Unsupported);
             }
             if (fullRestart && !c.SupportsRestart)
             {
-                return new ReloadOutcome(false, "Hot restart tidak didukung untuk sesi ini", ReloadFailure.Unsupported);
+                return new ReloadOutcome(false, "Hot restart isn't supported for this session", ReloadFailure.Unsupported);
             }
             if (!fullRestart && c.ReloadRejection is { } rejection)
             {
@@ -216,7 +216,7 @@ public sealed class RunSession(
         {
             // Reported via the outcome, the log and diag.log (IOException / closed stdin when the process is dying).
             DiagLog.Write("RunSession: failed to send app.restart", ex);
-            var failed = new ReloadOutcome(false, $"Gagal mengirim perintah ke flutter: {ex.Message}", ReloadFailure.Failed);
+            var failed = new ReloadOutcome(false, $"Couldn't send the command to flutter: {ex.Message}", ReloadFailure.Failed);
             if (Abandon(ctx, pending))
             {
                 _log.Append(LogKind.Error, failed.Message);
@@ -236,7 +236,7 @@ public sealed class RunSession(
                 // The answer (or the exit) won the race; it is being completed right now.
                 return await pending.Completion.Task.ConfigureAwait(false);
             }
-            var message = $"{label} timeout: flutter tidak menjawab dalam {timeout.TotalSeconds:0.#} detik";
+            var message = $"{label} timed out: flutter didn't respond within {timeout.TotalSeconds:0.#} seconds";
             _log.Append(LogKind.Error, message);
             return new ReloadOutcome(false, message, ReloadFailure.Timeout);
         }
@@ -284,7 +284,7 @@ public sealed class RunSession(
             changed = CommitLocked();
         }
         Raise(changed);
-        pending?.Completion.TrySetResult(new ReloadOutcome(false, "Sesi dihentikan", ReloadFailure.Failed));
+        pending?.Completion.TrySetResult(new ReloadOutcome(false, "Session stopped", ReloadFailure.Failed));
         _ = RunStopAsync(ctx, sendStop, done); // never faults: failures complete `done` instead
         return done.Task;
     }
@@ -519,7 +519,7 @@ public sealed class RunSession(
                         appends.Add((LogKind.Error, error));
                         if (!ctx.StopRequested && _state is SessionState.Starting or SessionState.Running or SessionState.Reloading)
                         {
-                            var failure = _state == SessionState.Starting ? $"Build gagal: {error}" : $"App berhenti: {error}";
+                            var failure = _state == SessionState.Starting ? $"Build failed: {error}" : $"App stopped: {error}";
                             FailLocked(failure);
                             if (ctx.Pending is { } interrupted)
                             {
@@ -600,7 +600,7 @@ public sealed class RunSession(
         if (response.Error is not null || IsUnsupported(response.Message))
         {
             var flutterMessage = response.Error ?? response.Message ?? string.Empty;
-            var message = $"{label} ditolak flutter: {flutterMessage}";
+            var message = $"{label} rejected by flutter: {flutterMessage}";
             if (!pending.FullRestart)
             {
                 ctx.ReloadRejection = message;
@@ -613,7 +613,7 @@ public sealed class RunSession(
         if (response.Code is int code && code != 0)
         {
             _hasError = true;
-            var summary = string.IsNullOrWhiteSpace(response.Message) ? $"{label} gagal (code {code})" : response.Message;
+            var summary = string.IsNullOrWhiteSpace(response.Message) ? $"{label} failed (code {code})" : response.Message;
             // Compiler diagnostics arrive on stderr before the response; they are already in the log after the marker.
             var details = _log.SinceLastReload()
                 .Where(l => l.Kind == LogKind.Error)
@@ -624,7 +624,7 @@ public sealed class RunSession(
 
         _hasError = false;
         _errorCount = 0;
-        var text = string.IsNullOrWhiteSpace(response.Message) ? $"{label} selesai" : response.Message;
+        var text = string.IsNullOrWhiteSpace(response.Message) ? $"{label} finished" : response.Message;
         appends.Add((LogKind.Reload, text));
         return new ReloadOutcome(true, text, null);
     }
@@ -689,11 +689,11 @@ public sealed class RunSession(
                 var suffix = ctx.LastStderr is { } last ? $": {last}" : string.Empty;
                 if (_state == SessionState.Starting)
                 {
-                    failure = $"Build gagal (exit code {code}){suffix}";
+                    failure = $"Build failed (exit code {code}){suffix}";
                 }
                 else if (_state is SessionState.Running or SessionState.Reloading)
                 {
-                    failure = $"App berhenti (exit code {code}){suffix}";
+                    failure = $"App stopped (exit code {code}){suffix}";
                 }
                 if (failure is not null)
                 {
@@ -704,7 +704,7 @@ public sealed class RunSession(
         }
 
         pending?.Completion.TrySetResult(new ReloadOutcome(
-            false, failure ?? $"Proses flutter berhenti (exit code {code})", ReloadFailure.Failed));
+            false, failure ?? $"flutter process stopped (exit code {code})", ReloadFailure.Failed));
         Raise(changed);
         if (failure is not null)
         {
@@ -716,7 +716,7 @@ public sealed class RunSession(
     private void HandlerFailed(Context ctx, string source, Exception ex)
     {
         DiagLog.Write($"RunSession: {source} handler failed", ex);
-        var message = $"Kesalahan internal FlutterBar: {ex.Message}";
+        var message = $"FlutterBar internal error: {ex.Message}";
         PendingReload? pending;
         SessionSnapshot? changed;
         var kill = false;
