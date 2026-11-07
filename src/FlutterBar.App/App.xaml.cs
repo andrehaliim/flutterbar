@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Docking;
+using FlutterBar.App.Log;
 using FlutterBar.App.Services;
 using FlutterBar.App.Theme;
 using FlutterBar.App.Widget;
@@ -16,7 +17,7 @@ namespace FlutterBar.App;
 
 /// <summary>
 /// Composition root: settings, theme, run session, the widget window and its docking (Task 13), and the
-/// <see cref="AppController"/> that wires flyouts, toasts, Run and the IPC server (Task 14). Task 15 adds the LogWindow,
+/// <see cref="AppController"/> that wires flyouts, toasts, Run and the IPC server (Task 14). the LogWindow (Task 15),
 /// Task 16 the full menu, the IDE import and single instance.
 /// </summary>
 public partial class App : Application
@@ -46,10 +47,29 @@ public partial class App : Application
         _theme = new TaskbarTheme(Resources, Dispatcher);
         _session = new RunSession(new ProcessLauncher(), _log);
         _viewModel = new WidgetViewModel(_session, Dispatcher);
-        _viewModel.OpenLogRequested += () => AppLog.Write("Open log requested from widget (LogWindow arrives with Task 15)");
+        LogWindow.Configure(_log);
+        _viewModel.OpenLogRequested += OpenLog;
         _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
         CreateWidget("startup");
         _ = InitializeControllerAsync(_controller);
+#if DEBUG
+        // Debug-only switches for checking the LogWindow while the widget is hidden (e.g. fullscreen).
+        if (e.Args.Contains("--fill-log"))
+        {
+            DebugLogFiller.Fill(_log, 20_000);
+        }
+        if (e.Args.Contains("--open-log"))
+        {
+            Dispatcher.BeginInvoke(() => LogWindow.ShowAt(null));
+        }
+#endif
+    }
+
+    // 🖥 button and the red status dot: open the log at the first error since the last reload (or at the end).
+    private void OpenLog()
+    {
+        var firstError = _log.SinceLastReload().FirstOrDefault(l => l.Kind == LogKind.Error);
+        LogWindow.ShowAt(firstError?.Seq);
     }
 
     private AppSettings LoadSettings(out string? warning)
@@ -195,6 +215,7 @@ public partial class App : Application
             }
             await session.DisposeAsync();
         }
+        LogWindow.CloseIfOpen();
         _docking?.Stop();
         _widget?.Close();
         _viewModel?.Dispose();

@@ -1,0 +1,270 @@
+<Window x:Class="FlutterBar.App.Log.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:FlutterBar.Core.Logging;assembly=FlutterBar.Core"
+        Title="FlutterBar — Log" Width="960" Height="600" MinWidth="480" MinHeight="240"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="True"
+        Background="{DynamicResource Fb.Background}" Foreground="{DynamicResource Fb.Foreground}"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+    <Window.Resources>
+        <!-- Colours are the Fb.* brushes (Theme/TaskbarTheme); light/dark follows the taskbar. -->
+        <FontFamily x:Key="Log.Mono">Cascadia Mono, Consolas</FontFamily>
+        <FontFamily x:Key="Log.Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <Style x:Key="Log.ToolButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinWidth" Value="28" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{DynamicResource Fb.Chip}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Fb.Accent}" />
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Log.IconButton" TargetType="Button" BasedOn="{StaticResource Log.ToolButton}">
+            <Setter Property="FontFamily" Value="{StaticResource Log.Icons}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="28" />
+        </Style>
+
+        <Style x:Key="Log.ToggleButton" TargetType="ToggleButton">
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd" Background="{DynamicResource Fb.Chip}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Red}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Fb.Accent}" />
+                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Log.SearchBox" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd" Background="{DynamicResource Fb.Chip}" CornerRadius="4" BorderThickness="1" BorderBrush="Transparent"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Fb.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Log.Chevron" TargetType="Button">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="FontFamily" Value="{StaticResource Log.Icons}" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+            <Setter Property="Content" Value="&#xE76C;" />
+            <Setter Property="Visibility" Value="Hidden" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Role}" Value="GroupHeader">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Role}" Value="GroupHeader" />
+                        <Condition Binding="{Binding Entry.Expanded}" Value="True" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Content" Value="&#xE70D;" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Colour per LogKind (spec §8): tool grey, app normal, reload green, error red, separators subtle. -->
+        <Style x:Key="Log.LineText" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Line.Kind}" Value="Tool">
+                    <Setter Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Line.Kind}" Value="Reload">
+                    <Setter Property="Foreground" Value="{DynamicResource Fb.Green}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Line.Kind}" Value="Error">
+                    <Setter Property="Foreground" Value="{DynamicResource Fb.Red}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Line.Kind}" Value="Separator">
+                    <Setter Property="Foreground" Value="{DynamicResource Fb.Grey}" />
+                    <Setter Property="FontStyle" Value="Italic" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Role}" Value="GroupHeader">
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Log.GroupCount" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+            <Setter Property="Margin" Value="10,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Role}" Value="GroupHeader" />
+                        <Condition Binding="{Binding Entry.Expanded}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <DataTemplate x:Key="Log.RowTemplate" DataType="{x:Type core:LogRow}">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Margin" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Role}" Value="GroupChild">
+                                <Setter Property="Margin" Value="20,0,0,0" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Style="{StaticResource Log.Chevron}" Click="OnToggleClick" ToolTip="Buka / lipat blok exception" />
+                <TextBlock Grid.Column="1" Text="{Binding Line.Text}" Style="{StaticResource Log.LineText}" />
+                <TextBlock Grid.Column="2" Text="{Binding Entry.LineCount, StringFormat=({0} baris)}" Style="{StaticResource Log.GroupCount}" />
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="Log.ItemContainer" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="2,1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Chip}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+        <Grid DockPanel.Dock="Top" Margin="8,8,8,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="120" MaxWidth="320" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0" Margin="0,0,8,0">
+                <TextBox x:Name="SearchBox" Style="{StaticResource Log.SearchBox}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         AutomationProperties.Name="Cari" />
+                <TextBlock Text="Cari…" Foreground="{DynamicResource Fb.Muted}" IsHitTestVisible="False" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text.IsEmpty, ElementName=SearchBox}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ToggleButton Style="{StaticResource Log.ToggleButton}" Content="Hanya error" IsChecked="{Binding ErrorsOnly}" />
+                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74A;" Click="OnPreviousErrorClick" ToolTip="Error sebelumnya (Shift+F3)"
+                        AutomationProperties.Name="Error sebelumnya" />
+                <Button Style="{StaticResource Log.IconButton}" Content="&#xE74B;" Click="OnNextErrorClick" ToolTip="Error berikutnya (F3)"
+                        AutomationProperties.Name="Error berikutnya" />
+                <Button Style="{StaticResource Log.ToolButton}" Content="Bersihkan" Click="OnClearClick" ToolTip="Kosongkan tampilan (buffer tidak ikut kosong)" />
+                <Button Style="{StaticResource Log.ToolButton}" Content="Salin" Click="OnCopyClick" ToolTip="Salin baris terpilih, atau semua (Ctrl+C)" />
+            </StackPanel>
+            <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource Fb.Muted}" HorizontalAlignment="Right"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        </Grid>
+
+        <Rectangle DockPanel.Dock="Top" Height="1" Fill="{DynamicResource Fb.Separator}" />
+
+        <ListBox x:Name="List" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource Log.RowTemplate}"
+                 ItemContainerStyle="{StaticResource Log.ItemContainer}" SelectionMode="Extended"
+                 Background="Transparent" BorderThickness="0" Foreground="{DynamicResource Fb.Foreground}"
+                 FontFamily="{StaticResource Log.Mono}" FontSize="12.5"
+                 VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                 VirtualizingPanel.ScrollUnit="Item" ScrollViewer.CanContentScroll="True"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 MouseDoubleClick="OnListDoubleClick" AutomationProperties.Name="Log" />
+    </DockPanel>
+</Window>
