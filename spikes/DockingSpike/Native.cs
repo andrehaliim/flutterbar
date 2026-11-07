@@ -56,6 +56,8 @@ internal static class Native
     [DllImport("shell32.dll")] public static extern UIntPtr SHAppBarMessage(uint msg, ref APPBARDATA data);
     [DllImport("shell32.dll")] public static extern int SHQueryUserNotificationState(out int state);
 
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+
     public static string ClassOf(IntPtr h)
     {
         var sb = new System.Text.StringBuilder(256);

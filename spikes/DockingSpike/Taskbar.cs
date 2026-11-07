@@ -15,7 +15,7 @@ internal static class Taskbar
         catch (Exception ex) { Console.WriteLine("log write failed: " + ex.Message); }
     }
 
-    public record Result(Native.RECT Taskbar, int ButtonsRight, int TrayLeft, string Note);
+    public record Result(Native.RECT Taskbar, int ButtonsRight, int TrayLeft, string Note, List<(int L, int R)> Boxes);
 
     public static void DumpTree(AutomationElement el, int depth, int max, StringBuilder sb)
     {
@@ -62,6 +62,7 @@ internal static class Taskbar
             if (TrayMatch(cls, id)) { trayLeft = Math.Min(trayLeft, (int)r.Left); anyTray = true; }
         }
         int occupiedRight = rect.Left, occupiedCount = 0;
+        var boxes = new List<(int L, int R)>();
         foreach (var (cls, id, _, r) in acc)
         {
             if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
@@ -71,8 +72,24 @@ internal static class Taskbar
             if (cls == "Image") continue;
             occupiedRight = Math.Max(occupiedRight, (int)r.Right);
             occupiedCount++;
+            boxes.Add(((int)r.Left, (int)r.Right));
         }
-        return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} elements={acc.Count}");
+        boxes.Sort();
+        return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} elements={acc.Count}", boxes);
+    }
+
+    // Gaps between occupied boxes (merged) and the tray, each inset by `inset` px, left to right.
+    public static List<(int L, int R)> Gaps(Result res, int inset)
+    {
+        var gaps = new List<(int L, int R)>();
+        int cursor = res.Taskbar.Left;
+        foreach (var (l, r) in res.Boxes)
+        {
+            if (l - inset > cursor + inset) gaps.Add((cursor + inset, l - inset));
+            cursor = Math.Max(cursor, r);
+        }
+        if (res.TrayLeft - inset > cursor + inset) gaps.Add((cursor + inset, res.TrayLeft - inset));
+        return gaps;
     }
 
     static bool InsideTaskbar(System.Windows.Rect r, Native.RECT t) =>

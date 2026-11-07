@@ -3,5 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None" AllowsTransparency="False" ShowInTaskbar="False" Topmost="True"
         ShowActivated="False" ResizeMode="NoResize" Background="#FF2B2B2B" Width="300" Height="40">
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="Freeze 5s (debug)" Click="OnFreeze"/>
+        </ContextMenu>
+    </Window.ContextMenu>
     <TextBlock x:Name="Info" Foreground="White" FontSize="11" Margin="6,2" TextWrapping="Wrap" VerticalAlignment="Center"/>
 </Window>

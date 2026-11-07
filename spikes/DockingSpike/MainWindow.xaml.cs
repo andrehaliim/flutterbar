@@ -10,7 +10,6 @@ public partial class MainWindow : Window
 {
     const int Gap = 8;
     static readonly HashSet<string> ShellClasses = new() { "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "Progman", "WorkerW" };
-    static readonly HashSet<string> ShellHostedClasses = new() { "Windows.UI.Core.CoreWindow", "ApplicationFrameWindow" };
     static readonly HashSet<string> ShellProcesses = new(StringComparer.OrdinalIgnoreCase)
         { "explorer", "SearchHost", "StartMenuExperienceHost", "ShellExperienceHost", "ShellHost" };
 
@@ -19,19 +18,31 @@ public partial class MainWindow : Window
     Native.WinEventDelegate? _fgCb, _locCb; // keep alive (GC)
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     readonly Dictionary<string, DateTime> _lastLog = new();
-    bool _locPending, _queryRunning, _hidden, _fullscreen;
+    readonly Dictionary<uint, string> _procNames = new();
+    bool _locPending, _queryRunning, _hidden, _fullscreen, _inReassert, _dead, _noGap;
+    bool _autoHide;
+    string _align = "tengah";
     DateTime _lastQuery = DateTime.MinValue;
-    Taskbar.Result? _layout;
+    volatile Taskbar.Result? _layout;
     string _lastReason = "-";
     string _lastPosLog = "";
     int _qunsLogged = -1;
+    (int x, int y, int w, int h) _lastPos;
 
     public MainWindow()
     {
         InitializeComponent();
         SourceInitialized += OnSourceInitialized;
-        _timer.Tick += (_, _) => Reassert("timer");
+        _timer.Tick += (_, _) => OnTimer();
         Closed += OnClosed;
+    }
+
+    // Debug: block the UI thread to test whether taskbar input stalls (cross-process owner shares input queue).
+    void OnFreeze(object sender, RoutedEventArgs e)
+    {
+        Taskbar.Log($"{Now()} FREEZE 5s start (UI thread blocked; test whether taskbar stays clickable)");
+        Thread.Sleep(5000);
+        Taskbar.Log($"{Now()} FREEZE end");
     }
 
     void OnSourceInitialized(object? sender, EventArgs e)
@@ -45,7 +56,9 @@ public partial class MainWindow : Window
         _fgHook = Native.SetWinEventHook(Native.EVENT_SYSTEM_FOREGROUND, Native.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _fgCb, 0, 0, Native.WINEVENT_OUTOFCONTEXT);
         if (_fgHook == IntPtr.Zero) Taskbar.Log("SetWinEventHook(FOREGROUND) failed");
         _locCb = OnLocation;
-        AttachToTaskbar("startup");
+        _autoHide = IsAutoHide();
+        _align = ReadAlignment();
+        AttachToTaskbar("startup", true);
         _timer.Start();
         Reassert("startup");
     }
@@ -56,36 +69,64 @@ public partial class MainWindow : Window
         {
             Taskbar.Log($"{Now()} TaskbarCreated received (explorer restarted)");
             _layout = null;
-            AttachToTaskbar("TaskbarCreated");
+            AttachToTaskbar("TaskbarCreated", true);
             Reassert("TaskbarCreated");
         }
         return IntPtr.Zero;
     }
 
-    // (Re)find the taskbar, set it as owner, and (re)install the location hook for its process.
-    void AttachToTaskbar(string why)
+    // Set the taskbar as owner; (re)install the location hook only when the tray handle changed (or forced).
+    void AttachToTaskbar(string why, bool forceHook)
     {
         var tray = Native.FindWindow("Shell_TrayWnd", null);
-        if (tray == IntPtr.Zero) { Taskbar.Log($"{Now()} AttachToTaskbar({why}): Shell_TrayWnd not found"); return; }
-        if (_locHook != IntPtr.Zero) { Native.UnhookWinEvent(_locHook); _locHook = IntPtr.Zero; }
+        if (tray == IntPtr.Zero) { LogLimited("attach-notfound", $"{Now()} AttachToTaskbar({why}): Shell_TrayWnd not found"); return; }
+        bool changed = tray != _tray;
+        if (changed || forceHook || _locHook == IntPtr.Zero)
+        {
+            if (_locHook != IntPtr.Zero) { Native.UnhookWinEvent(_locHook); _locHook = IntPtr.Zero; }
+            uint tid = Native.GetWindowThreadProcessId(tray, out var pid);
+            _locHook = Native.SetWinEventHook(Native.EVENT_OBJECT_LOCATIONCHANGE, Native.EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _locCb!, pid, 0, Native.WINEVENT_OUTOFCONTEXT);
+            Taskbar.Log($"{Now()} location hook ({why}): tray=0x{tray:X} pid={pid} tid={tid} locHook={(_locHook == IntPtr.Zero ? "FAILED" : "ok")}");
+        }
         _tray = tray;
         Native.SetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT, tray);
         var owner = Native.GetWindow(_hwnd, Native.GW_OWNER);
-        uint tid = Native.GetWindowThreadProcessId(tray, out var pid);
-        _locHook = Native.SetWinEventHook(Native.EVENT_OBJECT_LOCATIONCHANGE, Native.EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _locCb!, pid, 0, Native.WINEVENT_OUTOFCONTEXT);
-        Taskbar.Log($"{Now()} AttachToTaskbar({why}): tray=0x{tray:X} owner=0x{owner:X} pid={pid} tid={tid} locHook={(_locHook == IntPtr.Zero ? "FAILED" : "ok")}");
+        LogLimited("attach", $"{Now()} AttachToTaskbar({why}): tray=0x{tray:X} owner=0x{owner:X}");
     }
 
-    void OnClosed(object? sender, EventArgs e)
+    void LogLimited(string key, string msg)
+    {
+        if (_lastLog.TryGetValue(key, out var t) && (DateTime.Now - t).TotalSeconds < 2) return;
+        _lastLog[key] = DateTime.Now;
+        Taskbar.Log(msg);
+    }
+
+    void Cleanup()
     {
         _timer.Stop();
         if (_fgHook != IntPtr.Zero) Native.UnhookWinEvent(_fgHook);
         if (_locHook != IntPtr.Zero) Native.UnhookWinEvent(_locHook);
         _fgHook = _locHook = IntPtr.Zero;
+    }
+
+    void Recreate(string why)
+    {
+        if (_dead) return;
+        _dead = true;
+        Cleanup();
         if (Program.Exiting) return;
-        // Destroyed together with its owner (explorer restart): recreate.
-        Taskbar.Log($"{Now()} widget window destroyed unexpectedly (owner gone?) -> recreating");
+        Taskbar.Log($"{Now()} widget window destroyed ({why}) -> recreating");
         Dispatcher.BeginInvoke(() => new MainWindow().Show());
+    }
+
+    void OnClosed(object? sender, EventArgs e) => Recreate("Closed event, owner gone?");
+
+    void OnTimer()
+    {
+        if (_hwnd != IntPtr.Zero && !Native.IsWindow(_hwnd)) { Recreate("IsWindow=false"); return; }
+        _autoHide = IsAutoHide();
+        _align = ReadAlignment();
+        Reassert("timer");
     }
 
     void OnForeground(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
@@ -104,9 +145,7 @@ public partial class MainWindow : Window
     {
         if (reason == "timer") return;
         var key = reason.StartsWith("foreground:", StringComparison.Ordinal) ? "foreground" : reason;
-        if (_lastLog.TryGetValue(key, out var t) && (DateTime.Now - t).TotalSeconds < 2) return;
-        _lastLog[key] = DateTime.Now;
-        Taskbar.Log($"{Now()} reassert: {reason}");
+        LogLimited("reason:" + key, $"{Now()} reassert: {reason}");
     }
 
     void KickQuery(IntPtr tray)
@@ -149,58 +188,61 @@ public partial class MainWindow : Window
         return ((uint)Native.SHAppBarMessage(Native.ABM_GETSTATE, ref abd) & Native.ABS_AUTOHIDE) != 0;
     }
 
+    // Every foreground window is classified by its owning process; the class list is only a fast path.
     bool IsShellForeground(IntPtr fg, string cls)
     {
         if (ShellClasses.Contains(cls)) return true;
-        if (!ShellHostedClasses.Contains(cls)) return false;
         try
         {
             Native.GetWindowThreadProcessId(fg, out var pid);
-            using var p = Process.GetProcessById((int)pid);
-            return ShellProcesses.Contains(p.ProcessName);
+            if (!_procNames.TryGetValue(pid, out var name))
+            {
+                using var p = Process.GetProcessById((int)pid);
+                name = p.ProcessName;
+                if (_procNames.Count > 128) _procNames.Clear();
+                _procNames[pid] = name;
+            }
+            return ShellProcesses.Contains(name);
         }
         catch (Exception ex)
         {
-            Taskbar.Log($"{Now()} process lookup failed for class {cls}: {ex.Message} (treated as shell)");
+            LogLimited("proc-fail", $"{Now()} process lookup failed for class {cls}: {ex.Message} (treated as shell)");
             return true;
         }
     }
 
-    bool DetectFullscreen(IntPtr tray, out string detail)
+    bool DetectFullscreen(IntPtr tray)
     {
-        detail = "";
         var fg = Native.GetForegroundWindow();
-        if (fg == IntPtr.Zero || fg == _hwnd) return _fullscreen && fg == _hwnd; // keep state when we are foreground
+        if (fg == IntPtr.Zero || fg == _hwnd) return _fullscreen;
         var cls = Native.ClassOf(fg);
         if (IsShellForeground(fg, cls)) return false;
         var mon = Native.MonitorFromWindow(fg, Native.MONITOR_DEFAULTTONEAREST);
         if (mon != Native.MonitorFromWindow(tray, Native.MONITOR_DEFAULTTONEAREST)) return false;
         var mi = new Native.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Native.MONITORINFO>() };
         if (!Native.GetMonitorInfo(mon, ref mi) || !Native.GetWindowRect(fg, out var r)) return false;
-        bool covers = r.Left <= mi.rcMonitor.Left && r.Top <= mi.rcMonitor.Top && r.Right >= mi.rcMonitor.Right && r.Bottom >= mi.rcMonitor.Bottom;
-        detail = $"fg={cls}";
-        return covers;
+        return r.Left <= mi.rcMonitor.Left && r.Top <= mi.rcMonitor.Top && r.Right >= mi.rcMonitor.Right && r.Bottom >= mi.rcMonitor.Bottom;
     }
 
     void Reassert(string reason)
     {
+        if (_inReassert || _dead || _hwnd == IntPtr.Zero) return;
+        _inReassert = true;
         try
         {
-            if (_hwnd == IntPtr.Zero) return;
             _lastReason = reason;
             LogReason(reason);
             var tray = Native.FindWindow("Shell_TrayWnd", null);
             if (tray == IntPtr.Zero) { Info.Text = "taskbar not found"; return; }
-            if (tray != _tray || Native.GetWindow(_hwnd, Native.GW_OWNER) != tray) AttachToTaskbar("handle/owner changed");
-            if (reason == "timer") KickQuery(tray);
+            if (tray != _tray || Native.GetWindow(_hwnd, Native.GW_OWNER) != tray) AttachToTaskbar("handle/owner changed", false);
+            bool timer = reason == "timer";
+            if (timer) KickQuery(tray);
 
-            // fullscreen: only meaningful when taskbar auto-hide is off
-            bool autoHide = IsAutoHide();
-            bool fs = !autoHide && DetectFullscreen(tray, out _);
-            if (reason == "timer")
+            bool fs = !_autoHide && DetectFullscreen(tray);
+            if (timer)
             {
                 Native.SHQueryUserNotificationState(out var quns);
-                if (quns != _qunsLogged) { _qunsLogged = quns; Taskbar.Log($"{Now()} SHQueryUserNotificationState={quns} fullscreenRule={fs} autoHide={autoHide}"); }
+                if (quns != _qunsLogged) { _qunsLogged = quns; Taskbar.Log($"{Now()} SHQueryUserNotificationState={quns} fullscreenRule={fs} autoHide={_autoHide}"); }
             }
             if (fs != _fullscreen) { _fullscreen = fs; Taskbar.Log($"{Now()} fullscreen -> {(fs ? "YES (hide widget)" : "NO (show widget)")} [{reason}]"); }
 
@@ -208,31 +250,46 @@ public partial class MainWindow : Window
             double scale = dpi / 96.0;
             int w = (int)(300 * scale), h = (int)(40 * scale);
             var res = _layout;
-            string align = ReadAlignment();
-            int free = 0, x = 0, y = 0;
-            string rectTxt = "?";
+            int x = 0, y = 0;
+            string gapTxt = "?";
+            bool haveGap = false;
             if (res is not null)
             {
-                int freeLeft = res.ButtonsRight + Gap, freeRight = res.TrayLeft - Gap;
-                free = freeRight - freeLeft;
-                x = freeRight - w;
-                y = res.Taskbar.Top + (res.Taskbar.Bottom - res.Taskbar.Top - h) / 2;
-                rectTxt = $"({x},{y},{x + w},{y + h})";
+                var gaps = Taskbar.Gaps(res, Gap);
+                gapTxt = string.Join(" ", gaps.Select(g => $"[{g.L}..{g.R}]={g.R - g.L}"));
+                for (int i = gaps.Count - 1; i >= 0; i--)
+                {
+                    if (gaps[i].R - gaps[i].L >= w)
+                    {
+                        x = gaps[i].R - w;
+                        y = res.Taskbar.Top + (res.Taskbar.Bottom - res.Taskbar.Top - h) / 2;
+                        haveGap = true;
+                        gapTxt += $" -> pakai [{gaps[i].L}..{gaps[i].R}]";
+                        break;
+                    }
+                }
+                if (!haveGap) gapTxt += " -> TIDAK ADA gap cukup";
             }
-            if (fs)
+            bool noGap = res is not null && !haveGap;
+            if (noGap != _noGap) { _noGap = noGap; Taskbar.Log($"{Now()} gap fit -> {(noGap ? "NONE (hide widget)" : "ok")} gaps: {gapTxt}"); }
+            bool wantVisible = !fs && !noGap;
+
+            if (!wantVisible)
             {
                 if (!_hidden) { Native.ShowWindow(_hwnd, 0); _hidden = true; }
             }
             else
             {
-                uint flags = Native.SWP_NOACTIVATE | (_hidden ? Native.SWP_SHOWWINDOW : 0);
-                if (res is null) flags |= Native.SWP_NOMOVE | Native.SWP_NOSIZE;
+                if (_hidden) { Native.ShowWindow(_hwnd, 4); _hidden = false; _lastPos = default; }
+                bool moved = haveGap && _lastPos != (x, y, w, h);
+                // always reassert topmost; move/size only when the target changed
+                uint flags = Native.SWP_NOACTIVATE | (moved ? 0u : Native.SWP_NOMOVE | Native.SWP_NOSIZE);
                 Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, x, y, w, h, flags);
-                _hidden = false;
+                if (moved) _lastPos = (x, y, w, h);
             }
-            Info.Text = $"free={free}px DPI={dpi} ({scale * 100:F0}%) rata={align}\nfullscreen={(fs ? "ya" : "tidak")} autohide={(autoHide ? "ya" : "tidak")} last={_lastReason}";
+            Info.Text = $"gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}";
 
-            var posLog = $"align={align} free={free} dpi={dpi} occRight={res?.ButtonsRight} trayLeft={res?.TrayLeft} win={rectTxt} fs={fs}";
+            var posLog = $"align={_align} dpi={dpi} trayLeft={res?.TrayLeft} win=({x},{y},{x + w},{y + h}) visible={wantVisible} gaps={gapTxt}";
             if (posLog != _lastPosLog)
             {
                 _lastPosLog = posLog;
@@ -244,5 +301,6 @@ public partial class MainWindow : Window
             Taskbar.Log($"{Now()} Reassert({reason}) failed: {ex}");
             Info.Text = "error: " + ex.Message;
         }
+        finally { _inReassert = false; }
     }
 }
