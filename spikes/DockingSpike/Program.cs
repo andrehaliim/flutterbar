@@ -14,6 +14,7 @@ internal static class Program
         try
         {
             if (args.Contains("--probe")) return Probe();
+            // SPIKE-ONLY test hooks (do not copy to production)
             foreach (var a in args)
                 if (a.StartsWith("--force-empty-after=", StringComparison.Ordinal) && int.TryParse(a.AsSpan(20), out var n)) Taskbar.ForceEmptyAfter = n;
             foreach (var a in args)

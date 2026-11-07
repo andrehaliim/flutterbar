@@ -41,6 +41,8 @@ public partial class MainWindow : Window
     static readonly string[] SizeName = { "Full", "Compact", "ButtonsOnly" };
     record Placement(int Size, int X, bool NoFit);
     Placement? _applied, _pending;
+    int _pendingHeld;
+    string? _toolTipText;
     int? _lastValidX;
     bool _immediate = true;
     Taskbar.Result? _evalLayout;
@@ -123,7 +125,7 @@ public partial class MainWindow : Window
         _settings = new SpikeSettings();
         SpikeSettings.Delete();
         _lastPos = default;
-        _applied = null; _pending = null; _evalLayout = null; _immediate = true; // next auto layout applies immediately
+        _applied = null; _pending = null; _pendingHeld = 0; _evalLayout = null; _immediate = true; // next auto layout applies immediately
         Taskbar.Log($"{Now()} reset to auto position (drag mode exited, immediate-apply armed)");
         Reassert("reset-auto");
     }
@@ -382,18 +384,19 @@ public partial class MainWindow : Window
         {
             Apply(cand, $"immediate ({(_applied is null ? "first layout" : "after startup/reset")})", gapTxt);
         }
-        else if (SamePlacement(cand, _applied)) { _pending = null; }
+        else if (SamePlacement(cand, _applied)) { _pending = null; _pendingHeld = 0; }
         else if (_pending is not null && SamePlacement(cand, _pending)) Apply(cand, "confirmed by 2 consecutive queries", gapTxt);
+        else if (_pendingHeld >= 5) Apply(cand, $"max-hold: differing candidates held back {_pendingHeld} queries, applying the latest", gapTxt);
         else
         {
-            _pending = cand;
+            _pending = cand; _pendingHeld++;
             Taskbar.Log($"{Now()} placement candidate {desc} held back (applied {SizeName[_applied.Size]} x={_applied.X}); needs 2 consecutive queries; gaps: {gapTxt}");
         }
     }
 
     void Apply(Placement cand, string why, string gapTxt)
     {
-        _applied = cand; _pending = null; _immediate = false;
+        _applied = cand; _pending = null; _pendingHeld = 0; _immediate = false;
         if (!cand.NoFit) _lastValidX = cand.X;
         Taskbar.Log($"{Now()} placement APPLIED {SizeName[cand.Size]} x={cand.X}{(cand.NoFit ? " NOFIT (stay visible, hint)" : "")} [{why}] gaps: {gapTxt}");
     }
@@ -498,7 +501,8 @@ public partial class MainWindow : Window
                 1 => $"[Compact] mode={modeTxt} x={x}\nDPI={dpi} rata={_align}",
                 _ => noFit ? "\u25B6 \u26A1 Taskbar penuh \u2014 gunakan Drag widget" : "\u25B6 \u26A1",
             };
-            ToolTip = noFit ? "Taskbar penuh \u2014 gunakan Drag widget" : null;
+            var tipText = noFit ? "Taskbar penuh \u2014 gunakan Drag widget" : null;
+            if (tipText != _toolTipText) { _toolTipText = tipText; ToolTip = tipText; }
 
             var posLog = $"mode={_settings.Mode}/{(_dragMode ? "drag" : "-")} off={_settings.OffsetFromRight} align={_align} dpi={dpi} trayLeft={res?.TrayLeft} win=({x},{y},{x + w},{y + h}) visible={wantVisible} gaps={gapTxt}";
             if (posLog != _lastPosLog)

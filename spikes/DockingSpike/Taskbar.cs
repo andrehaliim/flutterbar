@@ -16,9 +16,11 @@ internal static class Taskbar
     }
 
     // Test hook (--force-empty-after=N): after N good queries, pretend UIA returned nothing (simulates Start-open glitch).
+    // SPIKE-ONLY test hook (do not copy to production)
     public static int ForceEmptyAfter = -1;
     static int _goodCount;
     // Test hook (--force-min-gap=N): every gap is shrunk to at most N px (keeps its right edge) to test the size step-down / no-fit paths.
+    // SPIKE-ONLY test hook (do not copy to production)
     public static int ForceMaxGap = -1;
     static readonly HashSet<string> _ignoredLogged = new();
     static readonly Dictionary<string, DateTime> _lastLog = new();
@@ -42,11 +44,11 @@ internal static class Taskbar
             DumpTree(ch, depth + 1, max, sb);
     }
 
-    static void Walk(AutomationElement el, int depth, List<(string cls, string id, string name, System.Windows.Rect r, int pid)> acc)
+    static void Walk(AutomationElement el, int depth, List<(string cls, string id, string name, System.Windows.Rect r, int pid, string ctype)> acc)
     {
         var c = el.Current;
         if (c.ProcessId == Environment.ProcessId) return; // our own widget (owned by the taskbar) shows up in its UIA tree
-        acc.Add((c.ClassName, c.AutomationId, c.Name, c.BoundingRectangle, c.ProcessId));
+        acc.Add((c.ClassName, c.AutomationId, c.Name, c.BoundingRectangle, c.ProcessId, c.ControlType.ProgrammaticName));
         if (depth >= 6) return;
         foreach (AutomationElement ch in el.FindAll(TreeScope.Children, Condition.TrueCondition))
             Walk(ch, depth + 1, acc);
@@ -66,15 +68,13 @@ internal static class Taskbar
     {
         if (tb == IntPtr.Zero) { Log("Shell_TrayWnd not found"); return null; }
         Native.GetWindowRect(tb, out var rect);
-        var acc = new List<(string cls, string id, string name, System.Windows.Rect r, int pid)>();
+        var acc = new List<(string cls, string id, string name, System.Windows.Rect r, int pid, string ctype)>();
         Walk(AutomationElement.FromHandle(tb), 0, acc);
         if (ForceEmptyAfter >= 0 && _goodCount >= ForceEmptyAfter) acc.Clear();
-        Native.GetWindowThreadProcessId(tb, out var tbPidU);
-        int tbPid = (int)tbPidU;
         int tbWidth = rect.Right - rect.Left;
         int trayLeft = rect.Right;
         bool anyTray = false;
-        foreach (var (cls, id, _, r, _) in acc)
+        foreach (var (cls, id, _, r, _, _) in acc)
         {
             if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
             if (TrayMatch(cls, id)) { trayLeft = Math.Min(trayLeft, (int)r.Left); anyTray = true; }
@@ -90,14 +90,14 @@ internal static class Taskbar
         }
         int occupiedRight = rect.Left, occupiedCount = 0;
         var boxes = new List<(int L, int R)>();
-        foreach (var (cls, id, name, r, pid) in acc)
+        foreach (var (cls, id, name, r, pid, ctype) in acc)
         {
             if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
             if (TrayMatch(cls, id) || NotOccupying.Contains(cls)) continue;
             if (r.Width >= tbWidth / 2.0) continue; // container
             if (r.Right > trayLeft + 1) continue;   // belongs to / overlaps tray
             if (cls == "Image") continue;
-            if (!Occupies(cls, id, name, r, rect, pid != tbPid)) continue;
+            if (!Occupies(cls, id, name, r, rect, pid, ctype)) continue;
             occupiedRight = Math.Max(occupiedRight, (int)r.Right);
             occupiedCount++;
             boxes.Add(((int)r.Left, (int)r.Right));
@@ -112,21 +112,43 @@ internal static class Taskbar
         return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} tnLeft={tnLeft} elements={acc.Count}", boxes);
     }
 
-    // v3.1: only real taskbar buttons count as occupied (Start, Search, Task View, Widgets, app buttons, known button classes).
-    // Tooltips / thumbnails / popups / anything shorter than half the taskbar height are ignored (they flicker in the UIA tree).
-    static bool Occupies(string cls, string id, string name, System.Windows.Rect r, Native.RECT tb, bool foreign)
+    static readonly HashSet<string> TransientClasses = new() { "TaskListThumbnailWnd", "TaskListOverlayWnd", "Xaml_WindowedPopupClass", "XamlPopupWindow", "ToolTip", "tooltips_class32", "Popup", "Windows.UI.Core.CoreWindow" };
+    static readonly HashSet<string> IgnoredProcesses = new(StringComparer.OrdinalIgnoreCase) { "DockingSpike", "FlutterBar.App" };
+    static readonly Dictionary<int, string> _pidNames = new();
+
+    static string ProcName(int pid)
+    {
+        lock (_pidNames)
+        {
+            if (_pidNames.TryGetValue(pid, out var n)) return n;
+            try { using var p = System.Diagnostics.Process.GetProcessById(pid); n = p.ProcessName; }
+            catch (Exception ex) { n = "?"; Log($"{DateTime.Now:HH:mm:ss.fff} process name lookup failed for pid {pid}: {ex.Message}"); }
+            if (_pidNames.Count > 256) _pidNames.Clear();
+            _pidNames[pid] = n;
+            return n;
+        }
+    }
+
+    // v3.1 rule: counted iff (a) inside the taskbar rect (2 px slack), (b) height >= 50% of taskbar, (c) width >= 8 px,
+    // (d) not a DockingSpike/FlutterBar.App process, (e) not a known transient (ToolTip control type / popup / thumbnail classes).
+    // Each newly seen (class, id, controlType, pid) is logged once with the verdict and reason.
+    static bool Occupies(string cls, string id, string name, System.Windows.Rect r, Native.RECT tb, int pid, string ctype)
     {
         double tbH = tb.Bottom - tb.Top;
-        bool known = id == "StartButton"
-            || id.Contains("Search", StringComparison.OrdinalIgnoreCase) || id.Contains("TaskView", StringComparison.OrdinalIgnoreCase)
-            || id.Contains("Widgets", StringComparison.OrdinalIgnoreCase)
-            || cls == "Taskbar.TaskListButtonAutomationPeer" || cls is "ToggleButton" or "Button";
-        if ((known || foreign) && r.Height >= tbH * 0.5) return true; // foreign = other process's widget on the taskbar (e.g. a Spotify taskbar widget)
-        var key = $"{cls}|{id}|{(known || foreign ? "short" : "unknown")}";
+        string pn = ProcName(pid);
+        string reason;
+        if (!InsideTaskbar(r, tb)) reason = "outside taskbar rect";
+        else if (r.Height < tbH * 0.5) reason = "height < 50% taskbar";
+        else if (r.Width < 8) reason = "width < 8";
+        else if (IgnoredProcesses.Contains(pn)) reason = $"own/other widget process {pn}";
+        else if (ctype == "ControlType.ToolTip" || TransientClasses.Contains(cls)) reason = "transient (tooltip/popup/thumbnail)";
+        else reason = "";
+        bool counted = reason.Length == 0;
+        var key = $"{cls}|{id}|{ctype}|{pid}";
         lock (_ignoredLogged)
             if (_ignoredLogged.Add(key))
-                Log($"{DateTime.Now:HH:mm:ss.fff} UIA element ignored as transient/non-button: class='{cls}' id='{id}' name='{name}' rect=({r.Left:F0},{r.Top:F0},{r.Right:F0},{r.Bottom:F0})");
-        return false;
+                Log($"{DateTime.Now:HH:mm:ss.fff} UIA element {(counted ? "COUNTED" : "IGNORED (" + reason + ")")}: class='{cls}' id='{id}' type={ctype} pid={pid}({pn}) name='{name}' rect=({r.Left:F0},{r.Top:F0},{r.Right:F0},{r.Bottom:F0})");
+        return counted;
     }
 
     // Gaps between occupied boxes (merged) and the tray, each inset by `inset` px, left to right.
@@ -140,7 +162,7 @@ internal static class Taskbar
             cursor = Math.Max(cursor, r);
         }
         if (res.TrayLeft - inset > cursor + inset) gaps.Add((cursor + inset, res.TrayLeft - inset));
-        if (ForceMaxGap >= 0)
+        if (ForceMaxGap >= 0) // SPIKE-ONLY test hook
             for (int i = 0; i < gaps.Count; i++)
                 if (gaps[i].R - gaps[i].L > ForceMaxGap) gaps[i] = (gaps[i].R - ForceMaxGap, gaps[i].R);
         return gaps;

@@ -188,10 +188,13 @@ Teknik (akan disalin ke Task 13):
 2. **Tidak ada yang muat (mode auto):** widget TIDAK disembunyikan. Tetap tampil di X valid terakhir (atau kiri `TrayNotifyWnd`
    bila belum ada) dalam ukuran ButtonsOnly, menampilkan "Taskbar penuh — gunakan Drag widget" (teks + tooltip), dan dicatat ke log
    (`taskbar full: ...`). Sembunyi hanya untuk fullscreen dan auto-hide.
-3. **Filter elemen transien**: hanya dihitung terisi Start (`StartButton`), Search, Task View, Widgets, `Taskbar.TaskListButtonAutomationPeer`,
-   kelas `ToggleButton`/`Button`, dan elemen proses LAIN (widget pihak ketiga di taskbar, mis. widget Spotify) yang tingginya >= 50% tinggi
-   taskbar. Elemen lain diabaikan (dicatat sekali per jenis: `UIA element ignored as transient/non-button`), begitu juga elemen
-   setinggi < 50% taskbar atau di luar rect taskbar. Elemen milik ProcessId sendiri tetap difilter.
+3. **Filter elemen terisi (revisi setelah review)**: elemen dihitung terisi bila (a) rect di dalam rect taskbar (toleransi 2 px),
+   (b) tinggi >= 50% taskbar, (c) lebar >= 8 px, (d) bukan proses sendiri/`DockingSpike`/`FlutterBar.App` (by nama proses), (e) bukan transien
+   (ControlType `ToolTip`, kelas popup/`TaskListThumbnailWnd`). Thumbnail/flyout ada di atas taskbar sehingga (a) sudah mengecualikan. Daftar putih
+   tombol versi awal DIBUANG (bisa melewatkan elemen explorer non-tombol dekat tray). TrafficMonitor tidak ada di pohon UIA `Shell_TrayWnd`, jadi
+   tidak pernah terhitung. Tiap (class, id, controlType, pid) baru dicatat sekali: `UIA element COUNTED/IGNORED (alasan)`.
+   Hasil log: elemen cuaca dekat tray = tombol `Widgets` (`ToggleButton`, id `WidgetsButton`, rect 1510..1662) beserta anak `NamedContainerAutomationPeer`
+   dan `AnimatedVisualPlayer`, semuanya milik explorer dan terhitung; itulah sebab gap berakhir di 1502 (bukan 1674 = TrayNotifyWnd).
 4. **Debounce**: penempatan baru (ukuran, x) diterapkan hanya bila kandidat yang sama (toleransi x 3 px) keluar dari 2 query UIA
    berturut-turut (~1-2 detik). Kandidat yang ditahan dicatat (`placement candidate ... held back`). Layout pertama setelah startup,
    setelah "Reset to auto position", dan setelah `TaskbarCreated` diterapkan langsung (`placement APPLIED ... [immediate ...]`).
@@ -199,8 +202,11 @@ Teknik (akan disalin ke Task 13):
 6. Hook uji: `--force-min-gap=N` memperkecil setiap gap menjadi paling lebar N px (tepi kanan tetap), untuk menguji turun ukuran dan jalur tidak-muat.
 
 Pengamatan otomatis (rata kiri, 1920x1080, DPI 96, build ke direktori scratch karena exe di bin dipakai instance lain):
-- Normal: `placement APPLIED Full x=894 [immediate (first layout)]`; kandidat transien `Full x=750` (gap berkedip jadi `[595..1050] [1366..1502]`)
-  ditahan: `held back ... needs 2 consecutive queries`, lalu gap kembali normal tanpa widget berpindah.
+- PERINGATAN: pada run awal, spike v3 milik user (pid 22888, di x 1202..1502) masih berjalan dan ikut terhitung terisi oleh aturan "proses lain"
+  yang terlalu longgar, sehingga widget hanya sampai x=894 (tepi kanan ~1194) padahal v3 mencapai 1502. Pengamatan "normal" itu tercemar.
+  Setelah filter diperketat (proses `DockingSpike` diabaikan): `placement APPLIED Full x=1202 [immediate (first layout)]`, gap `[595..1502]`, sama dengan v3.
+- Run awal juga menunjukkan kandidat transien `Full x=750` ditahan (`held back ... needs 2 consecutive queries`); itu sebagian akibat widget user ikut bergerak.
+  Max-hold: kandidat berbeda yang ditahan >= 5 query berturut-turut diterapkan (log `max-hold`); belum teramati di run.
 - `--force-min-gap=270`: Compact (260). `--force-min-gap=130`: ButtonsOnly (120). `--force-min-gap=50`: log
   `taskbar full: nothing fits even ButtonsOnly -> widget STAYS VISIBLE`, `visible=True`, ButtonsOnly di x=1546 (fallback kiri TrayNotifyWnd karena belum ada X valid).
 - Belum diuji otomatis: klik Reset saat drag (butuh mouse), hover tombol aplikasi, taskbar penuh sungguhan.
@@ -342,8 +348,9 @@ Pengamatan otomatis (rata kiri, 1920x1080, DPI 96, build ke direktori scratch ka
   pertama yang menemukan gap menang. `WidgetLayoutPolicy.Choose` mengembalikan `null` bila tidak ada yang muat: di mode auto, `null` berarti
   "tetap tampil di X valid terakhir (atau kiri TrayNotifyWnd) dalam ukuran ButtonsOnly + pesan 'Taskbar penuh — gunakan Drag widget' + log",
   BUKAN sembunyi. Sembunyi hanya untuk fullscreen dan auto-hide (kalau tidak, user tidak bisa mencapai menu klik kanan dan terkunci).
-- **Filter elemen UIA (v3.1)**: hitung terisi hanya Start (`StartButton`), Search, Task View, Widgets, `Taskbar.TaskListButtonAutomationPeer`, kelas tombol
-  taskbar yang dikenal, dan jendela widget proses lain di taskbar; abaikan tooltip/thumbnail/popup, tinggi < 50% taskbar, dan di luar rect taskbar.
-  Jangan menghitung semua elemen non-tray (teks/ikon anak di dalam tombol atau popup membuat gap berkedip).
+- **Filter elemen UIA (v3.1, revisi)**: lihat butir 3 "Spike v3.1" (a-e: di dalam rect taskbar, tinggi >= 50%, lebar >= 8, bukan proses `DockingSpike`/`FlutterBar.App`,
+  bukan transien). Jangan memakai daftar putih tombol dan jangan menghitung elemen proses lain tanpa filter itu. Log tiap (class, id, controlType, pid) baru sekali.
+- **Hook uji hanya untuk spike**: `--force-min-gap` / `ForceMaxGap` dan `--force-empty-after` ditandai `// SPIKE-ONLY test hook`; JANGAN disalin ke produksi.
+- **Max-hold (v3.1)**: kandidat berbeda yang ditahan >= 5 query berturut-turut (walau berganti-ganti) -> terapkan kandidat terbaru (log `max-hold`).
 - **Debounce (v3.1)**: terapkan penempatan baru hanya bila (ukuran, x) yang sama (toleransi 3 px) keluar dari 2 query UIA berturut-turut; layout pertama
   setelah startup / `ResetToAuto()` / `TaskbarCreated` diterapkan langsung; log kandidat yang ditahan. `ResetToAuto()` saat drag aktif harus keluar dari mode drag dulu.
