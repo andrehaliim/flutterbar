@@ -257,4 +257,10 @@ Pengamatan otomatis v3 (rata kiri, 1920x1080, DPI 96):
   auto-hide mati.
 - Nama kelas/AutomationId: Start `ToggleButton`/`StartButton`; tombol aplikasi `Taskbar.TaskListButtonAutomationPeer`;
   tray `SystemTray.*` (`SystemTrayIcon`/`NotifyItemIcon`); jangan pakai `ReBarWindow32`.
+- **Settings (v3 fix)**: tulis settings secara atomik (`AtomicFile` sudah ada di Core), dan validasi `offsetFromRight`
+  saat load (negatif atau sangat besar -> reset ke auto). Reset menghapus offset manual (spike menghapus file
+  `spike-settings.json`; di produksi cukup mengosongkan `widget.offsetFromRight`).
+- **Failsafe (v3 fix)**: bila flag penangguhan menu aktif tetapi `ContextMenu.IsOpen` false di tick 600 ms, flag dibersihkan
+  (log). `LostMouseCapture` mengakhiri drag dengan bersih (X terakhir dipertahankan). Mode auto tanpa layout UIA valid
+  saat startup: dock di kiri `TrayNotifyWnd` (kiri - 8 - lebar) sampai layout baik datang.
 - Gerbang keputusan (Step 6) ditentukan controller/user setelah checklist v3 diisi.

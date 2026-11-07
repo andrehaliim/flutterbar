@@ -142,6 +142,13 @@ public partial class MainWindow : Window
         _dragX = nx; _dragged = true; _lastPos = (nx, y, w, h);
     }
 
+    void OnLostCapture(object sender, MouseEventArgs e)
+    {
+        if (!_dragging) return;
+        _dragging = false;
+        Taskbar.Log($"{Now()} drag ended by LostMouseCapture, keeping x={_dragX}");
+    }
+
     void OnDragUp(object sender, MouseButtonEventArgs e)
     {
         if (!_dragging) return;
@@ -230,6 +237,11 @@ public partial class MainWindow : Window
     void OnTimer()
     {
         if (_hwnd != IntPtr.Zero && !Native.IsWindow(_hwnd)) { Recreate("IsWindow=false"); return; }
+        if (_menuOpen && ContextMenu is { IsOpen: false })
+        {
+            _menuOpen = false;
+            Taskbar.Log($"{Now()} failsafe: _menuOpen was set but ContextMenu.IsOpen=false -> cleared");
+        }
         _autoHide = IsAutoHide();
         _align = ReadAlignment();
         Reassert("timer");
@@ -389,6 +401,17 @@ public partial class MainWindow : Window
                     }
                 }
                 if (!haveGap) gapTxt += " -> TIDAK ADA gap cukup";
+            }
+            else
+            {
+                // auto mode, no valid UIA layout yet: dock left of the Win32 TrayNotifyWnd until one arrives
+                var tn = Native.FindWindowEx(tray, IntPtr.Zero, "TrayNotifyWnd", null);
+                if (tn != IntPtr.Zero && Native.GetWindowRect(tn, out var tnr) && tnr.Left > tbr.Left)
+                {
+                    x = Math.Clamp(tnr.Left - Gap - w, tbr.Left, xMax); y = yDock; haveGap = true;
+                    gapTxt = $"(fallback TrayNotifyWnd left={tnr.Left})";
+                }
+                else gapTxt = "(no layout, no TrayNotifyWnd)";
             }
             bool noGap = !_dragMode && !manual && res is not null && !haveGap;
             if (noGap != _noGap) { _noGap = noGap; Taskbar.Log($"{Now()} gap fit -> {(noGap ? "NONE (hide widget)" : "ok")} gaps: {gapTxt}"); }

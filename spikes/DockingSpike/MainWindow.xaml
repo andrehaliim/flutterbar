@@ -4,7 +4,7 @@
         WindowStyle="None" AllowsTransparency="False" ShowInTaskbar="False" Topmost="True"
         ShowActivated="False" ResizeMode="NoResize" Background="#FF2B2B2B" Width="300" Height="40"
         ContextMenuOpening="OnMenuOpening"
-        MouseLeftButtonDown="OnDragDown" MouseMove="OnDragMove" MouseLeftButtonUp="OnDragUp">
+        MouseLeftButtonDown="OnDragDown" MouseMove="OnDragMove" MouseLeftButtonUp="OnDragUp" LostMouseCapture="OnLostCapture">
     <Window.ContextMenu>
         <ContextMenu Placement="Top" Opened="OnMenuOpened" Closed="OnMenuClosed">
             <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragToggle"/>

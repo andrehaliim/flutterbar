@@ -698,7 +698,8 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
   - `TaskbarDocking(Window window)`, dengan:
     - `event Action<Box?>? AreaChanged`
     - `void Start()`, `void Stop()`
-    - `void Lock(double x)`, `void Unlock()`
+    - `void SetManual(int offsetFromRight)`, `void ResetToAuto()`
+    - `event Action<int>? ManualOffsetChanged` (dipicu saat drag selesai dengan offset baru, supaya app menyimpannya)
   - `WidgetViewModel` (INotifyPropertyChanged), dengan property:
     - `WidgetSize EffectiveSize`
     - `SessionSnapshot Session`
@@ -724,7 +725,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
   - Lebar yang dibutuhkan setiap ukuran diukur lewat `Measure`, lalu dimasukkan ke `WidgetLayoutPolicy.Choose`.
   - Visibilitas tombol diambil dari `Session.State`, `CanReload`, dan `CanRestart`. Tooltip-nya: "Tidak didukung di mode release/profile" dan "Hot reload tidak didukung di device ini".
   - Saat state Starting, titik status berkedip kuning dan progress ditampilkan di tooltip atau di layout lengkap.
-- [ ] **Step 3: Resize lewat drag tepi kiri** mengubah `Widget.WidthOverride`. Menu klik kanan punya item centang "Drag widget" dan "Reset to auto position" (label Inggris, keputusan user). Saat "Drag widget" dicentang, widget bisa digeser horizontal saja dengan mouse capture (bukan `Window.DragMove`), dengan isyarat visual (border aksen 1 px + kursor SizeWE); layout tidak dihitung ulang saat drag. Un-centang setelah drag mengunci posisi: mode manual, disimpan sebagai `OffsetFromRight` (piksel fisik dari tepi kanan taskbar, di-clamp). Catatan: setting `LockedX` di `WidgetSettings` (Task 4) diinterpretasi ulang sebagai offset-from-right; Task 13 me-rename `LockedX` menjadi `OffsetFromRight` di `WidgetSettings` beserta test-nya.
+- [ ] **Step 3: Resize lewat drag tepi kiri** mengubah `Widget.WidthOverride`. Menu klik kanan punya item centang "Drag widget" dan "Reset to auto position" (label Inggris, keputusan user). Saat "Drag widget" dicentang, widget bisa digeser horizontal saja dengan mouse capture (bukan `Window.DragMove`), dengan isyarat visual (border aksen 1 px + kursor SizeWE); layout tidak dihitung ulang saat drag. Un-centang setelah drag mengunci posisi: mode manual, `TaskbarDocking` memicu `ManualOffsetChanged(offset)` dan app menyimpannya sebagai `OffsetFromRight` (piksel fisik dari tepi kanan taskbar, di-clamp) lewat `AppSettingsStore`; saat start app memanggil `SetManual(offset)` bila ada, dan menu Reset memanggil `ResetToAuto()` (menghapus offset). Catatan: setting `LockedX` di `WidgetSettings` (Task 4) diinterpretasi ulang sebagai offset-from-right; Task 13 me-rename `LockedX` menjadi `OffsetFromRight` di `WidgetSettings` beserta test-nya.
 - [ ] **Step 4: Verifikasi.** `dotnet build` tanpa warning. Jalankan app dan ulangi checklist Task 1 Step 4 di build ini. Catat hasilnya di `docs/superpowers/spikes/2026-11-06-docking-findings.md` di bawah bagian "Build produksi".
 - [ ] **Step 5: Checkpoint.** Commit message: `feat(app): dock widget to taskbar with adaptive layout`.
 
