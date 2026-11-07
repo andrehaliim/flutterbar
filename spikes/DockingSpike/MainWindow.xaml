@@ -2,11 +2,18 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None" AllowsTransparency="False" ShowInTaskbar="False" Topmost="True"
-        ShowActivated="False" ResizeMode="NoResize" Background="#FF2B2B2B" Width="300" Height="40">
+        ShowActivated="False" ResizeMode="NoResize" Background="#FF2B2B2B" Width="300" Height="40"
+        ContextMenuOpening="OnMenuOpening"
+        MouseLeftButtonDown="OnDragDown" MouseMove="OnDragMove" MouseLeftButtonUp="OnDragUp">
     <Window.ContextMenu>
-        <ContextMenu>
+        <ContextMenu Placement="Top" Opened="OnMenuOpened" Closed="OnMenuClosed">
+            <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragToggle"/>
+            <MenuItem Header="Reset to auto position" Click="OnResetAuto"/>
+            <Separator/>
             <MenuItem Header="Freeze 5s (debug)" Click="OnFreeze"/>
         </ContextMenu>
     </Window.ContextMenu>
-    <TextBlock x:Name="Info" Foreground="White" FontSize="11" Margin="6,2" TextWrapping="Wrap" VerticalAlignment="Center"/>
+    <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
+        <TextBlock x:Name="Info" Foreground="White" FontSize="11" Margin="5,1" TextWrapping="Wrap" VerticalAlignment="Center"/>
+    </Border>
 </Window>

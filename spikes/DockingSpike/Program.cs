@@ -14,6 +14,8 @@ internal static class Program
         try
         {
             if (args.Contains("--probe")) return Probe();
+            foreach (var a in args)
+                if (a.StartsWith("--force-empty-after=", StringComparison.Ordinal) && int.TryParse(a.AsSpan(20), out var n)) Taskbar.ForceEmptyAfter = n;
             var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
             app.Exit += (_, _) => Exiting = true;
             app.DispatcherUnhandledException += (_, e) => Taskbar.Log("Unhandled: " + e.Exception);

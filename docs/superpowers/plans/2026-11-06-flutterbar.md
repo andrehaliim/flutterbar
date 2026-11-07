@@ -706,7 +706,11 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
     - `bool IsHidden`
     - `ICommand RunCommand, ReloadCommand, RestartCommand, StopCommand, OpenLogCommand`
 
-- [ ] **Step 1: Docking produksi.** Pindahkan teknik spike ke `TaskbarDocking`:
+- [ ] **Step 1: Docking produksi.** Pindahkan teknik spike ke `TaskbarDocking` (detail teknik v2 dan v3 di `docs/superpowers/spikes/2026-11-06-docking-findings.md`, bagian "Spike v3" dan "Catatan untuk Task 13"):
+  - Sanity check layout: hasil UIA tanpa elemen tray atau tanpa kotak terisi ditolak (pertahankan layout terakhir yang baik, log); `TrayNotifyWnd` (Win32) sebagai sumber/cek kiri tray (selisih > 300 px dengan UIA -> pakai TrayNotifyWnd).
+  - Penangguhan topmost saat popup/menu/tooltip terbuka, dan topmost-kan HWND popup (`HwndSource`), menu dibuka ke atas.
+  - Filter elemen UIA milik ProcessId sendiri.
+  - Teknik owner (`GWLP_HWNDPARENT` = Shell_TrayWnd, `TaskbarCreated`, UI thread tidak boleh blocking).
   - Jendela `WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE`, topmost, dengan topmost diterapkan ulang lewat WinEvent hook.
   - Re-probe dipicu oleh `EVENT_OBJECT_LOCATIONCHANGE` pada `Shell_TrayWnd`, ditambah timer 1 detik sebagai cadangan.
   - Lebar diambil dari `TaskbarGeometry.FreeAreaLeftOfTray`.
@@ -720,7 +724,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
   - Lebar yang dibutuhkan setiap ukuran diukur lewat `Measure`, lalu dimasukkan ke `WidgetLayoutPolicy.Choose`.
   - Visibilitas tombol diambil dari `Session.State`, `CanReload`, dan `CanRestart`. Tooltip-nya: "Tidak didukung di mode release/profile" dan "Hot reload tidak didukung di device ini".
   - Saat state Starting, titik status berkedip kuning dan progress ditampilkan di tooltip atau di layout lengkap.
-- [ ] **Step 3: Resize lewat drag tepi kiri** mengubah `Widget.WidthOverride`. **Drag di badan widget** saat posisi dikunci menyimpan `LockedX`.
+- [ ] **Step 3: Resize lewat drag tepi kiri** mengubah `Widget.WidthOverride`. Menu klik kanan punya item centang "Drag widget" dan "Reset to auto position" (label Inggris, keputusan user). Saat "Drag widget" dicentang, widget bisa digeser horizontal saja dengan mouse capture (bukan `Window.DragMove`), dengan isyarat visual (border aksen 1 px + kursor SizeWE); layout tidak dihitung ulang saat drag. Un-centang setelah drag mengunci posisi: mode manual, disimpan sebagai `OffsetFromRight` (piksel fisik dari tepi kanan taskbar, di-clamp). Catatan: setting `LockedX` di `WidgetSettings` (Task 4) diinterpretasi ulang sebagai offset-from-right; Task 13 me-rename `LockedX` menjadi `OffsetFromRight` di `WidgetSettings` beserta test-nya.
 - [ ] **Step 4: Verifikasi.** `dotnet build` tanpa warning. Jalankan app dan ulangi checklist Task 1 Step 4 di build ini. Catat hasilnya di `docs/superpowers/spikes/2026-11-06-docking-findings.md` di bawah bagian "Build produksi".
 - [ ] **Step 5: Checkpoint.** Commit message: `feat(app): dock widget to taskbar with adaptive layout`.
 
@@ -834,7 +838,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
 - [ ] **Step 3: Handler global.** Pasang handler di `DispatcherUnhandledException`, `AppDomain.UnhandledException`, dan `TaskScheduler.UnobservedTaskException`. Semuanya memanggil `DiagLog.Write` dan menampilkan toast "FlutterBar mengalami error, detail di diag.log". Exception di dispatcher ditandai handled supaya widget tetap hidup.
 - [ ] **Step 4: Menu klik kanan** sesuai spec §7.4:
   - Size.
-  - Posisi (Otomatis, Kunci, Reset).
+  - Drag widget (centang) dan Reset to auto position (label Inggris, keputusan user); lihat Task 13 Step 3 untuk perilaku drag/kunci.
   - Kelola project: dialog folder root, tambah project, daftar project tersembunyi yang bisa di-unhide, dan Rescan. Rescan juga memanggil `IPathResolver.ClearCache()`.
   - Import config dari IDE: dialog checklist berisi `ImportCandidate`. Item dengan `AlreadyExists` tidak dicentang secara default. Simpan lewat `Merge` lalu `Save`.
   - Buka `launch.json` dengan `Process.Start` dan `UseShellExecute=true`.

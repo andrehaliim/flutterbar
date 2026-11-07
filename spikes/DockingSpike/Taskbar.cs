@@ -15,6 +15,18 @@ internal static class Taskbar
         catch (Exception ex) { Console.WriteLine("log write failed: " + ex.Message); }
     }
 
+    // Test hook (--force-empty-after=N): after N good queries, pretend UIA returned nothing (simulates Start-open glitch).
+    public static int ForceEmptyAfter = -1;
+    static int _goodCount;
+    static readonly Dictionary<string, DateTime> _lastLog = new();
+
+    public static void LogLimited(string key, string msg)
+    {
+        if (_lastLog.TryGetValue(key, out var t) && (DateTime.Now - t).TotalSeconds < 5) return;
+        _lastLog[key] = DateTime.Now;
+        Log(msg);
+    }
+
     public record Result(Native.RECT Taskbar, int ButtonsRight, int TrayLeft, string Note, List<(int L, int R)> Boxes);
 
     public static void DumpTree(AutomationElement el, int depth, int max, StringBuilder sb)
@@ -53,6 +65,7 @@ internal static class Taskbar
         Native.GetWindowRect(tb, out var rect);
         var acc = new List<(string cls, string id, string name, System.Windows.Rect r)>();
         Walk(AutomationElement.FromHandle(tb), 0, acc);
+        if (ForceEmptyAfter >= 0 && _goodCount >= ForceEmptyAfter) acc.Clear();
         int tbWidth = rect.Right - rect.Left;
         int trayLeft = rect.Right;
         bool anyTray = false;
@@ -60,6 +73,15 @@ internal static class Taskbar
         {
             if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
             if (TrayMatch(cls, id)) { trayLeft = Math.Min(trayLeft, (int)r.Left); anyTray = true; }
+        }
+        // Win32 TrayNotifyWnd: stable even while Start is open; used to cross-check the UIA tray-left.
+        int tnLeft = -1;
+        var tn = Native.FindWindowEx(tb, IntPtr.Zero, "TrayNotifyWnd", null);
+        if (tn != IntPtr.Zero && Native.GetWindowRect(tn, out var tnr) && tnr.Right > tnr.Left && tnr.Left > rect.Left) tnLeft = tnr.Left;
+        if (anyTray && tnLeft >= 0 && Math.Abs(trayLeft - tnLeft) > 300)
+        {
+            LogLimited("tray-mismatch", $"{DateTime.Now:HH:mm:ss.fff} tray-left mismatch: UIA={trayLeft} TrayNotifyWnd={tnLeft} -> using TrayNotifyWnd");
+            trayLeft = tnLeft;
         }
         int occupiedRight = rect.Left, occupiedCount = 0;
         var boxes = new List<(int L, int R)>();
@@ -75,7 +97,13 @@ internal static class Taskbar
             boxes.Add(((int)r.Left, (int)r.Right));
         }
         boxes.Sort();
-        return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} elements={acc.Count}", boxes);
+        if (!anyTray || occupiedCount == 0)
+        {
+            LogLimited("layout-invalid", $"{DateTime.Now:HH:mm:ss.fff} UIA layout REJECTED (tray elements={anyTray}, occupied={occupiedCount}, elements={acc.Count}, TrayNotifyWnd.left={tnLeft}) -> keeping last good layout");
+            return null;
+        }
+        _goodCount++;
+        return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} tnLeft={tnLeft} elements={acc.Count}", boxes);
     }
 
     // Gaps between occupied boxes (merged) and the tray, each inset by `inset` px, left to right.

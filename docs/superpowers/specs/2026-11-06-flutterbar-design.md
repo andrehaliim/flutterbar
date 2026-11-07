@@ -175,7 +175,7 @@ dalam bahasa manusia.
     "C:\\Work\\gts-mobile": { "lastUsed": "2026-11-06T10:42:00+07:00", "config": "beta", "deviceId": "chrome" }
   },
   "currentProject": "C:\\Work\\gts-mobile",
-  "widget": { "size": "full", "position": "auto", "lockedX": null, "widthOverride": null },
+  "widget": { "size": "full", "position": "auto", "offsetFromRight": null, "widthOverride": null },
   "startWithWindows": false
 }
 ```
@@ -331,7 +331,15 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   - Windows 11: batas tombol diambil lewat UI Automation dari elemen taskbar.
   - Windows 10: diambil dari `MSTaskSwWClass` / `TrayNotifyWnd`.
 - Mendukung taskbar rata tengah maupun rata kiri.
-- **Posisi `locked`:** user bisa men-drag widget, lalu X disimpan. Ada menu "Reset ke otomatis".
+- **Posisi `manual`:** deteksi `auto` tidak bisa melihat widget overlay pihak ketiga (mis. TrafficMonitor) yang tidak
+  muncul di taskbar UI Automation, sehingga ada mode manual. Run pertama = `auto`. Dengan "Drag widget" dicentang,
+  user menggeser widget secara horizontal (Y tetap menempel taskbar); saat dicentang lagi/dimatikan, posisi terkunci dan
+  disimpan sebagai `widget.offsetFromRight` = jarak dari tepi KANAN taskbar dalam piksel fisik (tahan terhadap
+  perubahan tombol aplikasi/rata taskbar; di-clamp ke taskbar bila resolusi berubah). Mode manual TIDAK menghindari
+  tombol aplikasi; owner, topmost, fullscreen, dan auto-hide tetap berlaku. "Reset to auto position" kembali ke `auto`.
+- Hasil layout UIA tanpa elemen tray atau tanpa kotak terisi dianggap tidak valid (layout terakhir yang baik
+  dipertahankan); `TrayNotifyWnd` dipakai sebagai cadangan/cek kiri tray. Selama menu/tooltip/popup terbuka,
+  reassert topmost ditangguhkan dan HWND popup di-topmost-kan.
 - Topmost diterapkan ulang saat taskbar menjadi foreground, lewat WinEvent hook, supaya widget tidak
   tertutup taskbar Windows 11.
 - **Auto-hide:** status dan posisi taskbar dipantau (`SHAppBarMessage`). Widget ikut sembunyi dan
@@ -346,7 +354,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 
 ### 7.4 Menu klik kanan
 - Size: Lengkap / Ringkas / Tombol saja
-- Posisi: Otomatis / Kunci posisi / Reset
+- Drag widget (checkbox) / Reset to auto position (kedua label ini sengaja berbahasa Inggris, keputusan user)
 - Kelola project: Folder root…, Tambah project…, Project tersembunyi…, Rescan
 - Import config dari IDE…
 - Buka `launch.json`, yang membuka file dengan aplikasi default `.json`

@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
@@ -28,6 +31,11 @@ public partial class MainWindow : Window
     string _lastPosLog = "";
     int _qunsLogged = -1;
     (int x, int y, int w, int h) _lastPos;
+    // manual/drag state
+    SpikeSettings _settings = new();
+    bool _menuOpen, _dragMode, _dragged, _dragging;
+    int? _dragX;
+    int _dragStartCursor, _dragStartX;
 
     public MainWindow()
     {
@@ -45,9 +53,107 @@ public partial class MainWindow : Window
         Taskbar.Log($"{Now()} FREEZE end");
     }
 
+    // ---- context menu: while open, the topmost reassert is suspended (reusable for tooltips/popups) ----
+    void OnMenuOpening(object sender, ContextMenuEventArgs e) { _menuOpen = true; }
+
+    void OnMenuOpened(object sender, RoutedEventArgs e)
+    {
+        _menuOpen = true;
+        if (sender is ContextMenu cm && PresentationSource.FromVisual(cm) is HwndSource hs)
+        {
+            Native.SetWindowPos(hs.Handle, Native.HWND_TOPMOST, 0, 0, 0, 0, Native.SWP_NOACTIVATE | Native.SWP_NOMOVE | Native.SWP_NOSIZE);
+            Taskbar.Log($"{Now()} menu opened: popup hwnd=0x{hs.Handle:X} set TOPMOST, widget reassert suspended");
+        }
+        else Taskbar.Log($"{Now()} menu opened: popup HwndSource not found");
+    }
+
+    void OnMenuClosed(object sender, RoutedEventArgs e)
+    {
+        _menuOpen = false;
+        Taskbar.Log($"{Now()} menu closed: reassert resumed");
+        Reassert("menu-closed");
+    }
+
+    // ---- manual position / drag ----
+    void OnDragToggle(object sender, RoutedEventArgs e) => SetDragMode(DragItem.IsChecked);
+
+    void SetDragMode(bool on)
+    {
+        if (on == _dragMode) return;
+        _dragMode = on;
+        DragItem.IsChecked = on;
+        Frame.BorderBrush = on ? SystemParameters.WindowGlassBrush : Brushes.Transparent;
+        Cursor = on ? Cursors.SizeWE : null;
+        if (on)
+        {
+            _dragged = false;
+            Native.GetWindowRect(_hwnd, out var r);
+            _dragX = r.Left;
+            Taskbar.Log($"{Now()} drag mode ON (x={r.Left})");
+        }
+        else
+        {
+            if (_dragged && _dragX is int dx && Native.GetWindowRect(_tray, out var tb))
+            {
+                int w = (int)(300 * Native.GetDpiForWindow(_hwnd) / 96.0);
+                _settings = new SpikeSettings { Mode = "manual", OffsetFromRight = Math.Max(0, tb.Right - (dx + w)) };
+                _settings.Save();
+                Taskbar.Log($"{Now()} drag mode OFF -> position locked, mode=manual offsetFromRight={_settings.OffsetFromRight}");
+            }
+            else Taskbar.Log($"{Now()} drag mode OFF (no drag, mode stays {_settings.Mode})");
+            _dragX = null;
+        }
+        Reassert("drag-toggle");
+    }
+
+    void OnResetAuto(object sender, RoutedEventArgs e)
+    {
+        _dragMode = false; _dragX = null; _dragging = false;
+        DragItem.IsChecked = false;
+        Frame.BorderBrush = Brushes.Transparent;
+        Cursor = null;
+        _settings = new SpikeSettings();
+        SpikeSettings.Delete();
+        _lastPos = default;
+        Taskbar.Log($"{Now()} reset to auto position");
+        Reassert("reset-auto");
+    }
+
+    void OnDragDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_dragMode) return;
+        Native.GetCursorPos(out var p);
+        Native.GetWindowRect(_hwnd, out var r);
+        _dragStartCursor = p.X; _dragStartX = r.Left;
+        _dragging = true;
+        CaptureMouse();
+        e.Handled = true;
+    }
+
+    void OnDragMove(object sender, MouseEventArgs e)
+    {
+        if (!_dragging || !IsMouseCaptured) return;
+        if (!Native.GetCursorPos(out var p) || !Native.GetWindowRect(_tray, out var tb)) return;
+        uint dpi = Native.GetDpiForWindow(_hwnd);
+        int w = (int)(300 * dpi / 96.0), h = (int)(40 * dpi / 96.0);
+        int nx = Math.Clamp(_dragStartX + p.X - _dragStartCursor, tb.Left, Math.Max(tb.Left, tb.Right - w));
+        int y = tb.Top + (tb.Bottom - tb.Top - h) / 2;
+        Native.SetWindowPos(_hwnd, IntPtr.Zero, nx, y, w, h, Native.SWP_NOZORDER | Native.SWP_NOACTIVATE);
+        _dragX = nx; _dragged = true; _lastPos = (nx, y, w, h);
+    }
+
+    void OnDragUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_dragging) return;
+        _dragging = false;
+        ReleaseMouseCapture();
+        Taskbar.Log($"{Now()} drag end x={_dragX}");
+    }
+
     void OnSourceInitialized(object? sender, EventArgs e)
     {
         _hwnd = new WindowInteropHelper(this).Handle;
+        _settings = SpikeSettings.Load();
         var ex = Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE).ToInt64();
         Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, new IntPtr(ex | Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE));
         _taskbarCreatedMsg = Native.RegisterWindowMessage("TaskbarCreated");
@@ -253,7 +359,21 @@ public partial class MainWindow : Window
             int x = 0, y = 0;
             string gapTxt = "?";
             bool haveGap = false;
-            if (res is not null)
+            Native.GetWindowRect(tray, out var tbr);
+            int yDock = tbr.Top + (tbr.Bottom - tbr.Top - h) / 2;
+            int xMax = Math.Max(tbr.Left, tbr.Right - w);
+            bool manual = !_dragMode && _settings.Mode == "manual" && _settings.OffsetFromRight is not null;
+            if (_dragMode)
+            {
+                x = Math.Clamp(_dragX ?? tbr.Left, tbr.Left, xMax); y = yDock; haveGap = true;
+                gapTxt = "(drag)";
+            }
+            else if (manual)
+            {
+                x = Math.Clamp(tbr.Right - _settings.OffsetFromRight!.Value - w, tbr.Left, xMax); y = yDock; haveGap = true;
+                gapTxt = "(manual, no auto-avoid)";
+            }
+            else if (res is not null)
             {
                 var gaps = Taskbar.Gaps(res, Gap);
                 gapTxt = string.Join(" ", gaps.Select(g => $"[{g.L}..{g.R}]={g.R - g.L}"));
@@ -270,7 +390,7 @@ public partial class MainWindow : Window
                 }
                 if (!haveGap) gapTxt += " -> TIDAK ADA gap cukup";
             }
-            bool noGap = res is not null && !haveGap;
+            bool noGap = !_dragMode && !manual && res is not null && !haveGap;
             if (noGap != _noGap) { _noGap = noGap; Taskbar.Log($"{Now()} gap fit -> {(noGap ? "NONE (hide widget)" : "ok")} gaps: {gapTxt}"); }
             bool wantVisible = !fs && !noGap;
 
@@ -283,13 +403,15 @@ public partial class MainWindow : Window
                 if (_hidden) { Native.ShowWindow(_hwnd, 4); _hidden = false; _lastPos = default; }
                 bool moved = haveGap && _lastPos != (x, y, w, h);
                 // always reassert topmost; move/size only when the target changed
-                uint flags = Native.SWP_NOACTIVATE | (moved ? 0u : Native.SWP_NOMOVE | Native.SWP_NOSIZE);
+                uint flags = Native.SWP_NOACTIVATE | (moved && !_dragging ? 0u : Native.SWP_NOMOVE | Native.SWP_NOSIZE);
+                if (_menuOpen) flags |= Native.SWP_NOZORDER; // menu/popup open: do not raise the widget over it
                 Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, x, y, w, h, flags);
-                if (moved) _lastPos = (x, y, w, h);
+                if (moved && !_dragging) _lastPos = (x, y, w, h);
             }
-            Info.Text = $"gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}";
+            string modeTxt = _dragMode ? "drag" : _settings.Mode;
+            Info.Text = $"mode={modeTxt} off={_settings.OffsetFromRight?.ToString() ?? "-"} gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}";
 
-            var posLog = $"align={_align} dpi={dpi} trayLeft={res?.TrayLeft} win=({x},{y},{x + w},{y + h}) visible={wantVisible} gaps={gapTxt}";
+            var posLog = $"mode={_settings.Mode}/{(_dragMode ? "drag" : "-")} off={_settings.OffsetFromRight} align={_align} dpi={dpi} trayLeft={res?.TrayLeft} win=({x},{y},{x + w},{y + h}) visible={wantVisible} gaps={gapTxt}";
             if (posLog != _lastPosLog)
             {
                 _lastPosLog = posLog;

@@ -15,6 +15,7 @@ Shell_TrayWnd): tambahkan `--probe`. Log ditulis ke `spike.log` di sebelah exe (
 timestamp, perubahan layout, status fullscreen, TaskbarCreated). Teks di dalam widget menampilkan:
 lebar area kosong, DPI, rata taskbar (kiri/tengah), fullscreen ya/tidak, alasan reassert terakhir.
 Tutup widget lewat `Stop-Process -Name DockingSpike`.
+Posisi manual tersimpan di `spike-settings.json` (sebelah exe); hapus file itu atau pilih "Reset to auto position" untuk kembali ke auto.
 
 ## Hasil probe otomatis (UI Automation, kedalaman 6)
 
@@ -110,7 +111,86 @@ Pengamatan otomatis v2 awal (taskbar rata tengah, 1920x1080, DPI 96, auto-hide m
 - Tidak teramati otomatis: z-order nyata saat Start/Action Center dibuka, fullscreen video, rata kiri,
   auto-hide, DPI lain, restart explorer (tidak dijalankan karena terlihat oleh user): BELUM DIUJI.
 
-## Checklist manual v2
+## Hasil uji ulang v2 (user, 2026-11-07)
+
+Taskbar rata kiri, 1920x1080, DPI 100%.
+
+| Uji | Hasil |
+|---|---|
+| Buka Start | BUG 1: widget melompat menutupi ikon tray dan jam. Teks debug: `gap=[8..1912]=1904 -> pakai [8..1912]`. Query UIA tidak mengembalikan kotak terisi dan tidak ada elemen tray saat Start terbuka, sehingga seluruh taskbar dianggap kosong. (Normal: `gap=[595..1470]=875 -> pakai [595..1470] DPI=96 (100%) rata=kiri fs=tidak ah=tidak last=timer`.) |
+| Klik kanan widget | BUG 2: ContextMenu tergambar DI BELAKANG widget (reassert topmost widget menaikkan widget di atas popup menu). |
+
+Catatan: user juga memakai TrafficMonitor (overlay pihak ketiga dekat tray) yang tidak terlihat di pohon UIA taskbar.
+Deteksi otomatis tidak akan pernah bisa menghindarinya, sehingga diminta posisi manual (drag). Hasil uji v2 lainnya
+tidak dilaporkan; semuanya diuji ulang di checklist v3.
+
+## Spike v3
+
+Teknik (akan disalin ke Task 13):
+
+1. **Sanity check layout UIA**: hasil UIA tanpa elemen tray, atau tanpa kotak terisi (Start/tombol aplikasi = 0),
+   dianggap TIDAK VALID: `Compute` mengembalikan null, dicatat ke log (`UIA layout REJECTED ...`, dibatasi 1x/5 detik),
+   dan layout terakhir yang baik dipertahankan.
+2. **TrayNotifyWnd sebagai sumber/cek kiri tray**: `FindWindowEx(Shell_TrayWnd, 0, "TrayNotifyWnd")` lalu `GetWindowRect`
+   (stabil saat Start terbuka). Bila kiri tray dari UIA dan kiri TrayNotifyWnd berbeda > 300 px, TrayNotifyWnd
+   dipakai dan perbedaannya dicatat (`tray-left mismatch`). Di mesin ini keduanya sama (1674).
+3. **Menu/popup di atas widget**: selama ContextMenu terbuka (`ContextMenuOpening`/`Opened` sampai `Closed`) flag
+   `_menuOpen` menangguhkan reassert topmost sepenuhnya (SetWindowPos memakai `SWP_NOZORDER`; posisi tetap dihitung).
+   Saat `Opened`, HWND popup dicari lewat `PresentationSource.FromVisual(contextMenu) as HwndSource` dan di-`SetWindowPos`
+   `HWND_TOPMOST` dengan `NOACTIVATE|NOMOVE|NOSIZE`. Menu dibuka ke atas (`Placement="Top"`) karena widget ada di dasar
+   layar. Pola yang sama (flag penangguhan + topmost-kan HWND popup) harus dipakai untuk tooltip/popup/flyout lain
+   (Task 13/14).
+4. **Posisi manual + drag**: menu klik kanan (label BAHASA INGGRIS, keputusan user): item centang **"Drag widget"**
+   dan **"Reset to auto position"**. Mode `auto` (default run pertama) = penempatan gap. Saat "Drag widget" dicentang:
+   widget hanya bisa digeser horizontal (Y tetap menempel taskbar), isyarat visual berupa border 1 px warna aksen
+   dan kursor SizeWE. Drag memakai mouse capture (`MouseLeftButtonDown` -> `CaptureMouse`; `MouseMove` -> X baru dalam piksel
+   fisik dari `GetCursorPos`, di-clamp ke rect taskbar, `SetWindowPos NOZORDER|NOACTIVATE`; `MouseLeftButtonUp` -> `ReleaseMouseCapture`).
+   Bukan `Window.DragMove` (mengaktifkan jendela dan memindah dua sumbu). Selama drag, hitung ulang layout dilewati.
+5. **Penguncian**: un-centang "Drag widget" setelah menggeser -> mode `manual`, disimpan sebagai **jarak dari tepi kanan
+   taskbar dalam piksel fisik** (`offsetFromRight = taskbar.Right - (x + w)`) di `spike-settings.json` sebelah exe:
+   `{"mode":"manual","offsetFromRight":N}`; dimuat saat start. Tanpa menggeser, un-centang tidak mengunci. Mode manual:
+   `x = taskbar.Right - offsetFromRight - w`, di-clamp ke taskbar (resolusi berubah), TANPA penghindaran tombol otomatis.
+   Owner, reassert topmost, sembunyi fullscreen, dan auto-hide tetap berjalan. "Reset to auto position": mode auto,
+   file settings dihapus, posisi dihitung ulang seketika. Teks debug menampilkan `mode=auto|manual|drag off=N`.
+6. **Hook uji**: argumen `--force-empty-after=N` membuat hasil UIA dianggap kosong setelah N query baik (untuk
+   memverifikasi penolakan layout). Hanya untuk spike.
+
+Pengamatan otomatis v3 (rata kiri, 1920x1080, DPI 96):
+
+- Auto: widget (1202,1036)-(1502,1076), gap [595..1502], `tnLeft=1674` sama dengan tray-left UIA.
+- `spike-settings.json` ditulis tangan `{"mode":"manual","offsetFromRight":500}` -> widget di (1120,1036): 1920-500-300 = 1120 (OK).
+- `--force-empty-after=2`: log `UIA layout REJECTED (tray elements=False, occupied=0, ...) -> keeping last good layout`, posisi widget tidak berubah.
+- Drag dengan mouse, simpan setelah un-centang, menu di atas widget, dan Start terbuka: BELUM DIUJI (butuh interaksi user).
+
+## Checklist manual v3
+
+| Uji | Hasil |
+|---|---|
+| Taskbar rata tengah | BELUM DIUJI (user) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
+| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
+| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
+| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
+| Auto-hide taskbar menyala | BELUM DIUJI (user) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| DPI 100% | BELUM DIUJI (user) |
+| DPI 125% | BELUM DIUJI (user) |
+| DPI 150% | BELUM DIUJI (user) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
+| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | BELUM DIUJI (user) |
+| Reset to auto position | BELUM DIUJI (user) |
+| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
+| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
+| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+
+## Checklist manual v2 (tidak dipakai lagi, digantikan checklist v3)
 
 | Uji | Hasil |
 |---|---|
@@ -131,7 +211,7 @@ Pengamatan otomatis v2 awal (taskbar rata tengah, 1920x1080, DPI 96, auto-hide m
 | Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
 | Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
 
-## Checklist manual v1 (tidak dipakai lagi, digantikan hasil uji v1 dan checklist v2)
+## Checklist manual v1 (tidak dipakai lagi, digantikan hasil uji v1 dan checklist v3)
 
 | Uji | Hasil |
 |---|---|
@@ -149,7 +229,7 @@ Pengamatan otomatis v2 awal (taskbar rata tengah, 1920x1080, DPI 96, auto-hide m
 | Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang (poll 1 detik) | BELUM DIUJI (user) |
 | Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
 
-## Catatan untuk Task 13 (aturan v2)
+## Catatan untuk Task 13 (aturan v2 + v3)
 
 - Owner: setelah HWND ada, `SetWindowLongPtrW(hwnd, GWLP_HWNDPARENT, Shell_TrayWnd)` (SetWindowLongPtrW hanya
   ada di x64/ARM64; jangan target x86). Setelah itu jangan ubah `ShowInTaskbar`/`Owner` WPF. Pasang ulang
@@ -158,12 +238,23 @@ Pengamatan otomatis v2 awal (taskbar rata tengah, 1920x1080, DPI 96, auto-hide m
   (tanpa Thread.Sleep, .Result, I/O sinkron), jika tidak taskbar bisa ikut macet.
 - Reassert topmost (`SetWindowPos(HWND_TOPMOST, NOMOVE|NOSIZE|NOACTIVATE)`) pada setiap
   `EVENT_SYSTEM_FOREGROUND`, `EVENT_OBJECT_LOCATIONCHANGE` proses taskbar (digabung), dan timer 600 ms.
-- Penempatan: kotak terisi (semua elemen non-tray) -> gap -> ujung kanan gap paling kanan yang muat, inset 8 px;
+- **Popup/menu/tooltip (v3)**: tangguhkan reassert topmost selama popup terbuka (flag, `SWP_NOZORDER`), dan pada
+  `Opened` topmost-kan HWND popup (`PresentationSource.FromVisual(popup) as HwndSource`). Berlaku untuk ContextMenu,
+  tooltip, dan flyout. Buka menu ke atas (`Placement=Top`).
+- **Layout sanity check (v3)**: hasil UIA tanpa elemen tray atau tanpa kotak terisi tidak valid -> pertahankan layout
+  terakhir yang baik (log). Pakai `TrayNotifyWnd` (Win32, `FindWindowEx` anak `Shell_TrayWnd`) sebagai sumber/cek kiri
+  tray; selisih > 300 px dengan UIA -> pakai TrayNotifyWnd. UIA kosong saat Start terbuka terbukti terjadi.
+- Penempatan (mode auto): kotak terisi (semua elemen non-tray) -> gap -> ujung kanan gap paling kanan yang muat, inset 8 px;
   tidak ada gap = hide. Filter elemen UIA milik ProcessId sendiri (widget yang di-own muncul di pohon UIA taskbar).
   Koordinat UIA piksel fisik (PerMonitorV2); jangan kalikan DPI lagi. UIA di thread latar, maks 1x/detik.
+  Overlay pihak ketiga (mis. TrafficMonitor) tidak terlihat di UIA -> itulah alasan mode manual.
+- **Mode manual (v3)**: drag horizontal dengan mouse capture (`GetCursorPos` piksel fisik, clamp ke rect taskbar,
+  `SetWindowPos NOZORDER|NOACTIVATE`; jangan `Window.DragMove`), hitung ulang layout dilewati saat drag. Un-centang
+  setelah drag mengunci posisi sebagai offset dari tepi kanan taskbar (piksel fisik), clamp bila di luar taskbar,
+  tanpa penghindaran tombol. Reset = kembali auto.
 - Klasifikasi shell lewat proses pemilik (explorer, SearchHost, StartMenuExperienceHost, ShellExperienceHost,
   ShellHost); fullscreen = foreground non-shell di monitor taskbar dengan rect menutup `rcMonitor`, hanya bila
   auto-hide mati.
 - Nama kelas/AutomationId: Start `ToggleButton`/`StartButton`; tombol aplikasi `Taskbar.TaskListButtonAutomationPeer`;
   tray `SystemTray.*` (`SystemTrayIcon`/`NotifyItemIcon`); jangan pakai `ReBarWindow32`.
-- Gerbang keputusan (Step 6) ditentukan controller/user setelah checklist v2 diisi.
+- Gerbang keputusan (Step 6) ditentukan controller/user setelah checklist v3 diisi.
