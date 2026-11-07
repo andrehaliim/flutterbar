@@ -157,7 +157,7 @@ dalam bahasa manusia.
 | `.idea/workspace.xml` dan `.run/*.xml`: `<configuration type="FlutterRunConfigurationType">` | `name` → `name`. `filePath` (buang `$PROJECT_DIR$/`) → `program`. `buildFlavor` → `flavor`. `additionalArgs` di-*shell-split* (mendukung tanda kutip dan `&quot;`) → `args` |
 | `.vscode/launch.json`: item dengan `type: "dart"` | `name` → `name`. `program` → `program`. `flutterMode` → `mode`. `args`: pasangan `--flavor X` atau `--flavor=X` diangkat ke `flavor`, sisanya masuk ke `args` |
 
-- Import dipicu lewat menu klik kanan, atau tombol "Import from IDE" saat `launch.json` belum ada.
+- Import dipicu lewat menu klik kanan, atau tombol "Import from IDE" di flyout config (selalu tampil; bila `launch.json` belum ada, di samping "Create default").
 - Sebelum disimpan, tampil daftar config yang ditemukan dari semua sumber sebagai checklist. Item yang
   namanya sudah ada di `launch.json` ditandai dan tidak dicentang secara default.
 - Item yang dipilih **ditambahkan** ke `launch.json`. Nama yang bentrok antar sumber diberi akhiran,
@@ -246,8 +246,11 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
 
 #### Fetch, pull, commit and push (flyout branch)
 - Flyout branch punya baris tombol `Fetch` dan `Pull` (menampilkan angka behind bila > 0), lalu kolom
-  `Commit message`, teks `N changed files`, tombol `Commit and push` (aktif hanya bila pesan tidak
-  kosong), pemisah, dan daftar branch. Status (`git status --porcelain=v2 --branch`) dibaca saat flyout
+  `Commit message`, teks `N changed files` (ditambah ` · ↑N` bila ada commit yang belum terkirim),
+  tombol `Commit and push`, pemisah, dan daftar branch. Tombol aktif bila pesan tidak kosong. Bila pesan kosong
+  dan ada commit yang belum terkirim (ahead > 0) atau belum ada upstream, tombol berubah menjadi `Push ↑N`
+  (`Push` tanpa angka bila belum ada upstream) dan hanya menjalankan `git push` (tanpa add/commit). Enter di
+  kolom pesan hanya meng-commit bila pesan tidak kosong. Status (`git status --porcelain=v2 --branch`) dibaca saat flyout
   dibuka dan setelah setiap aksi.
 - `Fetch` = `git fetch --prune`; `Pull` = `git pull` biasa (merge/rebase mengikuti config git user).
   `Commit and push` = `git add -A`, `git commit -m <pesan>`, `git push` (atau `git push -u origin <branch>`
@@ -256,20 +259,30 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
 - `git add -A` berlaku untuk SELURUH repo (sama dengan VS Code), bukan hanya folder project; jumlah file
   berubah (`--untracked-files=all`) juga sebatas repo. Di monorepo, perubahan di luar folder project ikut ter-commit.
 - Tidak ada yang perlu di-commit tetapi ada commit yang belum terkirim (ahead > 0, atau belum ada upstream)
-  = hanya `git push`. "Nothing to commit" hanya bila tidak ada keduanya. Commit berhasil tetapi push gagal:
-  pesan diawali "Committed locally. Push failed: ..." dan kolom pesan dikosongkan (klik berikutnya hanya push).
+  = hanya `git push`. "Nothing to commit." hanya bila tidak ada keduanya. Commit berhasil tetapi push gagal:
+  pesan diawali "Committed locally. Push failed: ..." dan kolom pesan dikosongkan, sehingga tombol menjadi `Push ↑N`
+  (klik berikutnya hanya push). Pesan kosong padahal masih ada perubahan yang belum di-commit ditolak ("Enter a commit message.").
   Saran "Pull first" hanya untuk `[rejected]` non-fast-forward / fetch first, bukan `[remote rejected]`.
-- Ditolak dengan "Resolve conflicts first" (Commit and push dan Pull) bila ada entri unmerged atau
-  merge/rebase/cherry-pick yang belum selesai. Upstream sudah hilang di remote: ditolak dengan
-  "The upstream branch is gone. Push from a terminal if you want to recreate it." (tidak membuat ulang diam-diam).
+- Ditolak dengan "Resolve conflicts first." (Commit and push, Push, dan Pull) bila ada entri unmerged atau
+  merge/rebase/cherry-pick/revert/sequencer yang belum selesai. Upstream sudah hilang di remote: ditolak dengan
+  "The upstream branch is gone. Push from a terminal if you want to recreate it." (tidak membuat ulang diam-diam);
+  pemeriksaan ini dan pemeriksaan konflik berjalan sebelum `git add -A`, jadi penolakan tidak meninggalkan file ter-stage.
 - `git commit` memakai batas 2 menit (hook pre-commit, GPG). Daftar branch dinonaktifkan selama aksi git berjalan.
 - Perintah jaringan berjalan dengan `GIT_TERMINAL_PROMPT=0` (tidak pernah menunggu input terminal;
-  Git Credential Manager tetap bisa menampilkan login) dan timeout 2 menit.
-- Hasil lewat toast: `Fetched`, `Pulled`, `Pushed to <branch>`, `Nothing to commit`, atau stderr git
-  apa adanya (juga di flyout). Selama aksi berjalan tombol nonaktif dan spinner tampil. Hasil dibuang bila
-  project berganti di tengah jalan.
+  Git Credential Manager tetap bisa menampilkan login) dan timeout 2 menit. Remote SSH yang meminta passphrase atau
+  konfirmasi host baru tidak bisa dijawab (konsol tersembunyi): setelah timeout pesannya
+  "git timed out (waiting for credentials or SSH passphrase?)". Pembacaan status memakai `--no-optional-locks`
+  dan blok `hint:` git dimatikan lewat `-c advice.*=false`.
+- Selama flyout branch terbuka, hasil tampil di dalam flyout: sukses = satu baris `✓ Fetched` / `✓ Pulled` /
+  `✓ Pushed to <branch>` yang hilang sendiri setelah ~4 detik; gagal = baris Message (stderr git, maksimal ~6
+  baris lalu `…`, teks lengkap di diag.log). Toast dipakai hanya bila flyout sudah tertutup saat aksi selesai.
+  Selama aksi berjalan tombol nonaktif dan spinner tampil. Hasil dibuang bila project berganti di tengah jalan.
+  Setelah aksi berhasil chip branch ikut disegarkan (mis. "(no commits yet)" hilang setelah commit pertama).
+  Pesan yang diketik dan angka status dikosongkan saat flyout dibuka untuk project lain.
 - Pull yang menggeser HEAD saat sesi berjalan memakai saran yang sama dengan pindah branch (hot restart,
-  atau "pubspec changed. Stop and run again."). Commit and push tidak memicu saran.
+  atau "pubspec changed. Stop and run again."), dengan teks "Pulled. Hot restart?" (tombol Hot restart) atau
+  "Pulled. pubspec changed. Stop and run again." sebagai satu-satunya pesan (menggantikan "Pulled"); inline di flyout
+  bila terbuka (baris dengan tombol Hot restart), selain itu toast. Commit and push dan Push tidak memicu saran.
 
 ## 6. Sesi run
 
@@ -307,14 +320,14 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 | Running | hijau | ⚡ 🔄 ⏹ |
 | Reloading | hijau, tombol yang ditekan berubah jadi spinner | ⚡ 🔄 ⏹ (request kedua ditolak selama masih reloading) |
 | Stopping | abu-abu berkedip | — |
-| Failed | merah, dengan label "Build failed" atau "App berhenti" | ▶ |
+| Failed | merah, dengan label "Build failed" atau "App stopped" | ▶ |
 
 - **Flag error** (titik merah) terpisah dari state. Flag ini menyala saat `app.log` dengan
   `error:true`, saat ada baris `════════ Exception caught by`, saat `daemon.logMessage` dengan
   level error, atau saat reload/restart gagal. Flag padam saat reload/restart berikutnya berhasil, atau
   saat sesi baru dimulai.
-- **Mode `profile` atau `release`:** ⚡ dan 🔄 dinonaktifkan, dengan tooltip "Tidak didukung di mode
-  release/profile".
+- **Mode `profile` atau `release`:** ⚡ dan 🔄 dinonaktifkan, dengan tooltip "Not supported in
+  release/profile mode".
 - **`supportsRestart:false`:** 🔄 dinonaktifkan. Kalau hot reload ditolak oleh flutter (misalnya web di
   Flutter versi lama), ⚡ dinonaktifkan untuk sisa sesi dan pesan dari flutter ditampilkan.
 - **Stop:** kirim `app.stop`. Kalau proses belum keluar dalam 5 detik, Job Object ditutup sehingga
@@ -341,15 +354,15 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   klik membuka `LogWindow` di posisi error.
 - Hover chip config menampilkan tooltip berisi `program`, `flavor`, dan `mode`.
 - Flyout project dan branch punya kolom pencarian.
-- Flyout device dibagi dua bagian: "Terhubung" dan "Emulator (offline)".
+- Flyout device dibagi dua bagian: "Connected" dan "Emulator (offline)".
 
 ### 7.2 Aturan adaptif
 - Ukuran pilihan user (`widget.size`) hanya diatur lewat menu Size (tidak ada resize manual; `widthOverride` lama
   di settings.json diabaikan dan dibuang saat disimpan).
 - Kalau area kosong taskbar lebih kecil dari lebar ukuran pilihan, widget turun satu tingkat, lalu
   dicek lagi. Kalau "Buttons only" pun tidak muat (mode `auto`), widget TIDAK disembunyikan: tetap tampil di posisi
-  valid terakhir (atau di kiri `TrayNotifyWnd` bila belum ada) dalam ukuran "tombol saja", dengan pesan
-  "Taskbar penuh — gunakan Drag widget". Widget hanya disembunyikan untuk fullscreen dan auto-hide. Saat ruang
+  valid terakhir (atau di kiri `TrayNotifyWnd` bila belum ada) dalam ukuran "Buttons only", dengan pesan
+  "Taskbar is full — use Drag widget". Widget hanya disembunyikan untuk fullscreen dan auto-hide. Saat ruang
   cukup lagi, widget kembali ke ukuran pilihan.
 - Lebar dihitung ulang saat taskbar berubah (tombol aplikasi bertambah atau berkurang, DPI berubah,
   monitor berubah).

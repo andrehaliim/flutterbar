@@ -39,6 +39,16 @@ mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Exit". Log d
 
 Project yang memakai fvm (`.fvmrc` atau `.fvm/fvm_config.json`) selalu dijalankan lewat `fvm flutter`, tanpa fallback ke flutter global.
 
+## Aksi git (flyout branch)
+
+Klik chip branch: `Fetch` (`git fetch --prune`), `Pull` (`git pull` biasa), kolom `Commit message` + `Commit and push`, dan daftar branch.
+
+- `Commit and push` menjalankan `git add -A` untuk SELURUH repo (bukan hanya folder project; di monorepo perubahan di luar project ikut ter-commit), `git commit`, lalu `git push` (`push -u origin <branch>` bila belum ada upstream).
+- Pesan kosong dan ada commit yang belum terkirim (`↑N`): tombol menjadi `Push ↑N` dan hanya mengirim commit itu.
+- Tidak pernah `--force`, tidak ada pull otomatis sebelum push; push ditolak = saran "Pull first.". Merge/rebase yang belum selesai dan HEAD detached ditolak.
+- Login remote HTTPS lewat Git Credential Manager (tidak pernah menunggu input terminal; batas 2 menit). Remote SSH yang butuh passphrase atau host baru harus disiapkan dulu dari terminal (ssh-agent / sekali `ssh`).
+- Hasil tampil di dalam flyout selama terbuka (toast hanya bila flyout sudah tertutup); output git panjang dipotong ~6 baris, teks lengkap di `diag.log`.
+
 ## `launch.json`
 
 `<project>\.flutterbar\launch.json`, format JSONC (komentar dan trailing comma boleh), dibaca ulang dari disk setiap kali dipakai.
