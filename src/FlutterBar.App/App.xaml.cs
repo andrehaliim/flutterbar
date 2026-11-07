@@ -304,6 +304,25 @@ public partial class App : Application
         }
         _exiting = true;
         AppLog.Write("exit requested from widget menu");
+        try
+        {
+            await TearDownAsync();
+        }
+        catch (Exception ex) // a failing step must not leave a widget whose every command (Exit included) is a no-op
+        {
+            AppLog.Write("exit: teardown failed, shutting down anyway", ex);
+        }
+        finally
+        {
+            AppLog.Write("FlutterBar.App exit");
+            AppLog.Flush(TimeSpan.FromSeconds(1)); // window is gone (or the exit is forced): nothing left to stall
+            _instance?.Dispose(); // on the UI thread, which acquired it
+            Shutdown();
+        }
+    }
+
+    private async Task TearDownAsync()
+    {
         if (_controller is { } controller)
         {
             await controller.DisposeAsync();
@@ -314,7 +333,7 @@ public partial class App : Application
             {
                 await session.StopAsync(); // confirmed in RequestExitAsync; the Job Object kills whatever remains
             }
-            await session.DisposeAsync();
+            await session.DisposeAsync(); // also closes the jobs kept warm by earlier stops (Gradle, adb)
         }
         LogWindow.CloseIfOpen();
         _importFlow?.CloseIfOpen();
@@ -327,10 +346,6 @@ public partial class App : Application
         {
             await saver.FlushAsync();
         }
-        AppLog.Write("FlutterBar.App exit");
-        AppLog.Flush(TimeSpan.FromSeconds(1)); // window is gone: nothing left to stall
-        _instance?.Dispose(); // on the UI thread, which acquired it
-        Shutdown();
     }
 
     /// <summary>

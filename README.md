@@ -128,5 +128,11 @@ dilakukan otomatis). Rujukan build Debug (Task 15): widget saja sekitar 117 MB, 
   Pakai `--dart-define-from-file` untuk nilai kompleks.
 - Penempatan otomatis tidak melihat widget taskbar pihak ketiga (mis. TrafficMonitor); pakai "Drag widget".
 - Widget tersembunyi selama aplikasi fullscreen (game, video) berjalan.
+- Hanya Windows 11 (v1). Docking untuk taskbar Windows 10 (`MSTaskSwWClass` / `TrayNotifyWnd`) belum dibuat; di Windows 10
+  widget tidak akan menempel dengan benar.
 - Fixture protokol daemon direkam di `chrome`; output khusus Android (Gradle, `app.log`, semantik hot reload) belum direkam.
+  Deteksi exception Android (prefix logcat `I/flutter ( 1234): `) diuji dengan baris sintetis, belum dengan rekaman asli.
+- Stop yang bersih (flutter keluar dalam 5 detik setelah `app.stop`) membiarkan daemon yang dinyalakan sesi itu (Gradle, Kotlin,
+  adb) tetap hidup sampai FlutterBar ditutup, supaya ▶ berikutnya tidak membayar Gradle dingin. Exit atau crash FlutterBar tetap
+  mematikan semuanya (Job Object).
 - Deteksi git/adb hanya saat FlutterBar start; git yang baru dipasang butuh restart FlutterBar.

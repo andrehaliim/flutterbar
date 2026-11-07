@@ -14,11 +14,15 @@ internal static class ClipboardText
     private const int Attempts = 2;
     private const int DelayMs = 50;
 
+    /// <summary>
+    /// Replaces the clipboard content with <paramref name="text"/>. <paramref name="owner"/> is the calling window: with
+    /// a NULL owner, <c>EmptyClipboard</c> leaves the clipboard without an owner and <c>SetClipboardData</c> may fail.
+    /// </summary>
     /// <exception cref="Win32Exception">The clipboard stayed locked, or the data could not be stored.</exception>
-    public static void Set(string text)
+    public static void Set(IntPtr owner, string text)
     {
         var opened = false;
-        for (var i = 0; i < Attempts && !(opened = OpenClipboard(IntPtr.Zero)); i++)
+        for (var i = 0; i < Attempts && !(opened = OpenClipboard(owner)); i++)
         {
             Thread.Sleep(DelayMs);
         }
@@ -45,7 +49,12 @@ internal static class ClipboardText
             Marshal.WriteInt16(ptr, text.Length * 2, 0);
             GlobalUnlock(handle);
 
-            EmptyClipboard();
+            if (!EmptyClipboard())
+            {
+                var error = Marshal.GetLastWin32Error();
+                GlobalFree(handle);
+                throw new Win32Exception(error, "the clipboard could not be emptied");
+            }
             if (SetClipboardData(CfUnicodeText, handle) == IntPtr.Zero)
             {
                 var error = Marshal.GetLastWin32Error();

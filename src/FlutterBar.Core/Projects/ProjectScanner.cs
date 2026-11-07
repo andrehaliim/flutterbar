@@ -8,11 +8,12 @@ public static class ProjectScanner
     };
 
     /// <summary>
-    /// Best-effort scan: a missing root is ignored and a subfolder that cannot be read
-    /// (UnauthorizedAccessException) is skipped. Controller ruling: skipped paths are not recorded
-    /// because DiagLog does not exist yet.
+    /// Best-effort scan: a missing root is ignored, and a folder that cannot be read (UnauthorizedAccessException, or an
+    /// IOException such as an offline OneDrive placeholder, a dead junction or a locked pubspec.yaml) is skipped and
+    /// reported to <paramref name="onSkipped"/> (path, error); the rest of the scan goes on.
     /// </summary>
-    public static IReadOnlyList<string> Scan(IEnumerable<string> roots, int maxDepth = 3)
+    public static IReadOnlyList<string> Scan(
+        IEnumerable<string> roots, int maxDepth = 3, Action<string, Exception>? onSkipped = null)
     {
         var found = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var root in roots)
@@ -25,13 +26,13 @@ public static class ProjectScanner
             var full = PathKey.Normalize(root);
             if (Directory.Exists(full))
             {
-                Visit(full, 0, maxDepth, found);
+                Visit(full, 0, maxDepth, found, onSkipped);
             }
         }
         return [.. found.Order(StringComparer.OrdinalIgnoreCase)];
     }
 
-    private static void Visit(string dir, int depth, int maxDepth, HashSet<string> found)
+    private static void Visit(string dir, int depth, int maxDepth, HashSet<string> found, Action<string, Exception>? onSkipped)
     {
         try
         {
@@ -54,12 +55,13 @@ public static class ProjectScanner
                 {
                     continue;
                 }
-                Visit(child, depth + 1, maxDepth, found);
+                Visit(child, depth + 1, maxDepth, found, onSkipped);
             }
         }
-        catch (UnauthorizedAccessException)
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
         {
-            // Skip unreadable folders; see the controller ruling in the Scan summary.
+            // Skip this folder (and what is left of it); reported to the caller, which writes diag.log.
+            onSkipped?.Invoke(dir, ex);
         }
     }
 }

@@ -74,9 +74,9 @@ public sealed class CommandHandlerTests : IDisposable
         }
     }
 
-    private async Task<(RunSession Session, FakeProcessHandle Handle)> RunningAsync(FakeProcessHandle handle)
+    private async Task<(RunSession Session, FakeProcessHandle Handle)> RunningAsync(FakeProcessHandle handle, TimeSpan? stopGrace = null)
     {
-        var session = new RunSession(new FakeLauncher(handle), _log);
+        var session = new RunSession(new FakeLauncher(handle), _log, stopGrace);
         await session.StartAsync(Request());
         await WaitStateAsync(session, SessionState.Running);
         return (session, handle);
@@ -236,6 +236,29 @@ public sealed class CommandHandlerTests : IDisposable
 
         Assert.Equal(ExitCodes.Ok, response.ExitCode);
         Assert.Equal(SessionState.Idle, session.Snapshot.State);
+    }
+
+    [Fact]
+    public async Task StatusAndLogs_DuringSlowStop_AnswerAtOnce()
+    {
+        // flutter ignores app.stop: the stop waits the whole grace. A concurrent status/logs (CLI timeout 10 s) must
+        // not queue behind it.
+        var handle = FakeProcessHandle.FromFixture("start-ok");
+        handle.AutoExitOnStop = false;
+        var (session, _) = await RunningAsync(handle, stopGrace: TimeSpan.FromSeconds(3));
+        await using var lifetime = session;
+        var handler = Handler(session);
+
+        var stop = handler.HandleAsync(Req("stop"), CancellationToken.None);
+        await handle.WaitForWritesAsync(1, Wait); // app.stop sent: the stop grace is running
+        var status = await handler.HandleAsync(Req("status"), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(1));
+        var logs = await handler.HandleAsync(Req("logs"), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(ExitCodes.Ok, status.ExitCode); // Stopping still counts as a session
+        Assert.Equal(ExitCodes.Ok, logs.ExitCode);
+        Assert.False(stop.IsCompleted);
+        Assert.Equal(ExitCodes.Ok, (await stop.WaitAsync(Wait)).ExitCode);
+        Assert.Equal(1, handle.KillCount);
     }
 
     [Fact]

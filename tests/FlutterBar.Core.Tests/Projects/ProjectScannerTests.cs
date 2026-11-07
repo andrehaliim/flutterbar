@@ -63,6 +63,25 @@ public sealed class ProjectScannerTests : IDisposable
     }
 
     [Fact]
+    public void Scan_UnreadableFolder_IsSkippedAndReported_OthersStillFound()
+    {
+        // IOException on one folder (here a locked pubspec; also offline OneDrive placeholders, dead junctions) must
+        // not wipe the whole list.
+        var locked = MakeProject("a-locked");
+        var ok = MakeProject("b-ok");
+        var skipped = new List<(string Path, Exception Error)>();
+
+        using (new FileStream(Path.Combine(locked, "pubspec.yaml"), FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            Assert.Equal([ok], ProjectScanner.Scan([_root.FullName], onSkipped: (path, ex) => skipped.Add((path, ex))));
+        }
+
+        var (path, error) = Assert.Single(skipped);
+        Assert.Equal(locked, path);
+        Assert.IsAssignableFrom<IOException>(error);
+    }
+
+    [Fact]
     public void Scan_PathWithSpacesAndUnicode()
     {
         var dir = MakeProject("My Projects", "aplikasi-ü");

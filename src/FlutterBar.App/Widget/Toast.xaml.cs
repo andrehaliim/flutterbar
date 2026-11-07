@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Docking;
+using FlutterBar.Core.Orchestration;
 
 namespace FlutterBar.App.Widget;
 
@@ -41,8 +42,9 @@ internal sealed partial class Toast : UserControl
 /// <summary>
 /// Shows one toast at a time in a non-activating topmost popup above the widget (Placement=Top), registered with
 /// <see cref="TaskbarDocking.TrackPopup"/>. Plain toasts close after 5 s (the timer pauses while the mouse is over them);
-/// a confirmation stays until answered, and a newer toast answers it with "no". While the docking hides the widget
-/// (fullscreen / auto-hide) toasts are only written to diag.log and a confirmation answers "no".
+/// a confirmation stays until answered. A plain toast arriving meanwhile waits and is shown after the answer (newest
+/// wins, <see cref="ToastSlot{T}"/>); a newer confirmation replaces the older one, which answers "no". While the docking
+/// hides the widget (fullscreen / auto-hide) toasts are only written to diag.log and a confirmation answers "no".
 /// </summary>
 internal sealed class ToastHost
 {
@@ -53,6 +55,7 @@ internal sealed class ToastHost
     private readonly Popup _popup;
     private readonly Toast _toast = new();
     private readonly DispatcherTimer _timer;
+    private readonly ToastSlot<PlainToast> _slot = new();
     private Func<Task>? _action;
     private TaskCompletionSource<bool>? _confirm;
 
@@ -88,7 +91,11 @@ internal sealed class ToastHost
     /// <summary>Shows <paramref name="message"/>; <paramref name="action"/> runs when its button is pressed.</summary>
     public void Show(string message, string? actionLabel = null, Func<Task>? action = null)
     {
-        Answer(false);
+        if (!_slot.OfferPlain(new PlainToast(message, actionLabel, action)))
+        {
+            AppLog.Write($"toast (waits for the open confirmation): {message}");
+            return;
+        }
         if (!CanOpen("toast", message))
         {
             return;
@@ -100,10 +107,10 @@ internal sealed class ToastHost
         _timer.Start();
     }
 
-    /// <summary>Asks a yes/no question; completes with false when dismissed or replaced by another toast.</summary>
+    /// <summary>Asks a yes/no question; completes with false when dismissed or replaced by another confirmation.</summary>
     public Task<bool> ConfirmAsync(string message, string yes, string no)
     {
-        Answer(false);
+        Answer(false); // an older question, if any, is replaced
         if (!CanOpen("confirm", message))
         {
             return Task.FromResult(false);
@@ -112,6 +119,7 @@ internal sealed class ToastHost
         _timer.Stop();
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         _confirm = tcs;
+        _slot.ConfirmationShown();
         _toast.Set(message, yes, no);
         Open();
         return tcs.Task;
@@ -122,6 +130,10 @@ internal sealed class ToastHost
         _timer.Stop();
         Answer(false);
         _popup.IsOpen = false;
+        if (_slot.ConfirmationPending && _slot.ConfirmationResolved() is { } waiting)
+        {
+            Show(waiting.Message, waiting.ActionLabel, waiting.Action);
+        }
     }
 
     /// <summary>The widget moved or resized: keep the toast attached to it.</summary>
@@ -175,6 +187,8 @@ internal sealed class ToastHost
         _confirm = null;
         tcs?.TrySetResult(value);
     }
+
+    private sealed record PlainToast(string Message, string? ActionLabel, Func<Task>? Action);
 
     private async Task RunActionAsync(Func<Task> action)
     {

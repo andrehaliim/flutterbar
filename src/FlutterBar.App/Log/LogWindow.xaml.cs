@@ -315,10 +315,11 @@ public partial class LogWindow : Window
         }
         try
         {
-            ClipboardText.Set(LogView.FormatForCopy(lines)); // bounded retry (about 100 ms)
+            // Owned by this window (not NULL), bounded retry (about 100 ms).
+            ClipboardText.Set(new System.Windows.Interop.WindowInteropHelper(this).Handle, LogView.FormatForCopy(lines));
             _vm.SetStatus($"{lines.Count:N0} baris disalin");
         }
-        catch (System.ComponentModel.Win32Exception ex) // clipboard locked by another app
+        catch (System.ComponentModel.Win32Exception ex) // clipboard locked by another app, or not writable
         {
             AppLog.Write("LogWindow: copy failed", ex);
             _vm.SetStatus("Gagal menyalin: clipboard sedang dipakai aplikasi lain");

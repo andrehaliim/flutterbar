@@ -29,7 +29,7 @@ deskband).
 - Lebih dari satu sesi run sekaligus.
 - Operasi git selain melihat dan pindah branch lokal (tidak ada create, pull, push, atau branch remote).
 - Integrasi DTD/Dart MCP. Ini dicatat sebagai eksperimen terpisah (lihat §12).
-- macOS dan Linux. Hanya Windows 10 dan 11.
+- macOS dan Linux. Hanya Windows 10 dan 11 (v1: hanya Windows 11, lihat §12).
 
 ## 2. Keputusan utama
 
@@ -331,7 +331,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **Posisi `auto`:** tepat di kiri area tray/jam, dengan menghitung area kosong di antara tombol
   aplikasi dan tray:
   - Windows 11: batas tombol diambil lewat UI Automation dari elemen taskbar.
-  - Windows 10: diambil dari `MSTaskSwWClass` / `TrayNotifyWnd`.
+  - Windows 10: diambil dari `MSTaskSwWClass` / `TrayNotifyWnd` (belum dibuat di v1, lihat §12).
 - Mendukung taskbar rata tengah maupun rata kiri.
 - **Posisi `manual`:** deteksi `auto` tidak bisa melihat widget overlay pihak ketiga (mis. TrafficMonitor) yang tidak
   muncul di taskbar UI Automation, sehingga ada mode manual. Run pertama = `auto`. Dengan "Drag widget" dicentang,
@@ -473,7 +473,19 @@ dibutuhkan **.NET 10 SDK**. Pemasangannya dilakukan oleh user, atau atas persetu
 3. **Escaping argumen lewat `cmd.exe` untuk `flutter.bat` dan `fvm`.** Ini dimitigasi dengan unit test
    khusus.
 
+**Keputusan setelah review akhir (2026-11-07):**
+- **v1 hanya Windows 11.** Docking Windows 10 (`MSTaskSwWClass` / `TrayNotifyWnd`, §7.3) tidak dibuat di v1; README mencatatnya
+  sebagai keterbatasan.
+- **`ProcessRunner` (perintah sekali jalan) tidak memakai Job Object.** Daemon yang dinyalakan perintah itu (emulator dari
+  `flutter emulators --launch`, adb server, git fsmonitor) harus tetap hidup setelah perintahnya selesai (§5.4). Saat timeout
+  atau dibatalkan, hanya pohon proses yang masih hidup yang dimatikan. Job Object kill-on-close (§5.3) hanya untuk sesi
+  `flutter run`.
+- **Stop sesuai §6.2:** kalau flutter keluar dalam 5 detik setelah `app.stop`, Job Object sesi itu tidak ditutup tetapi disimpan
+  sampai FlutterBar keluar, supaya daemon Gradle/Kotlin/adb tetap hangat untuk ▶ berikutnya. Exit atau crash FlutterBar tetap
+  mematikan semuanya (§5.3).
+
 **Tindak lanjut di luar versi ini:**
+- Docking taskbar Windows 10.
 - Spike integrasi DTD supaya Dart MCP (`hot_reload`, `get_runtime_errors`) bisa menemukan sesi FlutterBar.
 - Update aturan `flutter.md` §9: kalau tidak ada DTD, pakai `flutterbar status/reload/logs`.
 - Widget di semua monitor, dan installer (winget/Inno Setup).

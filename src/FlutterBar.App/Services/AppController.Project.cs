@@ -1,6 +1,7 @@
 using System.IO;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Flyouts;
+using FlutterBar.App.Projects;
 using FlutterBar.App.Widget;
 using FlutterBar.Core.Git;
 using FlutterBar.Core.Orchestration;
@@ -196,7 +197,8 @@ internal sealed partial class AppController
     {
         var roots = Settings.ScanRoots.ToList();
         var started = DateTimeOffset.UtcNow;
-        _scanned = await Task.Run(() => ProjectScanner.Scan(roots));
+        _scanned = await Task.Run(() => ProjectScanner.Scan(
+            roots, onSkipped: (path, ex) => AppLog.Write($"scan: skipped unreadable folder {path}", ex)));
         _lastScan = DateTimeOffset.UtcNow;
         AppLog.Write($"scan: {_scanned.Count} project(s) in {roots.Count} root(s), {(_lastScan.Value - started).TotalMilliseconds:F0} ms");
         await RebuildCatalogAsync();
@@ -256,11 +258,15 @@ internal sealed partial class AppController
     {
         _flyout.Close();
         var dialog = new OpenFolderDialog { Title = "Pilih folder project Flutter" };
-        if (dialog.ShowDialog() != true)
+        string folder;
+        using (var owner = new DialogOwnerWindow()) // never the taskbar-owned widget (see DialogOwnerWindow)
         {
-            return;
+            if (dialog.ShowDialog(owner.Window) != true)
+            {
+                return;
+            }
+            folder = dialog.FolderName;
         }
-        var folder = dialog.FolderName;
         if (!await IsFlutterProjectAsync(folder))
         {
             ShowToast($"Bukan project Flutter (pubspec.yaml dengan flutter sdk tidak ada): {folder}");

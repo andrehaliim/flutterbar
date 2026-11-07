@@ -6,8 +6,9 @@ namespace FlutterBar.Core.Ipc;
 
 /// <summary>
 /// Executes IPC commands against the session. reload/restart are not serialized: the session answers a second
-/// request immediately with "Sedang reload" (Busy), so queueing it behind the first would make it hang.
-/// All other commands run one at a time.
+/// request immediately with "Sedang reload" (Busy), so queueing it behind the first would make it hang. status and logs
+/// only read snapshots, so they are not serialized either (a stop can wait the whole stop grace, longer than the CLI's
+/// patience). stop and show run one at a time.
 /// </summary>
 public sealed class CommandHandler(
     RunSession session,
@@ -28,6 +29,10 @@ public sealed class CommandHandler(
                 return await ReloadAsync(fullRestart: false, ct);
             case "restart":
                 return await ReloadAsync(fullRestart: true, ct);
+            case "status":
+                return Status();
+            case "logs":
+                return Logs(request.Args);
         }
 
         await _serial.WaitAsync(ct);
@@ -35,9 +40,7 @@ public sealed class CommandHandler(
         {
             return request.Command switch
             {
-                "status" => Status(),
                 "stop" => await StopAsync(),
-                "logs" => Logs(request.Args),
                 "show" => Show(),
                 _ => Error(ExitCodes.Usage, $"Perintah tidak dikenal: {request.Command}"),
             };
