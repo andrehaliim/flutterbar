@@ -60,18 +60,19 @@ public class LogViewTests
         var view = new LogView();
         view.Append(lines);
 
+        // The real dump is longer than MaxGroupLines, so it is one block split into continuation groups.
         var groups = view.Entries.Where(e => e.IsGroup).ToList();
-        var group = Assert.Single(groups);
-        Assert.Equal(footer - header + 1, group.LineCount);
-        Assert.Equal(lines[header].Seq, group.Lines[0].Seq);
-        Assert.Equal(lines[footer].Seq, group.Lines[^1].Seq);
-        Assert.False(group.Expanded);
-        Assert.True(group.Closed);
+        Assert.Equal(footer - header + 1, groups.Sum(g => g.LineCount));
+        Assert.Equal((footer - header + 1 + LogView.MaxGroupLines - 1) / LogView.MaxGroupLines, groups.Count);
+        Assert.Equal(lines[header].Seq, groups[0].Lines[0].Seq);
+        Assert.Equal(lines[footer].Seq, groups[^1].Lines[^1].Seq);
+        Assert.False(groups[0].IsContinuation);
+        Assert.All(groups.Skip(1), g => Assert.True(g.IsContinuation));
+        Assert.All(groups, g => Assert.True(g.Closed && !g.Expanded));
 
-        // collapsed: one row for the whole group, everything else is a plain line
-        Assert.Equal(lines.Count - group.LineCount + 1, view.Rows.Count);
-        var headerRow = Assert.Single(view.Rows, r => r.Role == LogRowRole.GroupHeader);
-        Assert.Same(group, headerRow.Entry);
+        // collapsed: one row per group, everything else is a plain line
+        Assert.Equal(lines.Count - (footer - header + 1) + groups.Count, view.Rows.Count);
+        Assert.Equal(groups.Count, view.Rows.Count(r => r.Role == LogRowRole.GroupHeader));
         Assert.DoesNotContain(view.Rows, r => r.Role == LogRowRole.GroupChild);
     }
 
@@ -463,5 +464,117 @@ public class LogViewTests
         view.Append(Lines(1, (LogKind.App, "foo"), (LogKind.App, "bar"), (LogKind.App, "foo2")));
         view.SetSearch("foo");
         Assert.Equal(["foo", "foo2"], view.GetCopyLines([]).Select(l => l.Text));
+    }
+
+    [Fact]
+    public void LastRemovedFromFront_CountsEvictedRowsPerAppend()
+    {
+        var view = new LogView(capacity: 10);
+        view.Append(Enumerable.Range(1, 10).Select(i => L(LogKind.App, "l" + i, i)).ToList());
+        Assert.Equal(0, view.LastRemovedFromFront);
+
+        view.Append(Lines(11, (LogKind.App, "a"), (LogKind.App, "b"), (LogKind.App, "c")));
+        Assert.Equal(3, view.LastRemovedFromFront);
+        Assert.Equal("l4", view.Rows[0].Line.Text);
+
+        view.Append(Lines(14, (LogKind.App, "d")));
+        Assert.Equal(1, view.LastRemovedFromFront);
+
+        view.Append([]);
+        Assert.Equal(1, view.LastRemovedFromFront); // nothing appended: untouched
+
+        view.Append(Lines(15, (LogKind.App, "e")));
+        view.Append(Lines(16, (LogKind.App, "f")));
+        Assert.Equal(1, view.LastRemovedFromFront); // reset per append, not cumulative
+    }
+
+    [Fact]
+    public void LastRemovedFromFront_CountsRowsNotLines_ForGroupsAndFilters()
+    {
+        var view = new LogView(capacity: 6);
+        view.Append(Lines(1, (LogKind.Error, DeviceHeader), (LogKind.Error, "a"), (LogKind.Error, "b"), (LogKind.Error, Footer), (LogKind.App, "x"), (LogKind.App, "y")));
+        Assert.Equal(3, view.Rows.Count); // collapsed group = 1 row
+
+        view.Append(Lines(7, (LogKind.App, "z")));
+
+        Assert.Equal(1, view.LastRemovedFromFront); // the 4-line group went, but it was a single row
+        Assert.Equal(["x", "y", "z"], view.Rows.Select(r => r.Line.Text));
+    }
+
+    [Fact]
+    public void LastRemovedFromFront_ZeroAfterRebuild_AndResettingFiresFirst()
+    {
+        var view = new LogView(capacity: 1000);
+        view.Append(Enumerable.Range(1, 1000).Select(i => L(LogKind.App, "l" + i, i)).ToList());
+        var oldRows = view.Rows;
+        var seenOld = false;
+        view.RowsResetting += () => seenOld = ReferenceEquals(view.Rows, oldRows);
+
+        view.Append(Enumerable.Range(1001, 600).Select(i => L(LogKind.App, "l" + i, i)).ToList()); // > bulk threshold
+
+        Assert.True(seenOld);
+        Assert.Equal(0, view.LastRemovedFromFront);
+        Assert.Equal(1000, view.Rows.Count);
+        Assert.Equal("l601", view.Rows[0].Line.Text);
+    }
+
+    [Fact]
+    public void LongBlock_IsSplitIntoContinuationGroups()
+    {
+        var view = new LogView();
+        var lines = new List<LogLine> { L(LogKind.Error, DeviceHeader, 1) };
+        for (var i = 0; i < LogView.MaxGroupLines + 100; i++)
+        {
+            lines.Add(L(LogKind.Error, "frame " + i, 2 + i));
+        }
+        lines.Add(L(LogKind.Error, Footer, 2 + LogView.MaxGroupLines + 100));
+        lines.Add(L(LogKind.App, "after", 3 + LogView.MaxGroupLines + 100));
+        view.Append(lines);
+
+        var groups = view.Entries.Where(e => e.IsGroup).ToList();
+        Assert.Equal(2, groups.Count);
+        Assert.False(groups[0].IsContinuation);
+        Assert.True(groups[1].IsContinuation);
+        Assert.Equal(LogView.MaxGroupLines, groups[0].LineCount);
+        Assert.Equal(lines.Count - 1 - LogView.MaxGroupLines, groups[1].LineCount); // all but "after"
+        Assert.True(groups[1].Closed);
+        Assert.StartsWith("(lanjutan) frame", view.Rows.First(r => r.Entry == groups[1]).Text, StringComparison.Ordinal);
+        Assert.Equal(DeviceHeader, view.Rows[0].Text);
+        Assert.Equal("after", view.Rows[^1].Text);
+    }
+
+    [Fact]
+    public void LongBlock_SplitIsTheSameIncrementally()
+    {
+        var lines = new List<LogLine> { L(LogKind.Error, DeviceHeader, 1) };
+        for (var i = 0; i < 1200; i++)
+        {
+            lines.Add(L(LogKind.Error, "frame " + i, 2 + i));
+        }
+        var bulk = new LogView();
+        bulk.Append(lines);
+        var inc = new LogView();
+        foreach (var l in lines)
+        {
+            inc.Append([l]);
+        }
+        Assert.Equal(bulk.Entries.Select(e => (e.LineCount, e.IsContinuation)), inc.Entries.Select(e => (e.LineCount, e.IsContinuation)));
+        Assert.Equal(3, inc.Entries.Count);
+        Assert.False(inc.Entries[^1].Closed);
+    }
+
+    [Fact]
+    public void Capacity_HoldsEvenWithOneHugeOpenBlock()
+    {
+        var view = new LogView(capacity: 2000);
+        var seq = 0L;
+        view.Append([L(LogKind.Error, DeviceHeader, ++seq)]);
+        for (var batch = 0; batch < 30; batch++)
+        {
+            view.Append(Enumerable.Range(0, 200).Select(_ => L(LogKind.Error, "frame", ++seq)).ToList());
+            Assert.True(view.TotalLines <= 2000, "batch " + batch + ": " + view.TotalLines);
+        }
+        Assert.True(view.TotalLines <= 2000);
+        Assert.Equal(view.Rows.Count, view.Entries.Count(e => e.IsGroup) + view.Entries.Count(e => !e.IsGroup));
     }
 }

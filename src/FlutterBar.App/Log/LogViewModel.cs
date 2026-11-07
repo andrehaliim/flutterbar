@@ -15,12 +15,14 @@ namespace FlutterBar.App.Log;
 internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
 {
     private static readonly TimeSpan BatchInterval = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan StatusDuration = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan SearchDebounce = TimeSpan.FromMilliseconds(200);
 
     private readonly LogBuffer _buffer;
     private readonly Dispatcher _dispatcher;
     private readonly DispatcherTimer _batchTimer;
     private readonly DispatcherTimer _searchTimer;
+    private readonly DispatcherTimer _statusTimer;
     private int _scheduled;
     private bool _disposed;
     private string _searchText = string.Empty;
@@ -37,6 +39,9 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
         _batchTimer.Stop();
         _searchTimer = new DispatcherTimer(SearchDebounce, DispatcherPriority.Normal, OnSearchTick, dispatcher);
         _searchTimer.Stop();
+        _statusTimer = new DispatcherTimer(StatusDuration, DispatcherPriority.Normal, OnStatusTick, dispatcher);
+        _statusTimer.Stop();
+        View.RowsResetting += OnRowsResetting;
 
         // Subscribe first, then read: a line appended in between is picked up by the next Since(LastSeq).
         _buffer.Appended += OnAppended;
@@ -47,6 +52,9 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
 
     /// <summary>Rows were added, removed or replaced: the window keeps the list pinned to the bottom when it was there.</summary>
     public event Action? RowsChanged;
+
+    /// <summary>The rows are about to be replaced (old rows still current): save scroll position and selection.</summary>
+    public event Action? Resetting;
 
     public LogView View { get; }
 
@@ -94,9 +102,15 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    /// <summary>Shows a transient message in the status area for about 3 s (null clears it at once).</summary>
     public void SetStatus(string? message)
     {
+        _statusTimer.Stop();
         _transientStatus = message;
+        if (message is not null)
+        {
+            _statusTimer.Start();
+        }
         OnPropertyChanged(nameof(StatusText));
     }
 
@@ -127,6 +141,8 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
         View.RowsReset -= OnRowsReset;
         _batchTimer.Stop();
         _searchTimer.Stop();
+        _statusTimer.Stop();
+        View.RowsResetting -= OnRowsResetting;
     }
 
     // Any thread, possibly out of order, must not throw: only schedule one batch tick.
@@ -158,10 +174,18 @@ internal sealed class LogViewModel : INotifyPropertyChanged, IDisposable
             return;
         }
         View.Append(lines);
-        _transientStatus = null;
-        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(StatusText)); // a transient message stays until its own timer fires
         RowsChanged?.Invoke();
     }
+
+    private void OnStatusTick(object? sender, EventArgs e)
+    {
+        _statusTimer.Stop();
+        _transientStatus = null;
+        OnPropertyChanged(nameof(StatusText));
+    }
+
+    private void OnRowsResetting() => Resetting?.Invoke();
 
     private void OnSearchTick(object? sender, EventArgs e)
     {

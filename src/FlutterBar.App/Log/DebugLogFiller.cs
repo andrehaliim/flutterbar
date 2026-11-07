@@ -8,6 +8,46 @@ internal static class DebugLogFiller
 {
     private const string WebHeader = "══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════";
 
+    /// <summary>Set by <c>--gc-on-log-close</c>: closing the LogWindow forces a GC and logs whether the window was collected.</summary>
+    public static bool GcOnLogClose { get; set; }
+
+    private static int s_streaming;
+
+    /// <summary>Appends <paramref name="perTick"/> dummy lines every 50 ms until the process exits (idempotent).</summary>
+    public static void StreamInBackground(LogBuffer buffer, int perTick)
+    {
+        if (Interlocked.Exchange(ref s_streaming, 1) == 1)
+        {
+            return;
+        }
+        Task.Run(async () =>
+        {
+            long n = 0;
+            while (true)
+            {
+                for (var i = 0; i < perTick; i++)
+                {
+                    buffer.Append(LogKind.App, $"I/flutter (stream): streamed line {++n}");
+                }
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+        });
+    }
+
+    /// <summary>After the LogWindow closed: GC twice, then log managed/private bytes and whether the window died.</summary>
+    public static void ForceGcAndLog(WeakReference window, WeakReference viewModel, WeakReference list)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        GC.Collect();
+        var p = System.Diagnostics.Process.GetCurrentProcess();
+        FlutterBar.App.Diagnostics.AppLog.Write(
+            $"DEBUG gc-on-log-close: windowAlive={window.IsAlive} viewModelAlive={viewModel.IsAlive} listBoxAlive={list.IsAlive} managedMB={GC.GetTotalMemory(true) / 1048576.0:F1} privateMB={p.PrivateMemorySize64 / 1048576.0:F1} workingSetMB={p.WorkingSet64 / 1048576.0:F1}");
+    }
+
     public static void FillInBackground(LogBuffer buffer, int count) => Task.Run(() => Fill(buffer, count));
 
     public static void Fill(LogBuffer buffer, int count)

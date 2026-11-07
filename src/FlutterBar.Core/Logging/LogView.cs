@@ -26,15 +26,19 @@ public sealed class LogEntry : INotifyPropertyChanged
     private readonly List<LogLine> _lines;
     private bool _expanded;
 
-    internal LogEntry(LogLine first, bool isGroup)
+    internal LogEntry(LogLine first, bool isGroup, bool isContinuation = false)
     {
         _lines = [first];
         IsGroup = isGroup;
+        IsContinuation = isContinuation;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public bool IsGroup { get; }
+
+    /// <summary>A block that was split because it exceeded <see cref="LogView.MaxGroupLines"/>: continues the previous group.</summary>
+    public bool IsContinuation { get; }
 
     /// <summary>True once the footer arrived (or the block ended some other way); only groups can be open.</summary>
     public bool Closed { get; internal set; }
@@ -68,13 +72,24 @@ public sealed class LogEntry : INotifyPropertyChanged
 }
 
 /// <summary>One row of the list: reference identity matters (the UI keeps selections of rows).</summary>
-public sealed class LogRow
+public sealed class LogRow : INotifyPropertyChanged
 {
     internal LogRow(LogEntry entry, LogLine line, LogRowRole role)
     {
         Entry = entry;
         Line = line;
         Role = role;
+    }
+
+    /// <summary>
+    /// Rows are immutable, so this never fires. Implementing the interface (with no-op accessors) stops WPF from hooking
+    /// the static property-descriptor change tables for bindings to a plain CLR object, which would keep every closed
+    /// LogWindow (through its row bindings) alive.
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged
+    {
+        add { }
+        remove { }
     }
 
     public LogEntry Entry { get; }
@@ -84,6 +99,9 @@ public sealed class LogRow
     public LogRowRole Role { get; }
 
     public bool IsHeader => Role == LogRowRole.GroupHeader;
+
+    /// <summary>Display text: the line, with a "(lanjutan)" prefix on the header of a split block.</summary>
+    public string Text => Role == LogRowRole.GroupHeader && Entry.IsContinuation ? "(lanjutan) " + Line.Text : Line.Text;
 }
 
 /// <summary>
@@ -94,7 +112,10 @@ public sealed class LogRow
 public sealed class LogView
 {
     /// <summary>Above this many new lines a single append rebuilds the rows instead of notifying row by row.</summary>
-    private const int BulkThreshold = 2000;
+    private const int BulkThreshold = 500;
+
+    /// <summary>An exception block longer than this is split into a new group so one open block can never outgrow the capacity.</summary>
+    public const int MaxGroupLines = 500;
 
     private readonly int _capacity;
     private readonly List<LogEntry> _entries = [];
@@ -112,7 +133,13 @@ public sealed class LogView
     /// <summary>The collection is replaced (not cleared) on a rebuild; this is raised after the new one is in place.</summary>
     public event Action? RowsReset;
 
+    /// <summary>Raised just before the rows are rebuilt, while the old <see cref="Rows"/> are still in place (UI saves its scroll/selection).</summary>
+    public event Action? RowsResetting;
+
     public ObservableCollection<LogRow> Rows { get; private set; }
+
+    /// <summary>Rows removed from the front of <see cref="Rows"/> by the last <see cref="Append"/> (capacity eviction); 0 after a rebuild.</summary>
+    public int LastRemovedFromFront { get; private set; }
 
     public IReadOnlyList<LogEntry> Entries => _entries;
 
@@ -132,6 +159,7 @@ public sealed class LogView
         {
             return;
         }
+        LastRemovedFromFront = 0;
         var bulk = lines.Count > BulkThreshold;
         foreach (var line in lines)
         {
@@ -329,10 +357,12 @@ public sealed class LogView
         TotalLines++;
         if (_open is { } open)
         {
-            if (line.Kind == LogKind.Error && !LogClassifier.IsExceptionHeader(line.Text))
+            var isFooter = LogClassifier.IsExceptionFooter(line.Text);
+            if (line.Kind == LogKind.Error && !LogClassifier.IsExceptionHeader(line.Text)
+                && (open.LineCount < MaxGroupLines || isFooter))
             {
                 open.Add(line);
-                if (LogClassifier.IsExceptionFooter(line.Text))
+                if (isFooter)
                 {
                     open.Closed = true;
                     _open = null;
@@ -343,12 +373,25 @@ public sealed class LogView
                 }
                 return;
             }
-            open.Closed = true; // no footer arrived: anything that is not part of the dump ends the block
+            // Ended without a footer (anything that is not part of the dump), or too long: split and continue.
+            var continues = line.Kind == LogKind.Error && !LogClassifier.IsExceptionHeader(line.Text);
+            open.Closed = true;
             _open = null;
+            if (continues)
+            {
+                StartEntry(new LogEntry(line, isGroup: true, isContinuation: true), bulk);
+                return;
+            }
         }
 
         var isGroup = line.Kind != LogKind.Separator && LogClassifier.IsExceptionHeader(line.Text);
-        var entry = new LogEntry(line, isGroup);
+        StartEntry(new LogEntry(line, isGroup), bulk);
+    }
+
+    private void StartEntry(LogEntry entry, bool bulk)
+    {
+        var line = entry.Header;
+        var isGroup = entry.IsGroup;
         _entries.Add(entry);
         if (isGroup)
         {
@@ -401,7 +444,7 @@ public sealed class LogView
     {
         var drop = 0;
         var total = TotalLines;
-        while (total > _capacity && drop < _entries.Count - 1)
+        while (total > _capacity && drop < _entries.Count)
         {
             total -= _entries[drop].LineCount;
             drop++;
@@ -415,7 +458,7 @@ public sealed class LogView
         TotalLines = total;
         if (_open is not null && removed.Contains(_open))
         {
-            _open = null;
+            _open = null; // only reachable when the open block alone exceeds a tiny capacity
         }
         if (bulk)
         {
@@ -426,11 +469,14 @@ public sealed class LogView
         while (Rows.Count > 0 && gone.Contains(Rows[0].Entry))
         {
             Rows.RemoveAt(0);
+            LastRemovedFromFront++;
         }
     }
 
     private void Rebuild()
     {
+        RowsResetting?.Invoke();
+        LastRemovedFromFront = 0;
         var rows = new List<LogRow>();
         foreach (var entry in _entries)
         {

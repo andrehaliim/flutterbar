@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,6 +29,10 @@ public partial class LogWindow : Window
     private ScrollViewer? _scroll;
     private bool _atBottom = true;
     private bool _scrollQueued;
+    private ResetState? _reset;
+
+    /// <summary>What to restore after the rows were rebuilt (rows are new objects: identity is the Seq of the line).</summary>
+    private sealed record ResetState(long? FirstVisibleSeq, HashSet<long> SelectedSeqs);
 
     private LogWindow(LogBuffer buffer)
     {
@@ -40,6 +43,7 @@ public partial class LogWindow : Window
         _vm = new LogViewModel(buffer, Dispatcher);
         DataContext = _vm;
         _vm.RowsChanged += OnRowsChanged;
+        _vm.Resetting += OnResetting;
         Loaded += OnLoaded;
         Closed += OnClosed;
         CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, _) => CopyToClipboard()));
@@ -99,11 +103,23 @@ public partial class LogWindow : Window
             _scroll.ScrollChanged -= OnScrollChanged;
         }
         _vm.RowsChanged -= OnRowsChanged;
+        _vm.Resetting -= OnResetting;
         _vm.Dispose();
         if (ReferenceEquals(s_instance, this))
         {
             s_instance = null;
         }
+#if DEBUG
+        if (DebugLogFiller.GcOnLogClose)
+        {
+            var weak = new WeakReference(this);
+            var weakVm = new WeakReference(_vm);
+            var weakList = new WeakReference(List);
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => DebugLogFiller.ForceGcAndLog(weak, weakVm, weakList));
+            var dispatcher = Dispatcher;
+            _ = Task.Delay(4000).ContinueWith(_ => dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => DebugLogFiller.ForceGcAndLog(weak, weakVm, weakList)), TaskScheduler.Default);
+        }
+#endif
     }
 
     // ---------------------------------------------------------------- scrolling
@@ -125,11 +141,66 @@ public partial class LogWindow : Window
         // else: content grew; stay "at bottom" if we were, and OnRowsChanged scrolls
     }
 
+    // Rows are about to be replaced: remember the first visible line and the selection.
+    private void OnResetting()
+    {
+        var rows = _vm.Rows;
+        long? first = null;
+        if (!_atBottom && _scroll is not null)
+        {
+            var index = (int)_scroll.VerticalOffset;
+            if (index >= 0 && index < rows.Count)
+            {
+                first = rows[index].Line.Seq;
+            }
+        }
+        var selected = new HashSet<long>();
+        foreach (LogRow row in List.SelectedItems)
+        {
+            selected.Add(row.Line.Seq);
+        }
+        _reset = new ResetState(first, selected);
+    }
+
     private void OnRowsChanged()
     {
+        if (_reset is { } reset)
+        {
+            _reset = null;
+            RestoreAfterReset(reset);
+        }
+        else if (!_atBottom && _scroll is not null && _vm.View.LastRemovedFromFront is var removed and > 0)
+        {
+            // Item-based scrolling: the offset is an item index, so rows evicted from the front shift the content up.
+            _scroll.ScrollToVerticalOffset(Math.Max(0, _scroll.VerticalOffset - removed));
+        }
         if (_atBottom)
         {
             ScrollToEnd();
+        }
+    }
+
+    private void RestoreAfterReset(ResetState reset)
+    {
+        var rows = _vm.Rows;
+        if (reset.SelectedSeqs.Count > 0)
+        {
+            foreach (var row in rows)
+            {
+                if (reset.SelectedSeqs.Contains(row.Line.Seq))
+                {
+                    List.SelectedItems.Add(row);
+                }
+            }
+        }
+        if (reset.FirstVisibleSeq is { } seq && !_atBottom)
+        {
+            var target = 0;
+            while (target < rows.Count - 1 && rows[target].Line.Seq < seq)
+            {
+                target++; // rows are in sequence order: first row at or after the old top line
+            }
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => _scroll?.ScrollToVerticalOffset(target));
         }
     }
 
@@ -244,10 +315,10 @@ public partial class LogWindow : Window
         }
         try
         {
-            Clipboard.SetText(LogView.FormatForCopy(lines));
+            ClipboardText.Set(LogView.FormatForCopy(lines)); // bounded retry (about 100 ms)
             _vm.SetStatus($"{lines.Count:N0} baris disalin");
         }
-        catch (ExternalException ex) // clipboard locked by another app
+        catch (System.ComponentModel.Win32Exception ex) // clipboard locked by another app
         {
             AppLog.Write("LogWindow: copy failed", ex);
             _vm.SetStatus("Gagal menyalin: clipboard sedang dipakai aplikasi lain");
@@ -265,12 +336,33 @@ public partial class LogWindow : Window
         }
     }
 
+    // Toggles the row under the mouse; a double-click that started on the chevron button is its own toggle click.
     private void OnListDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (List.SelectedItem is LogRow { IsHeader: true } row)
+        if (e.OriginalSource is not DependencyObject source || FindAncestor<Button>(source) is not null)
+        {
+            return;
+        }
+        if (FindAncestor<ListBoxItem>(source)?.DataContext is LogRow { IsHeader: true } row)
         {
             _vm.View.SetExpanded(row.Entry, !row.Entry.Expanded);
         }
+    }
+
+    private static T? FindAncestor<T>(DependencyObject start)
+        where T : DependencyObject
+    {
+        for (var node = start; node is not null;)
+        {
+            if (node is T found)
+            {
+                return found;
+            }
+            node = node is Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(node)
+                : LogicalTreeHelper.GetParent(node);
+        }
+        return null;
     }
 
 #if DEBUG
@@ -281,6 +373,11 @@ public partial class LogWindow : Window
         {
             e.Handled = true;
             DebugLogFiller.FillInBackground(_logBuffer, 20_000);
+        }
+        else if (e.Key == Key.F11 && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            e.Handled = true;
+            DebugLogFiller.StreamInBackground(_logBuffer, 20); // keeps appending: check scroll stability at capacity
         }
     }
 #endif

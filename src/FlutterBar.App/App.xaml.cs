@@ -58,9 +58,22 @@ public partial class App : Application
         {
             DebugLogFiller.Fill(_log, 20_000);
         }
+        DebugLogFiller.GcOnLogClose = e.Args.Contains("--gc-on-log-close");
+        if (e.Args.Contains("--stream-log"))
+        {
+            DebugLogFiller.StreamInBackground(_log, 20);
+        }
         if (e.Args.Contains("--open-log"))
         {
             Dispatcher.BeginInvoke(() => LogWindow.ShowAt(null));
+        }
+        if (e.Args.Contains("--close-log-after-6s"))
+        {
+            var closeTimer = new DispatcherTimer(TimeSpan.FromSeconds(6), DispatcherPriority.Normal, (t, _) =>
+            {
+                ((DispatcherTimer)t!).Stop();
+                LogWindow.CloseIfOpen();
+            }, Dispatcher);
         }
 #endif
     }

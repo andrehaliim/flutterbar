@@ -191,7 +191,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" Style="{StaticResource Log.Chevron}" Click="OnToggleClick" ToolTip="Buka / lipat blok exception" />
-                <TextBlock Grid.Column="1" Text="{Binding Line.Text}" Style="{StaticResource Log.LineText}" />
+                <TextBlock Grid.Column="1" Text="{Binding Text}" Style="{StaticResource Log.LineText}" />
                 <TextBlock Grid.Column="2" Text="{Binding Entry.LineCount, StringFormat=({0} baris)}" Style="{StaticResource Log.GroupCount}" />
             </Grid>
         </DataTemplate>
@@ -200,6 +200,7 @@
             <Setter Property="Padding" Value="2,1" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="AutomationProperties.Name" Value="{Binding Text}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
