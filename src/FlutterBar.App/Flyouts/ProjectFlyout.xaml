@@ -4,6 +4,7 @@
     <!-- Project flyout (spec §5.1, §7.1): search, cached items first, unavailable items greyed out. -->
     <StackPanel>
         <TextBlock Text="Project" Style="{StaticResource Fb.FlyoutHeader}" />
+        <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
         <Grid>
             <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Cari project" />

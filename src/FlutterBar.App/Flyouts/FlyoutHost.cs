@@ -18,20 +18,26 @@ namespace FlutterBar.App.Flyouts;
 /// WPF popups never activate on click, so on open the popup HWND is brought to the foreground explicitly for the
 /// search box to receive keys; losing activation closes it, as do Esc and a click outside (StaysOpen=false).
 /// Each <see cref="Show"/> returns a token cancelled when that content is closed or replaced (in-flight refreshes stop).
+/// Nothing opens while the docking hides the widget (fullscreen / auto-hide: <c>canShow</c>), and the window that had the
+/// foreground before the flyout (e.g. the IDE) gets it back when the flyout closes while still holding it.
 /// </summary>
 internal sealed class FlyoutHost
 {
     private readonly Func<FrameworkElement?> _anchor;
+    private readonly Func<bool> _canShow;
     private readonly Popup _popup;
     private readonly Border _frame;
     private CancellationTokenSource? _contentCts;
     private IInputElement? _focus;
     private HwndSource? _source;
     private bool _activated;
+    private IntPtr _previousForeground;
 
-    public FlyoutHost(Func<FrameworkElement?> anchor)
+    /// <param name="canShow">False while the docking hides the widget (WPF's IsVisible does not see a native SW_HIDE).</param>
+    public FlyoutHost(Func<FrameworkElement?> anchor, Func<bool> canShow)
     {
         _anchor = anchor;
+        _canShow = canShow;
         _frame = new Border
         {
             CornerRadius = new CornerRadius(8),
@@ -84,9 +90,9 @@ internal sealed class FlyoutHost
         }
 
         var anchor = _anchor();
-        if (anchor is null || !anchor.IsVisible)
+        if (anchor is null || !_canShow())
         {
-            AppLog.Write($"flyout {content.GetType().Name} not shown: widget not visible");
+            AppLog.Write($"flyout {content.GetType().Name} not shown: widget hidden");
             CancelContent();
             return token;
         }
@@ -99,7 +105,29 @@ internal sealed class FlyoutHost
     {
         if (_popup.IsOpen)
         {
+            RestoreForeground(); // before the popup HWND goes away, while it still holds the foreground
             _popup.IsOpen = false;
+        }
+    }
+
+    /// <summary>Moves keyboard focus inside the open <paramref name="content"/> (e.g. after it was filled asynchronously).</summary>
+    public void Refocus(FrameworkElement content, IInputElement focus)
+    {
+        if (_popup.IsOpen && ReferenceEquals(_frame.Child, content))
+        {
+            _focus = focus;
+            FocusContent();
+        }
+    }
+
+    /// <summary>The widget moved or resized: keep the popup attached to it.</summary>
+    public void Reposition()
+    {
+        if (_popup.IsOpen)
+        {
+            var offset = _popup.HorizontalOffset; // any offset change makes WPF recompute the placement
+            _popup.HorizontalOffset = offset + 1;
+            _popup.HorizontalOffset = offset;
         }
     }
 
@@ -113,6 +141,7 @@ internal sealed class FlyoutHost
             return;
         }
         _source.AddHook(WndProc);
+        _previousForeground = NativeMethods.GetForegroundWindow();
         _activated = NativeMethods.SetForegroundWindow(_source.Handle);
         if (!_activated)
         {
@@ -135,11 +164,35 @@ internal sealed class FlyoutHost
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        RestoreForeground();
         _source?.RemoveHook(WndProc);
         _source = null;
         _activated = false;
         CancelContent();
         Closed?.Invoke();
+    }
+
+    // Only while the flyout (or another window of ours) still holds the foreground: never take it from a window
+    // the user activated meanwhile.
+    private void RestoreForeground()
+    {
+        var previous = _previousForeground;
+        _previousForeground = IntPtr.Zero;
+        var wasActivated = _activated;
+        _activated = false; // the WM_ACTIVATE(inactive) that follows must not schedule another Close
+        if (!wasActivated || previous == IntPtr.Zero || !NativeMethods.IsWindow(previous))
+        {
+            return;
+        }
+        var foreground = NativeMethods.GetForegroundWindow();
+        NativeMethods.GetWindowThreadProcessId(foreground, out var pid);
+        if (foreground == IntPtr.Zero || pid == (uint)Environment.ProcessId)
+        {
+            if (!NativeMethods.SetForegroundWindow(previous))
+            {
+                AppLog.Limited("flyout-restore", $"flyout closed: foreground could not be returned to 0x{previous:X}", 30);
+            }
+        }
     }
 
     private void CancelContent()

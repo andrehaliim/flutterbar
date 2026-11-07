@@ -1,8 +1,11 @@
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Flyouts;
+using FlutterBar.App.Native;
 using FlutterBar.App.Widget;
 using FlutterBar.Core.Devices;
 using FlutterBar.Core.Git;
@@ -31,6 +34,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
     private readonly RunSession _session;
     private readonly LogBuffer _log;
     private readonly WidgetViewModel _vm;
+    private readonly Func<FrameworkElement?> _anchor;
     private readonly Action _showWidget;
     private readonly string? _settingsWarning;
     private readonly PathResolver _paths = new();
@@ -60,13 +64,15 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         _session = session;
         _log = log;
         _vm = vm;
+        _anchor = anchor;
         _showWidget = showWidget;
         _settingsWarning = settingsWarning;
         _locator = new FlutterToolLocator(_paths, File.Exists);
         _tools = Task.Run(DiscoverTools); // PATH lookups touch the disk: never on the UI thread
-        _flyout = new FlyoutHost(anchor);
+        _flyout = new FlyoutHost(anchor, WidgetShown);
         _flyout.Closed += OnFlyoutClosed;
-        _toast = new ToastHost(anchor, dispatcher);
+        _toast = new ToastHost(anchor, WidgetShown, dispatcher);
+        vm.PropertyChanged += OnViewModelChanged;
 
         vm.RunRequested += () => Fire(RunAsync(), "Run");
         vm.ReloadRequested += full => Fire(ReloadAsync(full), full ? "Hot restart" : "Hot reload");
@@ -119,6 +125,13 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             snapshot.ErrorCount);
     }
 
+    /// <summary>The widget moved or resized (docking relayout, auto-hide slide): open popups follow it.</summary>
+    public void OnWidgetMoved()
+    {
+        _flyout.Reposition();
+        _toast.Reposition();
+    }
+
     /// <summary>The widget window is being recreated: popups anchored to the old window must close.</summary>
     public void OnWidgetRecreating()
     {
@@ -135,6 +148,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         _disposed = true;
         _lifetime.Cancel();
         _session.Changed -= OnSessionChanged;
+        _vm.PropertyChanged -= OnViewModelChanged;
         _flyout.Close();
         _toast.Close();
         DisposeHeadWatcher();
@@ -150,7 +164,8 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         var adb = AdbLocator.Find(Environment.GetEnvironmentVariable, File.Exists, _paths);
         AppLog.Write($"tools: git={git ?? "-"} adb={adb ?? "-"} flutter={_paths.Find("flutter") ?? "-"} fvm={_paths.Find("fvm") ?? "-"}");
         var devices = new DeviceService(_runner, _locator, adb);
-        return new Tools(git is null ? null : new GitService(_runner, git), devices, new RunOrchestrator(_session, devices, _locator));
+        var run = new RunCoordinator(_session, new RunOrchestrator(_session, devices, _locator));
+        return new Tools(git is null ? null : new GitService(_runner, git), devices, run);
     }
 
     private void StartIpc()
@@ -183,6 +198,43 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             {
                 ShowToast($"CLI flutterbar tidak tersedia: {ex.Message}");
             }
+        }
+    }
+
+    /// <summary>
+    /// The docking hides the widget with a native SW_HIDE (fullscreen / auto-hide), which WPF's IsVisible does not reflect:
+    /// use the docking's state and the real window visibility.
+    /// </summary>
+    private bool WidgetShown()
+    {
+        if (_vm.IsHidden || _anchor() is not Window window)
+        {
+            return false;
+        }
+        var hwnd = new WindowInteropHelper(window).Handle;
+        return hwnd != IntPtr.Zero && NativeMethods.IsWindowVisible(hwnd);
+    }
+
+    // Widget hidden: nothing may stay above a fullscreen app; a pending confirmation answers "Batal".
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(WidgetViewModel.IsHidden) && _vm.IsHidden && (_flyout.IsOpen || _toast.IsOpen))
+        {
+            AppLog.Write("widget hidden: flyout and toast closed");
+            _flyout.Close();
+            _toast.Close();
+        }
+    }
+
+    private static bool SameProject(string? a, string? b) => a is not null && b is not null && string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>A selection change while ▶ is being prepared cancels that run (one-session rule, nothing runs yet).</summary>
+    private async Task CancelRunPreparationAsync(string what)
+    {
+        if ((await _tools).Run.CancelPreparation())
+        {
+            AppLog.Write($"run preparation cancelled: {what} changed");
+            ShowToast("Run dibatalkan");
         }
     }
 
@@ -236,7 +288,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             state?.DeviceId));
     }
 
-    private sealed record Tools(GitService? Git, DeviceService Devices, RunOrchestrator Orchestrator);
+    private sealed record Tools(GitService? Git, DeviceService Devices, RunCoordinator Run);
 
     /// <summary>What <c>flutterbar status</c> reports besides the session; null = nothing selected.</summary>
     private sealed record StatusLabels(string? Project, string? Branch, string? Config, string? Device);

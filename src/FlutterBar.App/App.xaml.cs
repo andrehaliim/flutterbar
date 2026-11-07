@@ -112,6 +112,8 @@ public partial class App : Application
         widget.ResetPositionRequested += () => ResetPosition(docking);
         widget.ExitRequested += () => _ = ExitAsync();
         widget.RequiredWidthsChanged += docking.InvalidateLayout;
+        widget.LocationChanged += (_, _) => _controller?.OnWidgetMoved(); // open flyout/toast follow the widget
+        widget.SizeChanged += (_, _) => _controller?.OnWidgetMoved();
         docking.DragModeChanged += widget.SetDragCue;
         docking.EffectiveSizeChanged += (size, full) =>
         {

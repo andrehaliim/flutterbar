@@ -4,6 +4,7 @@
     <!-- Device flyout (spec §5.4): cached list first, refreshed in the background; "Terhubung" and "Emulator (offline)". -->
     <StackPanel>
         <TextBlock Text="Device" Style="{StaticResource Fb.FlyoutHeader}" />
+        <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
         <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Daftar device" />
         <TextBlock x:Name="Message" Style="{StaticResource Fb.ErrorText}" Visibility="Collapsed" />

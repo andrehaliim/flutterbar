@@ -28,7 +28,12 @@ internal sealed partial class AppController
     {
         _flyout.Close();
         var root = Settings.CurrentProject;
-        if (root is null || name == _configChip?.Selected?.Name || !await ConfirmStopAsync("config"))
+        if (root is null || name == _configChip?.Selected?.Name)
+        {
+            return;
+        }
+        await CancelRunPreparationAsync("config");
+        if (!await ConfirmStopAsync("config"))
         {
             return;
         }
@@ -48,6 +53,7 @@ internal sealed partial class AppController
         Settings.TryGetProject(root, out var state);
         if (!string.Equals(state?.DeviceId, id, StringComparison.OrdinalIgnoreCase))
         {
+            await CancelRunPreparationAsync("device");
             if (!await ConfirmStopAsync("device"))
             {
                 return;
@@ -72,19 +78,25 @@ internal sealed partial class AppController
             _flyout.Close(); // keyboard / UI Automation invoke: no outside click closed it first
             return;
         }
+        ShowFlyoutFor(chip, null);
+    }
+
+    /// <summary>Opens a flyout without the click guards (combined flyout rows, ▶ outcomes); <paramref name="notice"/> is its warning line.</summary>
+    private void ShowFlyoutFor(WidgetChip chip, string? notice)
+    {
         switch (chip)
         {
             case WidgetChip.Project:
-                OpenProjectFlyout();
+                OpenProjectFlyout(notice);
                 break;
             case WidgetChip.Branch:
                 OpenBranchFlyout();
                 break;
             case WidgetChip.Config:
-                OpenConfigFlyout();
+                OpenConfigFlyout(notice);
                 break;
             case WidgetChip.Device:
-                OpenDeviceFlyout();
+                OpenDeviceFlyout(notice);
                 break;
             case WidgetChip.Combined:
                 OpenCombinedFlyout();
@@ -111,7 +123,7 @@ internal sealed partial class AppController
         if (flyout is null)
         {
             flyout = _combinedFlyout = new CombinedFlyout();
-            flyout.SectionChosen += OpenFlyout;
+            flyout.SectionChosen += chip => ShowFlyoutFor(chip, null);
         }
         flyout.SetValues(_vm.ProjectName, _vm.BranchVisible ? _vm.Branch : null, _vm.ConfigName, _vm.DeviceName);
         ShowFlyout(WidgetChip.Combined, flyout, flyout.FocusTarget);
@@ -149,12 +161,12 @@ internal sealed partial class AppController
         return (result, chip);
     }
 
-    private void OpenConfigFlyout()
+    private void OpenConfigFlyout(string? notice = null)
     {
         var root = Settings.CurrentProject;
         if (root is null)
         {
-            OpenProjectFlyout();
+            OpenProjectFlyout(notice);
             return;
         }
         var flyout = _configFlyout;
@@ -166,6 +178,8 @@ internal sealed partial class AppController
             flyout.OpenFileRequested += () => Fire(OpenLaunchJsonAsync(), "Buka file");
             flyout.ImportRequested += OnImportRequested;
         }
+        flyout.Reset(); // never show the previous project's configs while launch.json is re-read
+        flyout.SetNotice(notice);
         var token = ShowFlyout(WidgetChip.Config, flyout, flyout.FocusTarget);
         Fire(LoadConfigFlyoutAsync(flyout, root, token), "Baca launch.json");
     }
@@ -183,6 +197,7 @@ internal sealed partial class AppController
             if (loaded is { } ok)
             {
                 flyout.SetResult(ok.Result, ok.Chip);
+                _flyout.Refocus(flyout, flyout.FocusTarget); // the focus target depends on what was loaded
             }
             else
             {
@@ -259,12 +274,12 @@ internal sealed partial class AppController
         }
     }
 
-    private void OpenDeviceFlyout()
+    private void OpenDeviceFlyout(string? notice = null)
     {
         var root = Settings.CurrentProject;
         if (root is null)
         {
-            OpenProjectFlyout();
+            OpenProjectFlyout(notice);
             return;
         }
         var flyout = _deviceFlyout;
@@ -275,6 +290,7 @@ internal sealed partial class AppController
             flyout.EmulatorChosen += emulator => Fire(LaunchEmulatorAsync(emulator.Id), "Nyalakan emulator");
         }
         flyout.SetMessage(null);
+        flyout.SetNotice(notice);
         var token = ShowFlyout(WidgetChip.Device, flyout, flyout.FocusTarget);
         Fire(RefreshDeviceFlyoutAsync(flyout, root, token), "Daftar device");
     }
@@ -345,6 +361,12 @@ internal sealed partial class AppController
             ShowToast($"Menyalakan emulator {emulatorId}…");
             var devices = (await _tools).Devices;
             var outcome = await Task.Run(() => EmulatorFlow.LaunchAsync(devices, root, emulatorId, EmulatorFlow.PollInterval, EmulatorFlow.Timeout, _lifetime.Token));
+            if (!SameProject(root, Settings.CurrentProject))
+            {
+                // The emulator stays up; it is just not selected for a project the user left meanwhile.
+                AppLog.Write($"emulator {emulatorId} finished after a project change ({outcome.Device?.Id ?? outcome.Message}): not selected");
+                return;
+            }
             if (outcome.Device is { } device)
             {
                 AppLog.Write($"emulator {emulatorId} ready as {device.Id}");

@@ -30,6 +30,13 @@ internal sealed partial class ProjectFlyout : UserControl
 
     public void Reset() => _list.ClearSearch();
 
+    /// <summary>Warning line at the top (why the flyout was opened for the user), or null to hide it.</summary>
+    public void SetNotice(string? text)
+    {
+        Notice.Text = text ?? "";
+        Notice.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     public void SetBusy(bool busy) => Spinner.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
 
     public void SetProjects(IReadOnlyList<ProjectInfo> projects, string? current, bool scanning)

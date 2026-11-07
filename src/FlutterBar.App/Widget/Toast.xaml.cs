@@ -41,22 +41,25 @@ internal sealed partial class Toast : UserControl
 /// <summary>
 /// Shows one toast at a time in a non-activating topmost popup above the widget (Placement=Top), registered with
 /// <see cref="TaskbarDocking.TrackPopup"/>. Plain toasts close after 5 s (the timer pauses while the mouse is over them);
-/// a confirmation stays until answered, and a newer toast answers it with "no".
+/// a confirmation stays until answered, and a newer toast answers it with "no". While the docking hides the widget
+/// (fullscreen / auto-hide) toasts are only written to diag.log and a confirmation answers "no".
 /// </summary>
 internal sealed class ToastHost
 {
     private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(5);
 
     private readonly Func<FrameworkElement?> _anchor;
+    private readonly Func<bool> _canShow;
     private readonly Popup _popup;
     private readonly Toast _toast = new();
     private readonly DispatcherTimer _timer;
     private Func<Task>? _action;
     private TaskCompletionSource<bool>? _confirm;
 
-    public ToastHost(Func<FrameworkElement?> anchor, Dispatcher dispatcher)
+    public ToastHost(Func<FrameworkElement?> anchor, Func<bool> canShow, Dispatcher dispatcher)
     {
         _anchor = anchor;
+        _canShow = canShow;
         _popup = new Popup
         {
             Child = _toast,
@@ -80,11 +83,16 @@ internal sealed class ToastHost
         _toast.CloseClicked += () => Close();
     }
 
+    public bool IsOpen => _popup.IsOpen;
+
     /// <summary>Shows <paramref name="message"/>; <paramref name="action"/> runs when its button is pressed.</summary>
     public void Show(string message, string? actionLabel = null, Func<Task>? action = null)
     {
-        AppLog.Write($"toast: {message}");
         Answer(false);
+        if (!CanOpen("toast", message))
+        {
+            return;
+        }
         _action = actionLabel is null ? null : action;
         _toast.Set(message, _action is null ? null : actionLabel, null);
         Open();
@@ -95,8 +103,11 @@ internal sealed class ToastHost
     /// <summary>Asks a yes/no question; completes with false when dismissed or replaced by another toast.</summary>
     public Task<bool> ConfirmAsync(string message, string yes, string no)
     {
-        AppLog.Write($"confirm: {message}");
         Answer(false);
+        if (!CanOpen("confirm", message))
+        {
+            return Task.FromResult(false);
+        }
         _action = null;
         _timer.Stop();
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -113,16 +124,32 @@ internal sealed class ToastHost
         _popup.IsOpen = false;
     }
 
+    /// <summary>The widget moved or resized: keep the toast attached to it.</summary>
+    public void Reposition()
+    {
+        if (_popup.IsOpen)
+        {
+            var offset = _popup.HorizontalOffset;
+            _popup.HorizontalOffset = offset + 1;
+            _popup.HorizontalOffset = offset;
+        }
+    }
+
+    private bool CanOpen(string kind, string message)
+    {
+        if (_anchor() is null || !_canShow())
+        {
+            Close();
+            AppLog.Write($"{kind} (widget hidden, not shown): {message}");
+            return false;
+        }
+        AppLog.Write($"{kind}: {message}");
+        return true;
+    }
+
     private void Open()
     {
-        var anchor = _anchor();
-        if (anchor is null || !anchor.IsVisible)
-        {
-            AppLog.Write("toast not shown: widget not visible");
-            Answer(false);
-            return;
-        }
-        _popup.PlacementTarget = anchor;
+        _popup.PlacementTarget = _anchor();
         _popup.IsOpen = true;
     }
 

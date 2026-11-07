@@ -8,10 +8,14 @@ namespace FlutterBar.App.Services;
 /// <summary>▶ / ⚡ / 🔄 / ⏹ and the one-session confirmation (brief Steps 6-7).</summary>
 internal sealed partial class AppController
 {
-    /// <summary>▶: the pipeline lives in <see cref="RunOrchestrator"/>; here only the outcome is applied.</summary>
+    /// <summary>
+    /// ▶: <see cref="RunCoordinator"/> captures project/config/device now, prepares and starts the run, and saves the
+    /// result to that project. A selection change meanwhile cancels it (<see cref="CancelRunPreparationAsync"/>).
+    /// </summary>
     public async Task RunAsync()
     {
-        if (_vm.Preparing)
+        var run = (await _tools).Run;
+        if (run.IsPreparing)
         {
             return;
         }
@@ -21,26 +25,34 @@ internal sealed partial class AppController
         RunOutcome outcome;
         try
         {
-            var root = Settings.CurrentProject;
-            ProjectStateView(root, out var config, out var device);
-            var orchestrator = (await _tools).Orchestrator;
-            outcome = await orchestrator.RunAsync(new RunSelection(root, config, device), _lifetime.Token);
+            outcome = await run.RunAsync(Settings, () => DateTimeOffset.Now, _lifetime.Token);
         }
         finally
         {
             _vm.Preparing = false;
         }
 
-        AppLog.Write($"run: {outcome.Kind} - {outcome.Message}", outcome.Error);
-        if (outcome.ShouldPersist && Settings.CurrentProject is { } project && outcome.Config is { } used && outcome.DeviceId is { } deviceId)
+        AppLog.Write($"run [{outcome.ProjectRoot ?? "-"}]: {outcome.Kind} - {outcome.Message}", outcome.Error);
+        if (outcome.Kind == RunOutcomeKind.Cancelled)
         {
-            ProjectSelection.RecordRun(Settings, project, used.Name, deviceId, DateTimeOffset.Now);
+            return; // the selection change already said "Run dibatalkan"
+        }
+        if (outcome.ShouldPersist)
+        {
             _saver.Save("run");
-            await RefreshConfigChipAsync(project, _generation);
+        }
+        if (!SameProject(outcome.ProjectRoot, Settings.CurrentProject))
+        {
+            return; // defensive: never show results of another project
+        }
+        if (outcome.ShouldPersist && outcome.DeviceId is { } deviceId)
+        {
+            await RefreshConfigChipAsync(outcome.ProjectRoot!, _generation);
             _vm.DeviceName = DevicePresentation.Label(deviceId, (await _tools).Devices.CachedDevices);
             PublishLabels();
         }
 
+        // Selection problems: no toast (the flyout would cover it), the reason is the flyout's warning line.
         switch (outcome.Kind)
         {
             case RunOutcomeKind.Started:
@@ -49,16 +61,13 @@ internal sealed partial class AppController
                 _vm.Notice = outcome.Message; // the toast comes from the session turning Failed (OnSessionChanged)
                 break;
             case RunOutcomeKind.NoProject:
-                ShowToast(outcome.Message);
-                OpenFlyout(WidgetChip.Project);
+                ShowFlyoutFor(WidgetChip.Project, outcome.Message);
                 break;
             case RunOutcomeKind.NoConfig or RunOutcomeKind.ConfigInvalid or RunOutcomeKind.ConfigNotFound:
-                ShowToast(outcome.Message);
-                OpenFlyout(WidgetChip.Config);
+                ShowFlyoutFor(WidgetChip.Config, outcome.Message);
                 break;
             case RunOutcomeKind.NoDevice or RunOutcomeKind.DeviceMissing:
-                ShowToast(outcome.Message);
-                OpenFlyout(WidgetChip.Device); // spec §5.4: the device flyout opens and the run does not start
+                ShowFlyoutFor(WidgetChip.Device, outcome.Message); // spec §5.4: the device flyout opens, the run does not start
                 break;
             default:
                 _vm.Notice = outcome.Message;
@@ -104,16 +113,5 @@ internal sealed partial class AppController
             await StopAsync();
         }
         return yes;
-    }
-
-    private void ProjectStateView(string? root, out string? config, out string? device)
-    {
-        config = null;
-        device = null;
-        if (root is not null && Settings.TryGetProject(root, out var state))
-        {
-            config = state.Config;
-            device = state.DeviceId;
-        }
     }
 }

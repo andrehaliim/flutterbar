@@ -4,6 +4,7 @@
     <!-- Config flyout (spec §4.1, §10): launch.json is re-read on every open. -->
     <StackPanel>
         <TextBlock Text="Config" Style="{StaticResource Fb.FlyoutHeader}" />
+        <TextBlock x:Name="Notice" Style="{StaticResource Fb.NoticeText}" Visibility="Collapsed" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
         <StackPanel x:Name="MissingPanel" Visibility="Collapsed">
             <TextBlock Text="Belum ada config" Style="{StaticResource Fb.MutedText}" />

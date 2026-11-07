@@ -24,6 +24,9 @@ public enum RunOutcomeKind
     DeviceRefreshFailed,
     ToolError,
     SessionActive,
+
+    /// <summary>The selection changed while ▶ was being prepared (<see cref="RunCoordinator.CancelPreparation"/>).</summary>
+    Cancelled,
 }
 
 /// <param name="Error">The exception behind the failure, for diag.log (device refresh).</param>
@@ -31,6 +34,9 @@ public sealed record RunOutcome(RunOutcomeKind Kind, string Message, LaunchConfi
 {
     /// <summary>The selection was valid: LastUsed, config and device are saved to settings.</summary>
     public bool ShouldPersist => Kind is RunOutcomeKind.Started or RunOutcomeKind.StartFailed;
+
+    /// <summary>The project the run was prepared for (captured when ▶ was pressed).</summary>
+    public string? ProjectRoot { get; init; }
 }
 
 /// <summary>

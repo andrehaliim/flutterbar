@@ -30,6 +30,7 @@ internal sealed partial class AppController
         {
             return;
         }
+        await CancelRunPreparationAsync("project");
         if (!await ConfirmStopAsync("project"))
         {
             return;
@@ -52,6 +53,11 @@ internal sealed partial class AppController
         var generation = _generation;
         var live = SessionGuard.IsLive(_session.Snapshot.State);
         var outcome = await Task.Run(() => BranchFlow.SwitchAsync(git, root, branch, live));
+        if (generation != _generation)
+        {
+            AppLog.Write($"git switch {branch} in {root} finished after a project change ({outcome.Message}): result dropped");
+            return;
+        }
         if (outcome.AdviceError is { } adviceError)
         {
             AppLog.Write("branch switch: pubspec comparison skipped", adviceError);
@@ -204,7 +210,7 @@ internal sealed partial class AppController
         _catalog = await Task.Run(() => ProjectCatalog.Build(scanned, snapshot, Directory.Exists));
     }
 
-    private void OpenProjectFlyout()
+    private void OpenProjectFlyout(string? notice = null)
     {
         var flyout = _projectFlyout;
         if (flyout is null)
@@ -214,6 +220,7 @@ internal sealed partial class AppController
             flyout.AddRequested += () => Fire(AddProjectAsync(), "Tambah project");
         }
         flyout.Reset();
+        flyout.SetNotice(notice);
         var scanning = _scanTask is { IsCompleted: false };
         flyout.SetProjects(_catalog, Settings.CurrentProject, scanning); // cache first
         flyout.SetBusy(scanning);

@@ -23,6 +23,14 @@
         <Setter Property="Margin" Value="2,4" />
     </Style>
 
+    <!-- Why the flyout opened by itself (e.g. ▶ found no device): warning line at the top of the flyout. -->
+    <Style x:Key="Fb.NoticeText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Warning}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="2,0,2,6" />
+    </Style>
+
     <!-- Thin indeterminate bar used as the spinner while git/flutter/scan calls run in the background. -->
     <Style x:Key="Fb.Spinner" TargetType="ProgressBar">
         <Setter Property="Height" Value="2" />

@@ -40,6 +40,13 @@ public static class ProjectSelection
     public static void RecordRun(AppSettings settings, string projectRoot, string configName, string deviceId, DateTimeOffset now)
     {
         SelectProject(settings, projectRoot);
+        RecordRunFor(settings, projectRoot, configName, deviceId, now);
+    }
+
+    /// <summary>LastUsed, config and device of <paramref name="projectRoot"/> only; the current project is left alone.</summary>
+    public static void RecordRunFor(AppSettings settings, string projectRoot, string configName, string deviceId, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
         var state = settings.GetOrAddProject(projectRoot);
         state.LastUsed = now;
         state.Config = configName;

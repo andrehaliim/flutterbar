@@ -34,6 +34,13 @@ internal sealed partial class DeviceFlyout : UserControl
 
     public IInputElement FocusTarget => List;
 
+    /// <summary>Warning line at the top (why the flyout was opened for the user), or null to hide it.</summary>
+    public void SetNotice(string? text)
+    {
+        Notice.Text = text ?? "";
+        Notice.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     public void SetBusy(bool busy) => Spinner.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
 
     public void SetDevices(IReadOnlyList<DeviceInfo> devices, IReadOnlyList<EmulatorInfo> offline, string? currentId, bool refreshing)

@@ -34,6 +34,26 @@ internal sealed partial class ConfigFlyout : UserControl
     /// <summary>The list when it has rows, else the first action button.</summary>
     public IInputElement FocusTarget => List.HasItems ? List : MissingPanel.IsVisible ? ImportButton : OpenButton;
 
+    /// <summary>Warning line at the top (why the flyout was opened for the user), or null to hide it.</summary>
+    public void SetNotice(string? text)
+    {
+        Notice.Text = text ?? "";
+        Notice.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    /// <summary>Empties every section, so data of a previous project never shows while launch.json is re-read.</summary>
+    public void Reset()
+    {
+        MissingPanel.Visibility = Visibility.Collapsed;
+        ErrorPanel.Visibility = Visibility.Collapsed;
+        Errors.ItemsSource = null;
+        FileActions.Visibility = Visibility.Collapsed;
+        _list.SetItems([]);
+        List.Visibility = Visibility.Collapsed;
+        SetMessage(null);
+        SetNotice(null);
+    }
+
     public void SetBusy(bool busy) => Spinner.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>Renders a fresh <see cref="LaunchConfigStore.Load"/> result.</summary>
