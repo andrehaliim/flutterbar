@@ -30,8 +30,7 @@ internal sealed partial class AppController
         {
             return;
         }
-        await CancelRunPreparationAsync("project");
-        if (!await ConfirmStopAsync("project"))
+        if (!await MayChangeSelectionAsync("project"))
         {
             return;
         }

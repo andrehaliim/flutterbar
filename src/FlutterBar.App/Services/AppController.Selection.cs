@@ -32,8 +32,7 @@ internal sealed partial class AppController
         {
             return;
         }
-        await CancelRunPreparationAsync("config");
-        if (!await ConfirmStopAsync("config"))
+        if (!await MayChangeSelectionAsync("config"))
         {
             return;
         }
@@ -53,8 +52,7 @@ internal sealed partial class AppController
         Settings.TryGetProject(root, out var state);
         if (!string.Equals(state?.DeviceId, id, StringComparison.OrdinalIgnoreCase))
         {
-            await CancelRunPreparationAsync("device");
-            if (!await ConfirmStopAsync("device"))
+            if (!await MayChangeSelectionAsync("device"))
             {
                 return;
             }
@@ -202,6 +200,7 @@ internal sealed partial class AppController
             else
             {
                 flyout.SetMessage(_vm.ConfigToolTip);
+                _flyout.Refocus(flyout, flyout.FocusTarget);
             }
         }
         finally

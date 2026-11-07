@@ -10,7 +10,10 @@ using FlutterBar.Core.Tests.Fakes;
 
 namespace FlutterBar.Core.Tests.Orchestration;
 
-/// <summary>Fix round 1: ▶ preparation counts as an active session; a selection change cancels it.</summary>
+/// <summary>
+/// ▶ preparation counts as an active session: a selection change cancels it, but only until flutter is being launched;
+/// from then on the normal stop confirmation applies and the coordinator never stops the session itself.
+/// </summary>
 [Collection("DiagLog")]
 public sealed class RunCoordinatorTests : IDisposable
 {
@@ -61,7 +64,7 @@ public sealed class RunCoordinatorTests : IDisposable
     private RunCoordinator Create()
     {
         var locator = new FlutterToolLocator(new FakePaths(new() { ["flutter"] = @"C:\f\flutter.exe" }), File.Exists);
-        return new RunCoordinator(_session, new RunOrchestrator(_session, new DeviceService(_runner, locator), locator));
+        return new RunCoordinator(new RunOrchestrator(_session, new DeviceService(_runner, locator), locator));
     }
 
     [Fact]
@@ -72,8 +75,8 @@ public sealed class RunCoordinatorTests : IDisposable
         await _runner.Entered.Task.WaitAsync(Wait);
         Assert.True(coordinator.IsPreparing);
 
-        // The user picks project B while A is still being prepared.
-        Assert.True(coordinator.CancelPreparation());
+        // The user picks project B while A is still being prepared (flutter devices running): nothing started yet.
+        Assert.Equal(PreparationCancel.Cancelled, coordinator.CancelPreparation());
         ProjectSelection.SelectProject(_settings, _b.Root);
         _runner.Release();
         var outcome = await run.WaitAsync(Wait);
@@ -126,27 +129,48 @@ public sealed class RunCoordinatorTests : IDisposable
     }
 
     [Fact]
-    public async Task CancelWhileTheSessionIsLaunching_StopsIt_AndPersistsNothing()
+    public async Task SelectionChangeOnceLaunching_NeedsConfirmation_AndSessionIsNotStopped()
     {
         RunCoordinator? coordinator = null;
+        PreparationCancel? decision = null;
         _launcher.Enqueue(new FakeProcessHandle());
-        var session = new RunSession(new HookLauncher(_launcher, () => coordinator!.CancelPreparation()), new LogBuffer());
-        var locator = new FlutterToolLocator(new FakePaths(new() { ["flutter"] = @"C:lutter.exe" }), File.Exists);
-        coordinator = new RunCoordinator(session, new RunOrchestrator(session, new DeviceService(_runner, locator), locator));
+        var session = new RunSession(new HookLauncher(_launcher, () => decision = coordinator!.CancelPreparation()), new LogBuffer());
+        var locator = new FlutterToolLocator(new FakePaths(new() { ["flutter"] = @"C:\f\flutter.exe" }), File.Exists);
+        coordinator = new RunCoordinator(new RunOrchestrator(session, new DeviceService(_runner, locator), locator));
         _runner.Release();
 
         var outcome = await coordinator.RunAsync(_settings, () => Now, CancellationToken.None);
+        await coordinator.WaitForLaunchAsync().WaitAsync(Wait);
 
-        Assert.Equal(RunOutcomeKind.Cancelled, outcome.Kind);
+        Assert.Equal(PreparationCancel.Launching, decision);
+        Assert.Equal(RunOutcomeKind.Started, outcome.Kind);
         Assert.Single(_launcher.Starts);
-        Assert.Equal(SessionState.Idle, session.Snapshot.State);
+        Assert.Equal(SessionState.Starting, session.Snapshot.State); // left to the user's "Stop sesi sekarang dan ganti?"
         Assert.True(_settings.TryGetProject(_a.Root, out var a));
-        Assert.Null(a.LastUsed);
+        Assert.Equal(Now, a.LastUsed);
+        Assert.Equal(PreparationCancel.None, coordinator.CancelPreparation());
         await session.DisposeAsync();
     }
 
     [Fact]
-    public void CancelPreparation_WhenIdle_ReturnsFalse() => Assert.False(Create().CancelPreparation());
+    public async Task CancelBeforeLaunch_StartsNoProcess_EvenIfDevicesAnswerAfterwards()
+    {
+        var coordinator = Create();
+        var run = coordinator.RunAsync(_settings, () => Now, CancellationToken.None);
+        await _runner.Entered.Task.WaitAsync(Wait);
+
+        Assert.Equal(PreparationCancel.Cancelled, coordinator.CancelPreparation());
+        Assert.Equal(PreparationCancel.None, coordinator.CancelPreparation()); // already cancelled: nothing left to cancel
+        _runner.Release();
+
+        Assert.Equal(RunOutcomeKind.Cancelled, (await run.WaitAsync(Wait)).Kind);
+        await coordinator.WaitForLaunchAsync().WaitAsync(Wait);
+        Assert.Empty(_launcher.Starts);
+        Assert.Equal(SessionState.Idle, _session.Snapshot.State);
+    }
+
+    [Fact]
+    public void CancelPreparation_WhenIdle_ReturnsNone() => Assert.Equal(PreparationCancel.None, Create().CancelPreparation());
 
     [Fact]
     public async Task SecondRunWhilePreparing_IsIgnored()

@@ -10,7 +10,7 @@ internal sealed partial class AppController
 {
     /// <summary>
     /// ▶: <see cref="RunCoordinator"/> captures project/config/device now, prepares and starts the run, and saves the
-    /// result to that project. A selection change meanwhile cancels it (<see cref="CancelRunPreparationAsync"/>).
+    /// result to that project. A selection change meanwhile cancels it or asks first (<see cref="MayChangeSelectionAsync"/>).
     /// </summary>
     public async Task RunAsync()
     {

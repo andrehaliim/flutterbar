@@ -164,7 +164,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         var adb = AdbLocator.Find(Environment.GetEnvironmentVariable, File.Exists, _paths);
         AppLog.Write($"tools: git={git ?? "-"} adb={adb ?? "-"} flutter={_paths.Find("flutter") ?? "-"} fvm={_paths.Find("fvm") ?? "-"}");
         var devices = new DeviceService(_runner, _locator, adb);
-        var run = new RunCoordinator(_session, new RunOrchestrator(_session, devices, _locator));
+        var run = new RunCoordinator(new RunOrchestrator(_session, devices, _locator));
         return new Tools(git is null ? null : new GitService(_runner, git), devices, run);
     }
 
@@ -228,14 +228,26 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
 
     private static bool SameProject(string? a, string? b) => a is not null && b is not null && string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>A selection change while ▶ is being prepared cancels that run (one-session rule, nothing runs yet).</summary>
-    private async Task CancelRunPreparationAsync(string what)
+    /// <summary>
+    /// One-session rule for a selection change (brief Step 7). While ▶ is still being prepared nothing runs yet: the run
+    /// is cancelled ("Run dibatalkan"). Once flutter is being launched, wait for the launch and ask like for any session:
+    /// Ya = stop, Batal = keep the session and the old selection. True = the caller may change the selection.
+    /// </summary>
+    private async Task<bool> MayChangeSelectionAsync(string what)
     {
-        if ((await _tools).Run.CancelPreparation())
+        var run = (await _tools).Run;
+        switch (run.CancelPreparation())
         {
-            AppLog.Write($"run preparation cancelled: {what} changed");
-            ShowToast("Run dibatalkan");
+            case PreparationCancel.Cancelled:
+                AppLog.Write($"run preparation cancelled: {what} changed before flutter was launched");
+                ShowToast("Run dibatalkan");
+                return true;
+            case PreparationCancel.Launching:
+                AppLog.Write($"{what} changed while flutter is being launched: waiting for the launch, then asking");
+                await run.WaitForLaunchAsync();
+                break;
         }
+        return await ConfirmStopAsync(what);
     }
 
     // Any thread, possibly stale: marshal and re-read. A session that just failed gets a toast with its message.

@@ -47,8 +47,12 @@ public sealed record RunOutcome(RunOutcomeKind Kind, string Message, LaunchConfi
 /// </summary>
 public sealed class RunOrchestrator(RunSession session, DeviceService devices, FlutterToolLocator locator)
 {
+    /// <param name="commit">
+    /// Called right before <see cref="RunSession.StartAsync"/>: from then on the run can no longer be cancelled through
+    /// <paramref name="ct"/> (a selection change needs the stop confirmation). Returning false aborts (cancelled meanwhile).
+    /// </param>
     /// <exception cref="OperationCanceledException"><paramref name="ct"/> was cancelled.</exception>
-    public async Task<RunOutcome> RunAsync(RunSelection selection, CancellationToken ct)
+    public async Task<RunOutcome> RunAsync(RunSelection selection, CancellationToken ct, Func<bool>? commit = null)
     {
         ArgumentNullException.ThrowIfNull(selection);
         if (string.IsNullOrWhiteSpace(selection.ProjectRoot))
@@ -109,6 +113,10 @@ public sealed class RunOrchestrator(RunSession session, DeviceService devices, F
         }
 
         ct.ThrowIfCancellationRequested();
+        if (commit is not null && !commit())
+        {
+            throw new OperationCanceledException("Run preparation was cancelled", ct);
+        }
         var request = new RunRequest(root, config, deviceId, tool.Spec);
         try
         {

@@ -1,30 +1,72 @@
-using FlutterBar.Core.Sessions;
 using FlutterBar.Core.Settings;
 
 namespace FlutterBar.Core.Orchestration;
 
+/// <summary>What <see cref="RunCoordinator.CancelPreparation"/> did.</summary>
+public enum PreparationCancel
+{
+    /// <summary>No ▶ in flight: apply the normal one-session rule.</summary>
+    None,
+
+    /// <summary>The run was still being prepared and is cancelled; no flutter process was started.</summary>
+    Cancelled,
+
+    /// <summary>
+    /// flutter is already being launched: nothing was cancelled. Wait for <see cref="RunCoordinator.WaitForLaunchAsync"/>,
+    /// then ask "Stop sesi sekarang dan ganti?" like for any running session.
+    /// </summary>
+    Launching,
+}
+
 /// <summary>
 /// ▶ from the widget: captures project/config/device when pressed, runs <see cref="RunOrchestrator"/> under its own
-/// cancellation, and saves the result to THAT project. While preparing (device refresh can take seconds) the one-session
-/// rule applies too: a selection change calls <see cref="CancelPreparation"/>; a run cancelled after flutter was already
-/// launched is stopped again, and nothing is persisted.
-/// Call on the UI thread: <paramref name="settings"/> is mutated on the caller's context after the await.
+/// cancellation and saves the result to THAT project. While the run is being prepared (device refresh, tool resolution)
+/// a selection change cancels it (<see cref="CancelPreparation"/>). Right before <c>RunSession.StartAsync</c> the run is
+/// committed (under a lock, so cancel and commit never both win); after that the coordinator never stops the session:
+/// the stop confirmation decides. Call on the UI thread: <paramref name="settings"/> is mutated after the await.
 /// </summary>
-public sealed class RunCoordinator(RunSession session, RunOrchestrator orchestrator)
+public sealed class RunCoordinator(RunOrchestrator orchestrator)
 {
+    private readonly object _gate = new();
     private CancellationTokenSource? _preparation;
+    private bool _committed;
+    private TaskCompletionSource? _launch;
 
-    public bool IsPreparing => _preparation is not null;
-
-    /// <summary>Cancels an in-flight preparation; false when nothing was being prepared.</summary>
-    public bool CancelPreparation()
+    public bool IsPreparing
     {
-        if (_preparation is not { } cts)
+        get
         {
-            return false;
+            lock (_gate)
+            {
+                return _preparation is not null;
+            }
         }
-        cts.Cancel();
-        return true;
+    }
+
+    public PreparationCancel CancelPreparation()
+    {
+        lock (_gate)
+        {
+            if (_preparation is not { } cts || cts.IsCancellationRequested)
+            {
+                return PreparationCancel.None;
+            }
+            if (_committed)
+            {
+                return PreparationCancel.Launching;
+            }
+            cts.Cancel();
+            return PreparationCancel.Cancelled;
+        }
+    }
+
+    /// <summary>Completes once the in-flight ▶ finished (flutter launched, failed or cancelled); completed when idle.</summary>
+    public Task WaitForLaunchAsync()
+    {
+        lock (_gate)
+        {
+            return _launch?.Task ?? Task.CompletedTask;
+        }
     }
 
     /// <exception cref="OperationCanceledException"><paramref name="lifetime"/> was cancelled (exit).</exception>
@@ -32,11 +74,6 @@ public sealed class RunCoordinator(RunSession session, RunOrchestrator orchestra
     {
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(now);
-        if (_preparation is not null)
-        {
-            return new RunOutcome(RunOutcomeKind.SessionActive, "Run sedang disiapkan");
-        }
-
         var root = settings.CurrentProject;
         string? config = null;
         string? device = null;
@@ -47,11 +84,22 @@ public sealed class RunCoordinator(RunSession session, RunOrchestrator orchestra
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(lifetime);
-        _preparation = cts;
+        var launch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (_preparation is not null)
+            {
+                return new RunOutcome(RunOutcomeKind.SessionActive, "Run sedang disiapkan") { ProjectRoot = root };
+            }
+            _preparation = cts;
+            _committed = false;
+            _launch = launch;
+        }
+
         RunOutcome outcome;
         try
         {
-            outcome = await orchestrator.RunAsync(new RunSelection(root, config, device), cts.Token); // resume on the caller's context
+            outcome = await orchestrator.RunAsync(new RunSelection(root, config, device), cts.Token, Commit); // resume on the caller's context
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested && !lifetime.IsCancellationRequested)
         {
@@ -59,25 +107,37 @@ public sealed class RunCoordinator(RunSession session, RunOrchestrator orchestra
         }
         finally
         {
-            _preparation = null;
-        }
-
-        if (cts.IsCancellationRequested)
-        {
-            // Cancelled while flutter was being launched: the user already moved on, so this run must not stay.
-            if (outcome.ShouldPersist)
+            lock (_gate)
             {
-                await session.StopAsync();
+                _preparation = null;
+                _committed = false;
+                _launch = null;
             }
-            lifetime.ThrowIfCancellationRequested();
-            return Cancelled(root);
+            launch.TrySetResult();
         }
 
+        if (cts.IsCancellationRequested && !lifetime.IsCancellationRequested)
+        {
+            return Cancelled(root); // cancelled during an early return (no process was started)
+        }
         if (outcome.ShouldPersist && root is not null && outcome.Config is { } used && outcome.DeviceId is { } deviceId)
         {
             ProjectSelection.RecordRunFor(settings, root, used.Name, deviceId, now());
         }
         return outcome with { ProjectRoot = root };
+
+        bool Commit()
+        {
+            lock (_gate)
+            {
+                if (cts.IsCancellationRequested)
+                {
+                    return false;
+                }
+                _committed = true;
+                return true;
+            }
+        }
     }
 
     private static RunOutcome Cancelled(string? root) =>
