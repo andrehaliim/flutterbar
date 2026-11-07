@@ -46,7 +46,8 @@ public sealed class AppSettingsStoreTests : IDisposable
         var store = new AppSettingsStore(SettingsPath);
         var settings = new AppSettings { CurrentProject = "C:\\Work\\app", StartWithWindows = true };
         settings.ScanRoots.Add("C:\\Work");
-        settings.Widget.LockedX = 12.5;
+        settings.Widget.OffsetFromRight = 500;
+        settings.Widget.WidthOverride = 420;
         var used = new DateTimeOffset(2026, 11, 6, 10, 42, 0, TimeSpan.FromHours(7));
         settings.Projects["c:\\work\\APP"] = new ProjectState { LastUsed = used, Config = "beta", DeviceId = "chrome" };
 
@@ -58,7 +59,8 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.Equal("C:\\Work\\app", loaded.CurrentProject);
         Assert.True(loaded.StartWithWindows);
         Assert.Equal(["C:\\Work"], loaded.ScanRoots);
-        Assert.Equal(12.5, loaded.Widget.LockedX);
+        Assert.Equal(500, loaded.Widget.OffsetFromRight);
+        Assert.Equal(420, loaded.Widget.WidthOverride);
         var state = loaded.Projects["C:\\Work\\app"];
         Assert.Equal(used, state.LastUsed);
         Assert.Equal("beta", state.Config);
@@ -124,5 +126,52 @@ public sealed class AppSettingsStoreTests : IDisposable
         var text = File.ReadAllText(SettingsPath);
         Assert.Contains("\"scanRoots\"", text);
         Assert.Contains("\"startWithWindows\"", text);
+    }
+
+    [Fact]
+    public void Save_WritesWidgetOffsetFromRightKey()
+    {
+        var settings = new AppSettings();
+        settings.Widget.OffsetFromRight = 500;
+
+        new AppSettingsStore(SettingsPath).Save(settings);
+
+        var text = File.ReadAllText(SettingsPath);
+        Assert.Contains("\"offsetFromRight\": 500", text);
+        Assert.DoesNotContain("lockedX", text);
+    }
+
+    [Theory]
+    [InlineData("-5")]
+    [InlineData("100000")]
+    public void Load_AbsurdOffsetFromRight_ResetsToAuto(string value)
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"position\":\"manual\",\"offsetFromRight\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Null(settings.Widget.OffsetFromRight);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-20")]
+    [InlineData("50000")]
+    public void Load_AbsurdWidthOverride_Ignored(string value)
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"widthOverride\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out _);
+
+        Assert.Null(settings.Widget.WidthOverride);
+    }
+
+    [Fact]
+    public void Load_ValidOffsetFromRight_Kept()
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"position\":\"manual\",\"offsetFromRight\":500}}");
+
+        Assert.Equal(500, new AppSettingsStore(SettingsPath).Load(out _).Widget.OffsetFromRight);
     }
 }

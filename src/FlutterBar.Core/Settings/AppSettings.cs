@@ -1,3 +1,4 @@
+using FlutterBar.Core.Docking;
 using FlutterBar.Core.Projects;
 
 namespace FlutterBar.Core.Settings;
@@ -86,8 +87,31 @@ public sealed class ProjectState
 
 public sealed class WidgetSettings
 {
+    /// <summary>Upper bound for <see cref="WidthOverride"/> in DIPs; larger values are treated as corrupt.</summary>
+    public const double MaxWidthOverride = 4096;
+
+    private int? _offsetFromRight;
+    private double? _widthOverride;
+
     public string Size { get; set; } = "full";
+
+    /// <summary><c>auto</c> or <c>manual</c>; manual mode is in effect only while <see cref="OffsetFromRight"/> has a value.</summary>
     public string Position { get; set; } = "auto";
-    public double? LockedX { get; set; }
-    public double? WidthOverride { get; set; }
+
+    /// <summary>
+    /// Manual position: distance from the taskbar's right edge to the widget's right edge in physical px (spec §4.3, §7.3).
+    /// Negative or absurd values (&gt; <see cref="ManualPlacement.MaxOffset"/>) become null (= auto) on load and on assignment.
+    /// </summary>
+    public int? OffsetFromRight
+    {
+        get => _offsetFromRight;
+        set => _offsetFromRight = ManualPlacement.IsValidOffset(value) ? value : null;
+    }
+
+    /// <summary>Width of the preferred size after a left-edge resize, in DIPs; values outside (0, <see cref="MaxWidthOverride"/>] become null.</summary>
+    public double? WidthOverride
+    {
+        get => _widthOverride;
+        set => _widthOverride = value is > 0 and <= MaxWidthOverride ? value : null;
+    }
 }
