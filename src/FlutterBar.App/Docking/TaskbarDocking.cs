@@ -24,7 +24,7 @@ internal sealed partial class TaskbarDocking
     private readonly Window _window;
     private readonly string _id = Guid.NewGuid().ToString("N")[..6];
     private readonly DispatcherTimer _timer;
-    private readonly TaskbarProbe _probe = new();
+    private readonly TaskbarProbe _probe;
     private readonly FullscreenDetector _fullscreen = new();
     private readonly NativeMethods.WinEventDelegate _foregroundCallback; // kept in fields: the hooks must not lose them to the GC
     private readonly NativeMethods.WinEventDelegate _locationCallback;
@@ -32,6 +32,7 @@ internal sealed partial class TaskbarDocking
     private HwndSource? _source;
     private IntPtr _hwnd;
     private IntPtr _tray;
+    private IntPtr _trayNotify;
     private IntPtr _foregroundHook;
     private IntPtr _locationHook;
     private uint _taskbarCreatedMessage;
@@ -49,6 +50,7 @@ internal sealed partial class TaskbarDocking
         _window.Left = OffScreen; // no flash at the default position before the first placement
         _window.Top = OffScreen;
         _timer = new DispatcherTimer(DispatcherPriority.Background, window.Dispatcher) { Interval = TimeSpan.FromMilliseconds(600) };
+        _probe = new TaskbarProbe(() => _dead);
         _foregroundCallback = OnForeground;
         _locationCallback = OnLocation;
     }
@@ -208,7 +210,9 @@ internal sealed partial class TaskbarDocking
 
     private void OnLocation(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
     {
-        if (_dead || idObject != NativeMethods.OBJID_WINDOW || _locationPending)
+        // Only the taskbar window itself (auto-hide slide, resize) and its tray child; the hook is per explorer process, so
+        // moving a File Explorer window would otherwise trigger reassert bursts. The 600 ms timer covers everything else.
+        if (_dead || idObject != NativeMethods.OBJID_WINDOW || _locationPending || (hwnd != _tray && hwnd != _trayNotify))
         {
             return;
         }
@@ -231,38 +235,40 @@ internal sealed partial class TaskbarDocking
         }
         if (!NativeMethods.IsWindow(_hwnd))
         {
-            RequestRecreate("IsWindow=false");
+            _ = RequestRecreate("IsWindow=false"); // rate-limited: retried on the next tick
             return;
         }
-        if (_ownerFails >= 3)
+        if (_ownerFails >= 3 && RequestRecreate($"owner attach failed {_ownerFails}x on timer ticks"))
         {
-            if (DateTime.UtcNow - s_lastRecreate < RecreateMinInterval)
-            {
-                AppLog.Limited("owner-recreate-limit", $"inst={_id} owner attach keeps failing ({_ownerFails}x); recreate rate-limited (max once per 20 s)", 5);
-            }
-            else
-            {
-                s_lastRecreate = DateTime.UtcNow;
-                RequestRecreate($"owner attach failed {_ownerFails}x on timer ticks");
-                return;
-            }
+            return;
         }
         PopupFailsafe();
         _autoHide = NativeMethods.IsAutoHide();
         Reassert("timer");
     }
 
-    private void OnWindowClosed(object? sender, EventArgs e) => RequestRecreate("window closed unexpectedly");
+    private void OnWindowClosed(object? sender, EventArgs e) => _ = RequestRecreate("window closed unexpectedly"); // rate-limited: the timer retries via IsWindow
 
-    private void RequestRecreate(string reason)
+    /// <summary>
+    /// Every recreate path (owner failures, IsWindow=false, Closed) is rate-limited to once per 20 s process-wide. While
+    /// limited the instance stays alive and the timer retries on its next tick. Returns true when the recreate happened.
+    /// </summary>
+    private bool RequestRecreate(string reason)
     {
         if (_dead)
         {
-            return;
+            return false;
         }
+        if (DateTime.UtcNow - s_lastRecreate < RecreateMinInterval)
+        {
+            AppLog.Limited("recreate-limit", $"inst={_id} recreate wanted ({reason}) but rate-limited (max once per 20 s); timer retries", 5);
+            return false;
+        }
+        s_lastRecreate = DateTime.UtcNow;
         Teardown();
         AppLog.Write($"widget window destroyed inst={_id} ({reason}) -> old instance stopped, recreating");
         RecreateRequested?.Invoke(reason);
+        return true;
     }
 
     /// <summary>Full stop: after this no handler of this instance does anything or logs (all check <see cref="_dead"/>).</summary>

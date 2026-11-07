@@ -14,11 +14,14 @@ public static class PlacementPlanner
     public const double Inset = 8;
 
     /// <summary>
-    /// v3.1 rule: try sizes from <paramref name="preferred"/> down (Full -> Compact -> ButtonsOnly); the first size that fits
-    /// any gap wins and docks at the right end of the rightmost gap that fits it. Nothing fits (<see cref="WidgetLayoutPolicy.Choose"/>
-    /// returns null): ButtonsOnly at <paramref name="lastValidX"/>, else left of TrayNotifyWnd, else the taskbar's right edge,
-    /// clamped to the taskbar. The widget is never hidden for lack of space.
+    /// Rightmost-gap rule (spec §7.3 "tepat di kiri area tray/jam"): walk the gaps from RIGHT to LEFT; in each gap take the
+    /// largest size that fits, stepping down from <paramref name="preferred"/> (<see cref="WidgetLayoutPolicy.Choose"/>); the
+    /// first gap where any size fits wins and the widget docks at its right end. So a smaller size next to the tray beats a
+    /// larger size in a gap further left. Nothing fits anywhere: ButtonsOnly at <paramref name="lastValidX"/>, else left of
+    /// TrayNotifyWnd, else the taskbar's right edge, clamped to the taskbar, with <see cref="Placement.NoFit"/> set. The
+    /// widget is never hidden for lack of space.
     /// </summary>
+    /// <param name="gaps">Free strips sorted left to right (<see cref="TaskbarGeometry.FreeGaps"/>).</param>
     /// <param name="widths">Required width per size in physical px.</param>
     public static Placement Choose(
         IReadOnlyList<Box> gaps,
@@ -28,17 +31,12 @@ public static class PlacementPlanner
         double? lastValidX,
         double? trayNotifyLeft)
     {
-        // The first size fitting ANY gap is the largest size not wider than the widest gap.
-        var widest = gaps.Count == 0 ? 0 : gaps.Max(g => g.Right - g.Left);
-        if (WidgetLayoutPolicy.Choose(preferred, widest, widths) is { } size)
+        for (var i = gaps.Count - 1; i >= 0; i--)
         {
-            var width = widths[size];
-            for (var i = gaps.Count - 1; i >= 0; i--)
+            var gap = gaps[i];
+            if (WidgetLayoutPolicy.Choose(preferred, gap.Right - gap.Left, widths) is { } size)
             {
-                if (gaps[i].Right - gaps[i].Left >= width)
-                {
-                    return new Placement(size, gaps[i].Right - width, NoFit: false, gaps[i]);
-                }
+                return new Placement(size, gap.Right - widths[size], NoFit: false, gap);
             }
         }
 

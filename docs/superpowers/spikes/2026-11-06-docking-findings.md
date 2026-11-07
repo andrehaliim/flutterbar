@@ -471,15 +471,32 @@ Perbedaan dengan spike: tidak ada teks debug, item "Hide debug info", "Freeze 5s
 layout nyata (`Measure`), bukan 300/260/120 tetap. Fullscreen = aturan rect spike ATAU `SHQueryUserNotificationState` BUSY/D3D (foreground non-shell
 di monitor taskbar). Resize tepi kiri hanya aktif saat "Drag widget" dicentang.
 
+**Aturan penempatan auto (fix round 1, keputusan controller; spec §7.3 "tepat di kiri area tray/jam") menggantikan urutan v3.1:** gap diperiksa dari
+KANAN ke KIRI; di tiap gap dipilih ukuran terbesar yang muat (turun dari ukuran pilihan: Full -> Compact -> ButtonsOnly); gap pertama yang memuat ukuran
+apa pun menang, widget menempel di ujung kanannya. Jadi Compact di dekat tray mengalahkan Full di gap yang lebih kiri. Tidak muat di gap mana pun = jalur
+"taskbar penuh" yang sama (ButtonsOnly di X valid terakhir + pesan, tidak disembunyikan). Contoh nyata: gap `[166..663]=497 [1257..1666]=409`, Full 437,
+Compact 271 -> Compact di x=1395.
+
 Pengamatan otomatis (agen, 2026-11-07; 1920x1080, DPI 96, taskbar rata tengah, auto-hide mati):
 - Start: `owner attached (startup) ... verified (before=<owner tersembunyi WPF>)`; `GetWindowLongPtr(GWLP_HWNDPARENT)` = `Shell_TrayWnd`, ex-style `0x08000088`
   (TOOLWINDOW|NOACTIVATE|TOPMOST), widget tampil, tanpa log FAILED/REJECTED selama 2 menit idle.
 - Lebar terukur (DIP, label default "Pilih project/config/device"): Full 437, Compact 263-271, ButtonsOnly 62. Gap `[166..663]=497 [1257..1666]=409`:
-  Full (437) tidak muat di gap kanan, jadi aturan v3.1 (ukuran dulu, lalu gap paling kanan) menaruh Full di gap KIRI (x=226). Dengan `widget.size=compact`:
+  Full (437) tidak muat di gap kanan; dengan aturan v3.1 lama Full ditaruh di gap KIRI (x=226). Setelah fix round 1 (gap paling kanan dulu): Compact x=1395. Dengan `widget.size=compact`:
   Compact di 1666-271=1395 (dekat tray); `buttonsOnly`: x=1604.
 - `widget.offsetFromRight=500` (tulis tangan): mode manual, x = 1920-500-437 = 983 (OK). `offsetFromRight=-5`: diabaikan saat load -> auto.
-- Working set setelah 2 menit idle: 121,4 MB (render GPU, GC concurrent) -> 104,9 MB Debug / 105,8 MB Release setelah `RenderMode.SoftwareOnly` +
-  `ConcurrentGarbageCollection=false` (private bytes 52 MB). Target spec < 100 MB BELUM tercapai. CPU idle ~1,6% satu core (query UIA ~1x/1,2 detik).
+- Working set setelah 2 menit idle (Debug). Commit pertama: 121,4 MB (GPU, GC concurrent) -> 104,9 MB dengan `RenderMode.SoftwareOnly` PROSES-WIDE +
+  `ConcurrentGarbageCollection=false`. Fix round 1: software rendering hanya untuk window widget (`HwndSource.CompositionTarget.RenderMode`), GC concurrent tetap mati.
+  "Private WS" = kolom "Memory" default Task Manager.
+
+  | Kondisi | Working set | Private WS | Private bytes | CPU 2 menit |
+  |---|---|---|---|---|
+  | (a) normal, widget tampil ~70 s lalu disembunyikan (user masuk game fullscreen) | 115,0 MB | 33,3 MB | 58,1 MB | 2,80 s |
+  | (a') normal, binary ukur yang sama, sepanjang run tersembunyi (fullscreen) | 112,8 MB | 29,7 MB | 54,2 MB | 2,89 s |
+  | (b) probe UIA dimatikan (toggle sementara, tidak di-commit), tersembunyi (fullscreen) | 96,3 MB | 22,9 MB | 49,4 MB | 1,14 s |
+
+  Biaya probe UIA (a' vs b, kondisi sama): ~16,5 MB WS, ~6,8 MB private WS, ~1,75 s CPU per 2 menit. Working set total masih > 100 MB; private WS jauh < 100 MB.
+  Keputusan RAM (metrik mana yang dipakai untuk target spec §1, dan apakah UIA diganti COM langsung / dijalankan lebih jarang) diserahkan ke user.
+- Selama game fullscreen (Overwatch, `SHQueryUserNotificationState=3`) widget tersembunyi dengan benar dan muncul lagi setelah keluar (log `fullscreen -> YES/NO`).
 - Tidak diuji otomatis: Start/Search, fullscreen, auto-hide, restart explorer, drag/resize/menu (butuh mouse), DPI lain, tema terang.
 
 | Uji | Hasil |
@@ -509,7 +526,7 @@ Pengamatan otomatis (agen, 2026-11-07; 1920x1080, DPI 96, taskbar rata tengah, a
 | Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
 | Taskbar penuh: widget mengecil (Full→Compact→ButtonsOnly) lalu tetap tampil dengan pesan (tooltip + border oranye) | BELUM DIUJI (user) |
 | Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
-| Working set FlutterBar.App (Task Manager, MB, idle) | agen: 104,9 MB (Debug) / 105,8 MB (Release) setelah 2 menit idle, target < 100 MB belum tercapai; user: BELUM DIUJI (user) |
+| Working set FlutterBar.App (Task Manager, MB, idle) | agen (fix round 1): WS 115,0 MB / private WS 33,3 MB setelah 2 menit idle (lihat tabel di atas); user: BELUM DIUJI (user) |
 | Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
 | Explorer restart: owner terpasang lagi (diag.log `owner attached` / tanpa `FAILED`) | BELUM DIUJI (user) |
 | Teks widget diam (tidak berubah sendiri tiap detik) | BELUM DIUJI (user) |

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using FlutterBar.Core.Layout;
@@ -59,6 +60,19 @@ internal sealed partial class TaskbarWidget : Window
     {
         _measured ??= MeasureLayouts();
         return WidgetWidths.Resolve(_measured, PreferredSize, WidthOverride);
+    }
+
+    /// <summary>
+    /// The 40 px widget gains nothing from the GPU pipeline: render THIS window in software (per window, not process-wide,
+    /// so flyouts and the LogWindow keep hardware rendering).
+    /// </summary>
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        if (PresentationSource.FromVisual(this) is HwndSource { CompositionTarget: { } target })
+        {
+            target.RenderMode = RenderMode.SoftwareOnly;
+        }
     }
 
     /// <summary>Visual cue for drag mode: 1 px accent border, SizeWE cursor, menu check mark.</summary>

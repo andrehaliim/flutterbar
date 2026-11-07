@@ -15,6 +15,7 @@ internal sealed partial class TaskbarDocking
         if (!_dead && _taskbarCreatedMessage != 0 && (uint)msg == _taskbarCreatedMessage)
         {
             AppLog.Write($"TaskbarCreated received inst={_id} (explorer restarted)");
+            _layoutGeneration++; // queries started before this are stale
             _layout = null;
             _evaluatedLayout = null;
             _debouncer.ArmImmediate();
@@ -34,6 +35,7 @@ internal sealed partial class TaskbarDocking
         {
             InstallLocationHook(tray, reason);
             _tray = tray;
+            _trayNotify = NativeMethods.FindWindowEx(tray, IntPtr.Zero, "TrayNotifyWnd", null);
         }
         var before = NativeMethods.GetWindowLongPtr(_hwnd, NativeMethods.GWLP_HWNDPARENT);
         if (before == tray)

@@ -39,8 +39,12 @@ internal sealed class TaskbarProbe
     private IntPtr _rootHandle;
     private AutomationElement? _root;
 
-    public TaskbarProbe()
+    private readonly Func<bool> _isCancelled;
+
+    /// <param name="isCancelled">True once the owning docking instance is dead: no more logging or results.</param>
+    public TaskbarProbe(Func<bool> isCancelled)
     {
+        _isCancelled = isCancelled;
         _request = new CacheRequest
         {
             TreeScope = TreeScope.Subtree,
@@ -81,10 +85,18 @@ internal sealed class TaskbarProbe
             catch (Exception ex) when (ex is ElementNotAvailableException or COMException or InvalidOperationException or ArgumentException)
             {
                 _root = null; // re-resolve next time (explorer restarted, element gone)
+                if (_isCancelled())
+                {
+                    return null;
+                }
                 AppLog.Limited("probe-fail", $"UIA query failed (keeping last good layout): {ex.GetType().Name}: {ex.Message}", 5);
                 return null;
             }
 
+            if (_isCancelled())
+            {
+                return null; // the instance died while UIA was running: no logs, no result
+            }
             var trayNotifyLeft = NativeMethods.TrayNotifyLeft(tray, taskbar);
             var analysis = TaskbarLayoutAnalyzer.Analyze(taskbar, elements, trayNotifyLeft);
             LogNewVerdicts(analysis, pids);

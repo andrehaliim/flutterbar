@@ -1,4 +1,7 @@
 using FlutterBar.Core.Docking;
+using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FlutterBar.Core.Projects;
 
 namespace FlutterBar.Core.Settings;
@@ -102,6 +105,7 @@ public sealed class WidgetSettings
     /// Manual position: distance from the taskbar's right edge to the widget's right edge in physical px (spec §4.3, §7.3).
     /// Negative or absurd values (&gt; <see cref="ManualPlacement.MaxOffset"/>) become null (= auto) on load and on assignment.
     /// </summary>
+    [JsonConverter(typeof(LenientOffsetConverter))]
     public int? OffsetFromRight
     {
         get => _offsetFromRight;
@@ -113,5 +117,50 @@ public sealed class WidgetSettings
     {
         get => _widthOverride;
         set => _widthOverride = value is > 0 and <= MaxWidthOverride ? value : null;
+    }
+}
+
+/// <summary>
+/// Hand-edited settings must not reset everything: a fractional offset (<c>500.5</c>) is rounded, a numeric string is
+/// parsed, and anything else (text, bool, object, out-of-range number) reads as null (= auto position).
+/// </summary>
+internal sealed class LenientOffsetConverter : JsonConverter<int?>
+{
+    public override bool HandleNull => true;
+
+    public override int? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        double? value = null;
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.Number:
+                value = reader.GetDouble();
+                break;
+            case JsonTokenType.String:
+                if (double.TryParse(reader.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+                {
+                    value = parsed;
+                }
+                break;
+            case JsonTokenType.StartObject:
+            case JsonTokenType.StartArray:
+                reader.Skip();
+                break;
+        }
+        return value is { } v && double.IsFinite(v) && v >= int.MinValue && v <= int.MaxValue
+            ? (int)Math.Round(v, MidpointRounding.AwayFromZero)
+            : null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, int? value, JsonSerializerOptions options)
+    {
+        if (value is { } v)
+        {
+            writer.WriteNumberValue(v);
+        }
+        else
+        {
+            writer.WriteNullValue();
+        }
     }
 }

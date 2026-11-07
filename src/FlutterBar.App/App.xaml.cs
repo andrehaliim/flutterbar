@@ -36,8 +36,6 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => AppLog.Write("unhandled exception (terminating)", args.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, args) => AppLog.Write("unobserved task exception", args.Exception);
-        // A 40 px widget gains nothing from the GPU pipeline; software rendering avoids loading the D3D/driver stack (working set, spec §1).
-        System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         AppLog.Write($"FlutterBar.App start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
 
         _settings = LoadSettings(); // before any window exists, so the synchronous read cannot stall the taskbar

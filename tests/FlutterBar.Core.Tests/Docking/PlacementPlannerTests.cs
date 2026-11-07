@@ -97,15 +97,41 @@ public sealed class PlacementPlannerTests
     }
 
     [Fact]
-    public void Choose_LargestSizeBeatsRightmostSmallerGap()
+    public void Choose_RightmostGapWinsOverLargerSizeInLeftGap()
     {
-        // Full fits only the left gap; it still wins over Compact in the right gap.
+        // Spec §7.3 "tepat di kiri area tray/jam": Full fits only the left gap, but the right gap (270) takes Compact (260).
         var gaps = new[] { Gap(100, 450), Gap(1300, 1570) };
 
         var p = PlacementPlanner.Choose(gaps, WidgetSize.Full, Widths, Taskbar, null, 1674);
 
-        Assert.Equal(WidgetSize.Full, p.Size);
-        Assert.Equal(150, p.X);
+        Assert.Equal(new Placement(WidgetSize.Compact, 1310, false, Gap(1300, 1570)), p);
+    }
+
+    [Fact]
+    public void Choose_ProductionLog_CenteredTaskbar_CompactNearTray()
+    {
+        // Task 13 launch: gaps [166..663]=497 [1257..1666]=409, measured Full 437 / Compact 271 -> Compact at 1666-271.
+        var widths = new Dictionary<WidgetSize, double>
+        {
+            [WidgetSize.Full] = 437,
+            [WidgetSize.Compact] = 271,
+            [WidgetSize.ButtonsOnly] = 62,
+        };
+        var gaps = new[] { Gap(166, 663), Gap(1257, 1666) };
+
+        var p = PlacementPlanner.Choose(gaps, WidgetSize.Full, widths, Taskbar, null, 1674);
+
+        Assert.Equal(new Placement(WidgetSize.Compact, 1395, false, Gap(1257, 1666)), p);
+    }
+
+    [Fact]
+    public void Choose_RightGapTooSmallEvenForButtons_LeftGapWithItsLargestSize()
+    {
+        var gaps = new[] { Gap(100, 450), Gap(1500, 1600) }; // right gap 100 < ButtonsOnly 120
+
+        var p = PlacementPlanner.Choose(gaps, WidgetSize.Full, Widths, Taskbar, null, 1674);
+
+        Assert.Equal(new Placement(WidgetSize.Full, 150, false, Gap(100, 450)), p);
     }
 
     [Fact]

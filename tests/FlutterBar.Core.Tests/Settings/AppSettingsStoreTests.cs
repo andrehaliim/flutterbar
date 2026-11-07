@@ -174,4 +174,36 @@ public sealed class AppSettingsStoreTests : IDisposable
 
         Assert.Equal(500, new AppSettingsStore(SettingsPath).Load(out _).Widget.OffsetFromRight);
     }
+
+    [Theory]
+    [InlineData("500.5", 501)]
+    [InlineData("499.4", 499)]
+    [InlineData("\"500\"", 500)]
+    public void Load_NonIntegerOffsetFromRight_RoundedWithoutResettingSettings(string value, int expected)
+    {
+        File.WriteAllText(SettingsPath, "{\"currentProject\":\"C:/Work/app\",\"widget\":{\"position\":\"manual\",\"offsetFromRight\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Equal(expected, settings.Widget.OffsetFromRight);
+        Assert.Equal("C:/Work/app", settings.CurrentProject);
+        Assert.True(File.Exists(SettingsPath)); // not treated as corrupt
+    }
+
+    [Theory]
+    [InlineData("\"abc\"")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("1e300")]
+    public void Load_GarbageOffsetFromRight_AutoWithoutResettingSettings(string value)
+    {
+        File.WriteAllText(SettingsPath, "{\"startWithWindows\":true,\"widget\":{\"offsetFromRight\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Null(settings.Widget.OffsetFromRight);
+        Assert.True(settings.StartWithWindows);
+    }
 }

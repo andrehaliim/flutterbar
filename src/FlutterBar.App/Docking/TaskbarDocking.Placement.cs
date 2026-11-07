@@ -28,6 +28,7 @@ internal sealed partial class TaskbarDocking
     private string _evaluatedKey = string.Empty;
     private double? _lastValidX;
     private volatile bool _queryRunning;
+    private volatile int _layoutGeneration; // bumped on TaskbarCreated (UI thread); older query results are dropped
     private DateTime _lastQuery = DateTime.MinValue;
     private WidgetSize? _effectiveSize;
     private bool _taskbarFull;
@@ -236,26 +237,32 @@ internal sealed partial class TaskbarDocking
         _queryRunning = true;
         _lastQuery = DateTime.UtcNow;
         var dispatcher = _window.Dispatcher;
+        var generation = _layoutGeneration;
         Task.Run(() =>
         {
             try
             {
                 var info = _probe.Read();
-                if (info is not null && !_dead && !_autoHidden)
+                if (info is null || _dead || _autoHidden || generation != _layoutGeneration)
                 {
-                    _layout = info;
-                    dispatcher.BeginInvoke(() =>
-                    {
-                        if (!_dead)
-                        {
-                            Reassert("layout");
-                        }
-                    }, DispatcherPriority.Background);
+                    return; // dead instance, hidden bar, or started before TaskbarCreated: drop silently
                 }
+                dispatcher.BeginInvoke(() =>
+                {
+                    // re-check on the UI thread, where _dead and _layoutGeneration change
+                    if (!_dead && generation == _layoutGeneration)
+                    {
+                        _layout = info;
+                        Reassert("layout");
+                    }
+                }, DispatcherPriority.Background);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
-                AppLog.Limited("uia-fail", $"UIA query failed inst={_id} (keeping last good layout): {ex}", 5);
+                if (!_dead)
+                {
+                    AppLog.Limited("uia-fail", $"UIA query failed inst={_id} (keeping last good layout): {ex}", 5);
+                }
             }
             finally
             {
