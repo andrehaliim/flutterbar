@@ -41,6 +41,17 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         return (await QueryAsync(root, "rev-parse", "--short", "HEAD").ConfigureAwait(false)).Trim();
     }
 
+    /// <summary>
+    /// Branch HEAD points to via <c>git symbolic-ref --short HEAD</c>, also when it has no commit yet (fresh repo, where
+    /// <see cref="GetCurrentAsync"/> throws). Null when HEAD is detached or git fails.
+    /// </summary>
+    public async Task<string?> GetSymbolicBranchAsync(string root)
+    {
+        var result = await RunAsync(root, "symbolic-ref", "--quiet", "--short", "HEAD").ConfigureAwait(false);
+        var name = result.Stdout.Trim();
+        return result.ExitCode == 0 && name.Length > 0 ? name : null;
+    }
+
     public async Task<string> GetHeadCommitAsync(string root) =>
         (await QueryAsync(root, "rev-parse", "HEAD").ConfigureAwait(false)).Trim();
 
