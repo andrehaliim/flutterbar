@@ -268,37 +268,39 @@ Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata te
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah | BELUM DIUJI (user) |
-| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
-| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
-| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
-| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
-| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
-| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
-| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
-| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | BELUM DIUJI (user) |
-| Reset to auto position | BELUM DIUJI (user) |
-| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
-| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
-| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
-| Taskbar penuh: widget mengecil (260→120) lalu tetap tampil dengan pesan | BELUM DIUJI (user) |
-| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
-| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
-| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
-| Explorer restart: owner terpasang lagi (log owner≠0x0) | BELUM DIUJI (user) |
-| Hide debug info: teks widget diam | BELUM DIUJI (user) |
-| Auto-hide ON sebelum spike dijalankan: widget tetap tersembunyi sampai taskbar muncul | BELUM DIUJI (user) |
-| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | BELUM DIUJI (user) |
+| Taskbar rata tengah | OK (user, 2026-11-07) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | OK (user, 2026-11-07) |
+| Klik Start / Search: widget tetap terlihat? | OK (user, 2026-11-07) |
+| Buka Start: widget tidak pindah/menutupi tray | OK (user, 2026-11-07) |
+| Klik tombol aplikasi: widget tetap terlihat? | OK (user, 2026-11-07) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | OK (user, 2026-11-07) |
+| Menu klik kanan tampil di atas widget | OK (user, 2026-11-07) |
+| Auto-hide taskbar menyala | OK (user, 2026-11-07) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | OK (user, 2026-11-07) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | OK (user, 2026-11-07) |
+| DPI 100% | OK (user, 2026-11-07) |
+| DPI 125% | OK (user, 2026-11-07) |
+| DPI 150% | OK (user, 2026-11-07) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | OK (user, 2026-11-07) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | OK (user, 2026-11-07) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | OK (user, 2026-11-07) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | OK (user, 2026-11-07) |
+| Drag widget: bisa digeser horizontal | OK (user, 2026-11-07) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | OK (user, 2026-11-07) |
+| Reset to auto position | OK (user, 2026-11-07) |
+| Mode manual + fullscreen/auto-hide tetap jalan | OK (user, 2026-11-07) |
+| Bersebelahan dengan TrafficMonitor | OK (user, 2026-11-07) |
+| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | OK (user, 2026-11-07) |
+| Taskbar penuh: widget mengecil (260→120) lalu tetap tampil dengan pesan | OK (user, 2026-11-07) |
+| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | OK (user, 2026-11-07) |
+| Working set spike (Task Manager, MB) | tidak dilaporkan (angka belum diukur) |
+| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | OK (user, 2026-11-07) |
+| Explorer restart: owner terpasang lagi (log owner≠0x0) | OK (user, 2026-11-07) |
+| Hide debug info: teks widget diam | OK (user, 2026-11-07) |
+| Auto-hide ON sebelum spike dijalankan: widget tetap tersembunyi sampai taskbar muncul | OK (user, 2026-11-07) |
+| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | OK (user, 2026-11-07) |
+
+Gerbang keputusan Task 1: LULUS (user, 2026-11-07)
 
 ## Checklist manual v3.1 (tidak dipakai lagi, digantikan checklist v3.2)
 
@@ -457,3 +459,62 @@ Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata te
 - **Visibilitas saat startup/recreate (v3.2 fix)**: `SourceInitialized` datang sebelum WPF menampilkan window, jadi jangan memutuskan hide/show di sana. Jalankan Reassert pertama setelah window tampil
   (`Dispatcher.BeginInvoke(..., DispatcherPriority.Loaded)` atau `ContentRendered`), dan putuskan sembunyi/tampil dari `IsWindowVisible(hwnd)` (keadaan nyata), bukan dari flag cache. Mulai di luar layar
   agar tidak berkedip. Saat window dibuat ulang selagi mode drag aktif, akhiri drag dan log bahwa state drag yang belum disimpan dibuang.
+
+## Build produksi (Task 13)
+
+Teknik spike v3.2 dipindah ke `src/FlutterBar.App` (`Docking/TaskbarDocking*.cs`, `Docking/TaskbarProbe.cs`, `Docking/FullscreenDetector.cs`,
+`Widget/TaskbarWidget.xaml`), aturan murni di `src/FlutterBar.Core/Docking/` (dengan unit test). Log ke `%APPDATA%\FlutterBar\diag.log`.
+Jalankan: `src\FlutterBar.App\bin\Debug\net10.0-windows\FlutterBar.App.exe`; tutup lewat klik kanan widget > "Keluar".
+Posisi manual tersimpan di `%APPDATA%\FlutterBar\settings.json` (`widget.offsetFromRight`, `widget.widthOverride`).
+
+Perbedaan dengan spike: tidak ada teks debug, item "Hide debug info", "Freeze 5s (debug)", maupun hook uji. Lebar tiap ukuran diukur dari
+layout nyata (`Measure`), bukan 300/260/120 tetap. Fullscreen = aturan rect spike ATAU `SHQueryUserNotificationState` BUSY/D3D (foreground non-shell
+di monitor taskbar). Resize tepi kiri hanya aktif saat "Drag widget" dicentang.
+
+Pengamatan otomatis (agen, 2026-11-07; 1920x1080, DPI 96, taskbar rata tengah, auto-hide mati):
+- Start: `owner attached (startup) ... verified (before=<owner tersembunyi WPF>)`; `GetWindowLongPtr(GWLP_HWNDPARENT)` = `Shell_TrayWnd`, ex-style `0x08000088`
+  (TOOLWINDOW|NOACTIVATE|TOPMOST), widget tampil, tanpa log FAILED/REJECTED selama 2 menit idle.
+- Lebar terukur (DIP, label default "Pilih project/config/device"): Full 437, Compact 263-271, ButtonsOnly 62. Gap `[166..663]=497 [1257..1666]=409`:
+  Full (437) tidak muat di gap kanan, jadi aturan v3.1 (ukuran dulu, lalu gap paling kanan) menaruh Full di gap KIRI (x=226). Dengan `widget.size=compact`:
+  Compact di 1666-271=1395 (dekat tray); `buttonsOnly`: x=1604.
+- `widget.offsetFromRight=500` (tulis tangan): mode manual, x = 1920-500-437 = 983 (OK). `offsetFromRight=-5`: diabaikan saat load -> auto.
+- Working set setelah 2 menit idle: 121,4 MB (render GPU, GC concurrent) -> 104,9 MB Debug / 105,8 MB Release setelah `RenderMode.SoftwareOnly` +
+  `ConcurrentGarbageCollection=false` (private bytes 52 MB). Target spec < 100 MB BELUM tercapai. CPU idle ~1,6% satu core (query UIA ~1x/1,2 detik).
+- Tidak diuji otomatis: Start/Search, fullscreen, auto-hide, restart explorer, drag/resize/menu (butuh mouse), DPI lain, tema terang.
+
+| Uji | Hasil |
+|---|---|
+| Taskbar rata tengah | BELUM DIUJI (user) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
+| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
+| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
+| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
+| Auto-hide taskbar menyala | BELUM DIUJI (user) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
+| DPI 100% | BELUM DIUJI (user) |
+| DPI 125% | BELUM DIUJI (user) |
+| DPI 150% | BELUM DIUJI (user) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
+| Taskbar tetap bisa diklik saat widget berjalan (produksi tidak punya item "Freeze 5s"; UI thread tidak pernah blocking) | BELUM DIUJI (user) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
+| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah app ditutup-buka | BELUM DIUJI (user) |
+| Reset to auto position | BELUM DIUJI (user) |
+| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
+| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
+| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
+| Taskbar penuh: widget mengecil (Full→Compact→ButtonsOnly) lalu tetap tampil dengan pesan (tooltip + border oranye) | BELUM DIUJI (user) |
+| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
+| Working set FlutterBar.App (Task Manager, MB, idle) | agen: 104,9 MB (Debug) / 105,8 MB (Release) setelah 2 menit idle, target < 100 MB belum tercapai; user: BELUM DIUJI (user) |
+| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
+| Explorer restart: owner terpasang lagi (diag.log `owner attached` / tanpa `FAILED`) | BELUM DIUJI (user) |
+| Teks widget diam (tidak berubah sendiri tiap detik) | BELUM DIUJI (user) |
+| Auto-hide ON sebelum app dijalankan: widget tetap tersembunyi sampai taskbar muncul | BELUM DIUJI (user) |
+| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | BELUM DIUJI (user) |
+| Resize tepi kiri (saat "Drag widget" dicentang) menyimpan lebar dan bertahan setelah app ditutup-buka | BELUM DIUJI (user) |
+| Tombol & chip tampil sesuai ukuran (Full/Compact/ButtonsOnly) | BELUM DIUJI (user) |
+| Tema terang/gelap mengikuti Windows | BELUM DIUJI (user) |

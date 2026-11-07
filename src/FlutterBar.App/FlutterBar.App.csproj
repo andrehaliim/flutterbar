@@ -5,6 +5,12 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>FlutterBar.App</RootNamespace>
+    <!-- Idle working set target < 100 MB (spec §1): no background GC thread for this small, mostly idle process. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FlutterBar.Core\FlutterBar.Core.csproj" />
+  </ItemGroup>
 
 </Project>
