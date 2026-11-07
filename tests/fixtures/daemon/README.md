@@ -43,3 +43,10 @@ The Pixel_9 AVD booted (as `emulator-5554`) but the debug APK install failed wit
 - `app.log` and `daemon.logMessage` did NOT occur in any recording (web prints app output as plain text lines). Their field names are as in the spec (`log`/`error`, `level`/`message`), unverified against real output.
 - Non-JSON stdout lines seen: `Launching lib\main.dart on Chrome in debug mode...`, `This app is linked to the debug service: ws://...`, `Debug service listening on ws://...`, `Restarted application in NNNms.`, `Application finished.`, framework exception dumps. (No "new version available" banner appeared.)
 - The first fixture of a fresh SDK may contain `Downloading ...` lines on stderr only.
+## Android log prefix (synthesized, not recorded)
+
+On Android, `flutter run` forwards app output from logcat with its tag/pid prefix, e.g.
+`I/flutter ( 1234): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══…` (iOS: `flutter: …`). The Android lines used in
+`LogClassifierTests` and `RunSessionTests` (`AndroidLogcatPrefixedException_*`) were **synthesized from flutter_tools'
+`AdbLogReader` line format**, not recorded: no Android recording exists yet (see "Device used"). Record one
+`runtime-exception` fixture on an Android device once the AVD has free storage and check it against those tests.

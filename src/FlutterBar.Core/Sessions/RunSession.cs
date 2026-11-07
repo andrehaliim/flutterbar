@@ -188,6 +188,9 @@ public sealed class RunSession(
             ctx = c;
             handle = h;
             appId = id;
+            // A block whose footer never came (output cut off) must not swallow the output after this reload.
+            ctx.StdoutInException = false;
+            ctx.StderrInException = false;
             pending = new PendingReload(Interlocked.Increment(ref _nextId), fullRestart);
             ctx.Pending = pending;
             _state = SessionState.Reloading;

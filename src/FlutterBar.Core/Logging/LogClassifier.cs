@@ -1,7 +1,12 @@
+using System.Text.RegularExpressions;
+
 namespace FlutterBar.Core.Logging;
 
-/// <summary>Recognises the framing lines Flutter prints around uncaught exceptions.</summary>
-public static class LogClassifier
+/// <summary>
+/// Recognises the framing lines Flutter prints around uncaught exceptions. Device log prefixes are ignored: Android
+/// forwards logcat lines as <c>I/flutter ( 1234): …</c> (flutter_tools AdbLogReader), iOS as <c>flutter: …</c>.
+/// </summary>
+public static partial class LogClassifier
 {
     private const char Bar = '═';
     private const char HeaderCap = '╡';
@@ -14,7 +19,7 @@ public static class LogClassifier
     /// </summary>
     public static bool IsExceptionHeader(string text)
     {
-        var span = text.AsSpan().Trim();
+        var span = WithoutDevicePrefix(text).Trim();
         var bars = 0;
         while (bars < span.Length && span[bars] == Bar)
         {
@@ -35,7 +40,7 @@ public static class LogClassifier
     /// <summary>True when the whole trimmed line is at least 20 box-drawing bars.</summary>
     public static bool IsExceptionFooter(string text)
     {
-        var span = text.AsSpan().Trim();
+        var span = WithoutDevicePrefix(text).Trim();
         if (span.Length < MinFooterLength)
         {
             return false;
@@ -49,4 +54,17 @@ public static class LogClassifier
         }
         return true;
     }
+
+    /// <summary>
+    /// <paramref name="text"/> without a leading <c>I/flutter ( 1234): </c> (any of V/D/I/W/E/F, pid optional) or
+    /// <c>flutter: </c> prefix; used for classification only, the log keeps the original text.
+    /// </summary>
+    internal static ReadOnlySpan<char> WithoutDevicePrefix(string text)
+    {
+        var match = DevicePrefix().Match(text);
+        return match.Success ? text.AsSpan(match.Length) : text.AsSpan();
+    }
+
+    [GeneratedRegex(@"^\s*(?:[VDIWEF]/flutter\s*(?:\(\s*\d+\s*\))?:|flutter:)\s?", RegexOptions.CultureInvariant)]
+    private static partial Regex DevicePrefix();
 }

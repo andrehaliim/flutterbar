@@ -58,6 +58,9 @@ public sealed class RunSessionTests : IDisposable
     private static string ResponseLine(int code, string message) =>
         $$$"""[{"id":0,"result":{"code":{{{code}}},"message":"{{{message}}}"}}]""";
 
+    private static string AppLogLine(string log) =>
+        JsonSerializer.Serialize(new[] { new { @event = "app.log", @params = new { appId = AppId, log } } });
+
     private static FakeProcessHandle RunningHandle(bool supportsRestart = true) =>
         new([AppStartLine(supportsRestart: supportsRestart), AppStartedLine()]);
 
@@ -566,6 +569,57 @@ public sealed class RunSessionTests : IDisposable
         Assert.True(session.Snapshot.HasError);
         Assert.Equal(1, session.Snapshot.ErrorCount);
         Assert.Empty(handle.HandlerFaults);
+    }
+
+    [Fact]
+    public async Task AndroidLogcatPrefixedException_ErrorFlagCountAndBlock()
+    {
+        // Android: app.log carries the logcat prefix (flutter_tools AdbLogReader format; synthesized, not recorded).
+        var (session, handle) = await StartRunningAsync(RunningHandle());
+        await using var lifetime = session;
+
+        handle.EmitStdout(
+            AppLogLine("I/flutter ( 4711): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════"),
+            AppLogLine("I/flutter ( 4711): The following StateError was thrown building MyHomePage:"),
+            AppLogLine("I/flutter ( 4711): Bad state: boom"),
+            AppLogLine("I/flutter ( 4711): ════════════════════════════════════════════════════════════════════════════════"),
+            AppLogLine("I/flutter ( 4711): after"));
+        await handle.WhenIdle();
+
+        var kinds = _log.Snapshot().ToDictionary(l => l.Text, l => l.Kind);
+        Assert.Equal(LogKind.Error, kinds["I/flutter ( 4711): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════"]);
+        Assert.Equal(LogKind.Error, kinds["I/flutter ( 4711): Bad state: boom"]);
+        Assert.Equal(LogKind.Error, kinds["I/flutter ( 4711): ════════════════════════════════════════════════════════════════════════════════"]);
+        Assert.Equal(LogKind.App, kinds["I/flutter ( 4711): after"]); // original text kept, block closed by the footer
+        Assert.True(session.Snapshot.HasError);
+        Assert.Equal(1, session.Snapshot.ErrorCount);
+        Assert.Empty(handle.HandlerFaults);
+    }
+
+    [Fact]
+    public async Task UnterminatedExceptionBlock_ResetOnReload()
+    {
+        var handle = RunningHandle();
+        handle.EnqueueSegment([ResponseLine(0, "")]);
+        var (session, _) = await StartRunningAsync(handle);
+        await using var lifetime = session;
+
+        // A block without its footer (output cut off) must not turn the rest of the session red.
+        handle.EmitStdout("══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══", "Bad state: boom");
+        handle.EmitStderr("══╡ EXCEPTION CAUGHT BY SERVICES LIBRARY ╞═══");
+        await handle.WhenIdle();
+        Assert.Equal(LogKind.Error, _log.Snapshot().Single(l => l.Text == "Bad state: boom").Kind);
+        Assert.True((await session.ReloadAsync(false, Wait)).Success);
+
+        handle.EmitStdout(AppLogLine("I/flutter ( 4711): after reload"), "plain tool line");
+        handle.EmitStderr("Warning: deprecated");
+        await handle.WhenIdle();
+
+        var kinds = _log.SinceLastReload().ToDictionary(l => l.Text, l => l.Kind);
+        Assert.Equal(LogKind.App, kinds["I/flutter ( 4711): after reload"]);
+        Assert.Equal(LogKind.Tool, kinds["plain tool line"]);
+        Assert.False(session.Snapshot.HasError);
+        Assert.Equal(0, session.Snapshot.ErrorCount);
     }
 
     [Fact]

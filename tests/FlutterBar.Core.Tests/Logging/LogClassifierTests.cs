@@ -29,4 +29,32 @@ public class LogClassifierTests
         Assert.False(LogClassifier.IsExceptionFooter(new string('═', 19)));
         Assert.False(LogClassifier.IsExceptionFooter(new string('═', 20) + "x"));
     }
+
+    // Android: flutter forwards logcat lines with their tag/pid prefix (flutter_tools AdbLogReader); iOS: "flutter: ".
+    // Synthesized from that format, not recorded (no Android fixture yet, see tests/fixtures/daemon/README.md).
+    [Theory]
+    [InlineData("I/flutter ( 1234): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════")]
+    [InlineData("I/flutter (12345): ════════ Exception caught by rendering library ═════════════")]
+    [InlineData("E/flutter (  999): ══╡ EXCEPTION CAUGHT BY FLUTTER FRAMEWORK ╞══")]
+    [InlineData("I/flutter: ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══")]
+    [InlineData("flutter: ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════")]
+    public void Header_WithDeviceLogPrefix(string line) => Assert.True(LogClassifier.IsExceptionHeader(line));
+
+    [Theory]
+    [InlineData("I/flutter ( 1234): ════════════════════════════════════════════════════════════════════════════════")]
+    [InlineData("I/flutter (12345):  ════════════════════════════════════")]
+    [InlineData("flutter: ════════════════════════════════════════")]
+    public void Footer_WithDeviceLogPrefix(string line) => Assert.True(LogClassifier.IsExceptionFooter(line));
+
+    [Theory]
+    [InlineData("I/flutter ( 1234): hello")]
+    [InlineData("I/flutter ( 1234): Bad state: boom")]
+    [InlineData("I/chromium ( 1234): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══")]
+    [InlineData("X/flutter ( 1234): ══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══")]
+    [InlineData("I/flutter ( 1234): ════════")]
+    public void PrefixedNonFramingLines_AreNotHeaderOrFooter(string line)
+    {
+        Assert.False(LogClassifier.IsExceptionHeader(line));
+        Assert.False(LogClassifier.IsExceptionFooter(line));
+    }
 }
