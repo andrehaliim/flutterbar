@@ -494,7 +494,7 @@ Pengamatan otomatis (agen, 2026-11-07; 1920x1080, DPI 96, taskbar rata tengah, a
   | (a') normal, binary ukur yang sama, sepanjang run tersembunyi (fullscreen) | 112,8 MB | 29,7 MB | 54,2 MB | 2,89 s |
   | (b) probe UIA dimatikan (toggle sementara, tidak di-commit), tersembunyi (fullscreen) | 96,3 MB | 22,9 MB | 49,4 MB | 1,14 s |
 
-  Biaya probe UIA (a' vs b, kondisi sama): ~16,5 MB WS, ~6,8 MB private WS, ~1,75 s CPU per 2 menit. Working set total masih > 100 MB; private WS jauh < 100 MB.
+  Biaya probe UIA (a' vs b, kondisi sama): ~16,5 MB WS, ~6,8 MB private WS, ~1,75 s CPU per 2 menit. Catatan: selama (a') instance (b) yang tersembunyi masih berjalan (kelalaian script ukur), jadi angka ini batas atas. Working set total masih > 100 MB; private WS jauh < 100 MB.
   Keputusan RAM (metrik mana yang dipakai untuk target spec §1, dan apakah UIA diganti COM langsung / dijalankan lebih jarang) diserahkan ke user.
 - Selama game fullscreen (Overwatch, `SHQueryUserNotificationState=3`) widget tersembunyi dengan benar dan muncul lagi setelah keluar (log `fullscreen -> YES/NO`).
 - Tidak diuji otomatis: Start/Search, fullscreen, auto-hide, restart explorer, drag/resize/menu (butuh mouse), DPI lain, tema terang.
