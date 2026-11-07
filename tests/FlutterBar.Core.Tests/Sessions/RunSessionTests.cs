@@ -95,9 +95,9 @@ public sealed class RunSessionTests : IDisposable
         WaitForAsync(session, s => s.State == state);
 
     private async Task<(RunSession Session, FakeProcessHandle Handle)> StartRunningAsync(
-        FakeProcessHandle handle, RunMode mode = RunMode.Debug, TimeSpan? stopGrace = null)
+        FakeProcessHandle handle, RunMode mode = RunMode.Debug, TimeSpan? stopGrace = null, RetainedJobs? retainedJobs = null)
     {
-        var session = new RunSession(new FakeLauncher(handle), _log, stopGrace);
+        var session = new RunSession(new FakeLauncher(handle), _log, stopGrace, retainedJobs);
         await session.StartAsync(Request(mode));
         await WaitForStateAsync(session, SessionState.Running);
         return (session, handle);
@@ -238,6 +238,9 @@ public sealed class RunSessionTests : IDisposable
         Assert.Equal(0, running.ErrorCount);
         Assert.Null(running.FailureMessage);
         Assert.True(first.Disposed);
+        Assert.Equal(0, first.KillCount); // it had exited on its own: its job (daemons) is retained, not killed
+        Assert.True(first.JobDetached);
+        Assert.False(first.Job.Disposed);
     }
 
     // ---------------------------------------------------------------- reload
@@ -663,6 +666,42 @@ public sealed class RunSessionTests : IDisposable
     }
 
     [Fact]
+    public async Task Stop_CleanExit_RetainsJob_UntilRetainedJobsDisposed()
+    {
+        // Spec §6.2: the job is only closed when flutter does not exit within the grace; a clean stop keeps the
+        // session's daemons (Gradle, adb) warm for the next run, and they die with FlutterBar (§5.3).
+        using var retained = new RetainedJobs();
+        var (session, handle) = await StartRunningAsync(FakeProcessHandle.FromFixture("stop"), retainedJobs: retained);
+        await using var lifetime = session;
+
+        await session.StopAsync().WaitAsync(Wait);
+
+        Assert.Equal(0, handle.KillCount);
+        Assert.True(handle.JobDetached);
+        Assert.True(handle.Disposed);
+        Assert.False(handle.Job.Disposed);
+        Assert.Equal(1, retained.Count);
+
+        retained.Dispose();
+
+        Assert.True(handle.Job.Disposed);
+        Assert.Equal(0, retained.Count);
+    }
+
+    [Fact]
+    public void RetainedJobs_RetainAfterDispose_DisposesAtOnce()
+    {
+        var retained = new RetainedJobs();
+        retained.Dispose();
+        var handle = new FakeProcessHandle();
+
+        retained.Retain(handle.Job);
+
+        Assert.True(handle.Job.Disposed);
+        Assert.Equal(0, retained.Count);
+    }
+
+    [Fact]
     public async Task Stop_NoExitWithinGrace_KillsTree()
     {
         var handle = FakeProcessHandle.FromFixture("start-ok");
@@ -674,6 +713,7 @@ public sealed class RunSessionTests : IDisposable
 
         Assert.Single(handle.Writes);
         Assert.Equal(1, handle.KillCount);
+        Assert.False(handle.JobDetached); // killed, not retained
         Assert.True(handle.Disposed);
         Assert.Equal(SessionState.Idle, session.Snapshot.State);
     }
@@ -731,6 +771,7 @@ public sealed class RunSessionTests : IDisposable
 
         Assert.Single(handle.Writes);
         Assert.True(handle.Disposed);
+        Assert.True(handle.Job.Disposed); // the session's own RetainedJobs ends with it (FlutterBar exit)
         Assert.Equal(SessionState.Idle, session.Snapshot.State);
         await Assert.ThrowsAsync<ObjectDisposedException>(() => session.StartAsync(Request()));
     }

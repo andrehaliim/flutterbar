@@ -12,12 +12,17 @@ namespace FlutterBar.Core.Sessions;
 /// Starting --exit / app.stop with error--> Failed; Running/Reloading --unexpected exit / app.stop with error--> Failed;
 /// any active state --Stop--> Stopping --> Idle.
 /// <para>
+/// <paramref name="retainedJobs"/> keeps the jobs of processes that exited on their own; when null the session owns one
+/// and closes it in <see cref="DisposeAsync"/> (FlutterBar exit).
+/// </para>
+/// <para>
 /// State changes driven by process output happen on the reader threads in stream order; <see cref="Changed"/> is raised
 /// outside the internal lock on whichever thread caused the change. Notifications from different threads may arrive out
 /// of order, so <see cref="Snapshot"/> is the authoritative latest state.
 /// </para>
 /// </summary>
-public sealed class RunSession(IProcessLauncher launcher, LogBuffer log, TimeSpan? stopGrace = null) : IAsyncDisposable
+public sealed class RunSession(
+    IProcessLauncher launcher, LogBuffer log, TimeSpan? stopGrace = null, RetainedJobs? retainedJobs = null) : IAsyncDisposable
 {
     private const string BusyMessage = "Sedang reload";
 
@@ -26,6 +31,8 @@ public sealed class RunSession(IProcessLauncher launcher, LogBuffer log, TimeSpa
     private readonly IProcessLauncher _launcher = launcher ?? throw new ArgumentNullException(nameof(launcher));
     private readonly LogBuffer _log = log ?? throw new ArgumentNullException(nameof(log));
     private readonly TimeSpan _stopGrace = stopGrace ?? TimeSpan.FromSeconds(5);
+    private readonly bool _ownsRetainedJobs = retainedJobs is null;
+    private readonly RetainedJobs _retainedJobs = retainedJobs ?? new RetainedJobs();
     private readonly object _gate = new();
 
     private SessionState _state = SessionState.Idle;
@@ -242,7 +249,8 @@ public sealed class RunSession(IProcessLauncher launcher, LogBuffer log, TimeSpa
 
     /// <summary>
     /// Sends <c>app.stop</c> when an app is running and waits up to the stop grace for the exit, otherwise (or when
-    /// still Starting) kills the process tree. Always disposes the process and ends Idle.
+    /// still Starting) kills the process tree. A process that exited keeps its job in the <see cref="RetainedJobs"/>
+    /// (warm Gradle/adb daemons until FlutterBar exits). Always disposes the process handle and ends Idle.
     /// </summary>
     public Task StopAsync()
     {
@@ -288,7 +296,17 @@ public sealed class RunSession(IProcessLauncher launcher, LogBuffer log, TimeSpa
             }
             _disposed = true;
         }
-        await StopAsync().ConfigureAwait(false);
+        try
+        {
+            await StopAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            if (_ownsRetainedJobs)
+            {
+                _retainedJobs.Dispose();
+            }
+        }
     }
 
     private async Task RunStopAsync(Context ctx, bool sendStop, TaskCompletionSource done)
@@ -334,35 +352,43 @@ public sealed class RunSession(IProcessLauncher launcher, LogBuffer log, TimeSpa
         }
     }
 
+    /// <summary>
+    /// Spec §6.2: <c>app.stop</c>, then the job is closed only when flutter has not exited within the stop grace. When
+    /// it exited (now or earlier), its job is retained instead, so daemons it started (Gradle, adb) stay warm until
+    /// FlutterBar exits.
+    /// </summary>
     private async Task StopProcessAsync(IProcessHandle handle, string? appId)
     {
-        if (!handle.Exited.IsCompleted)
+        var exited = handle.Exited.IsCompleted;
+        if (!exited && appId is not null)
         {
-            var exited = false;
-            if (appId is not null)
+            try
             {
-                try
-                {
-                    await handle.WriteLineAsync(DaemonProtocol.EncodeStop(Interlocked.Increment(ref _nextId), appId)).ConfigureAwait(false);
-                    exited = await Task.WhenAny(handle.Exited, Task.Delay(_stopGrace)).ConfigureAwait(false) == handle.Exited;
-                }
-                catch (Exception ex)
-                {
-                    // Falls through to KillTree; the process must not outlive the session.
-                    DiagLog.Write("RunSession: failed to send app.stop, killing the process tree", ex);
-                }
+                await handle.WriteLineAsync(DaemonProtocol.EncodeStop(Interlocked.Increment(ref _nextId), appId)).ConfigureAwait(false);
+                exited = await Task.WhenAny(handle.Exited, Task.Delay(_stopGrace)).ConfigureAwait(false) == handle.Exited;
             }
-            if (!exited)
+            catch (Exception ex)
             {
-                handle.KillTree();
+                // Falls through to KillTree; the process must not outlive the session.
+                DiagLog.Write("RunSession: failed to send app.stop, killing the process tree", ex);
             }
         }
-        await handle.DisposeAsync().ConfigureAwait(false);
+        await ReleaseAsync(handle, exited).ConfigureAwait(false);
     }
 
-    private static async Task ShutdownAsync(IProcessHandle handle)
+    /// <summary>Ends a previous (Failed) or abandoned process: kept job if it exited by itself, else the tree is killed.</summary>
+    private Task ShutdownAsync(IProcessHandle handle) => ReleaseAsync(handle, handle.Exited.IsCompleted);
+
+    private async Task ReleaseAsync(IProcessHandle handle, bool exited)
     {
-        if (!handle.Exited.IsCompleted)
+        if (exited)
+        {
+            if (handle.DetachJob() is { } job)
+            {
+                _retainedJobs.Retain(job);
+            }
+        }
+        else
         {
             handle.KillTree();
         }
