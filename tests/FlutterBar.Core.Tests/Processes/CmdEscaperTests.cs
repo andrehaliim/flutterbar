@@ -16,7 +16,7 @@ public class CmdEscaperTests
     public async Task BatchArgs_ArriveVerbatim(string arg)
     {
         using var echo = new EchoArgsFixture();
-        var result = await new ProcessRunner(new ProcessLauncher())
+        var result = await new ProcessRunner()
             .RunAsync(echo.Spec(echo.Cmd, arg), TimeSpan.FromSeconds(30), CancellationToken.None);
 
         Assert.Equal(0, result.ExitCode);
@@ -38,7 +38,7 @@ public class CmdEscaperTests
     public async Task BatchArgs_MoreTrickyCases_ArriveVerbatim(string arg)
     {
         using var echo = new EchoArgsFixture();
-        var result = await new ProcessRunner(new ProcessLauncher())
+        var result = await new ProcessRunner()
             .RunAsync(echo.Spec(echo.Cmd, "first", arg, "last"), TimeSpan.FromSeconds(30), CancellationToken.None);
 
         Assert.Equal(["first", arg, "last"], EchoArgsFixture.ParseArgs(result.Stdout));
@@ -65,7 +65,7 @@ public class CmdEscaperTests
     public async Task BatchPath_WithSpecialChars_Works(string dirName)
     {
         using var echo = new EchoArgsFixture(dirName);
-        var result = await new ProcessRunner(new ProcessLauncher())
+        var result = await new ProcessRunner()
             .RunAsync(echo.Spec(echo.Cmd, "x y"), TimeSpan.FromSeconds(30), CancellationToken.None);
 
         Assert.Equal(0, result.ExitCode);

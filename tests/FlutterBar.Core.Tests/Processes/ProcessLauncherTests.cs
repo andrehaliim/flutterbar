@@ -14,6 +14,16 @@ public class ProcessLauncherTests
         return await reader.ReadAsync(cts.Token);
     }
 
+    /// <summary>Test cleanup for a process this test started (directly or through EchoArgs).</summary>
+    internal static void KillStarted(Process process)
+    {
+        if (!process.HasExited)
+        {
+            process.Kill();
+            process.WaitForExit(Wait);
+        }
+    }
+
     private static Channel<string> SubscribeStdout(IProcessHandle handle)
     {
         var ch = Channel.CreateUnbounded<string>();
@@ -119,7 +129,7 @@ public class ProcessLauncherTests
     {
         using var echo = new EchoArgsFixture();
 
-        var result = await new ProcessRunner(new ProcessLauncher())
+        var result = await new ProcessRunner()
             .RunAsync(echo.Spec(echo.Exe, "--interactive"), TimeSpan.FromSeconds(20), CancellationToken.None);
 
         Assert.Equal(0, result.ExitCode);
@@ -129,7 +139,7 @@ public class ProcessLauncherTests
     public async Task Runner_Timeout_KillsAndReturnsMinusOne()
     {
         using var echo = new EchoArgsFixture();
-        var result = await new ProcessRunner(new ProcessLauncher())
+        var result = await new ProcessRunner()
             .RunAsync(echo.Spec(echo.Exe, "--hang"), TimeSpan.FromMilliseconds(500), CancellationToken.None);
 
         Assert.Equal(-1, result.ExitCode);
@@ -141,8 +151,73 @@ public class ProcessLauncherTests
         using var echo = new EchoArgsFixture();
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ProcessRunner(new ProcessLauncher())
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new ProcessRunner()
             .RunAsync(echo.Spec(echo.Exe, "--hang"), TimeSpan.FromSeconds(30), cts.Token));
+    }
+
+    [Fact]
+    public async Task Runner_ChildExits_DaemonItStartedKeepsRunning()
+    {
+        // "flutter emulators --launch" / "adb start-server": the command exits, the emulator / adb server it started
+        // must survive the runner (no kill-on-close job for one-shot commands).
+        using var echo = new EchoArgsFixture();
+
+        var result = await new ProcessRunner()
+            .RunAsync(echo.Spec(echo.Exe, "--spawn-detached-child"), Wait, CancellationToken.None);
+
+        Assert.Equal(0, result.ExitCode);
+        using var daemon = Process.GetProcessById(int.Parse(result.Stdout.Trim()));
+        try
+        {
+            Assert.False(daemon.WaitForExit(TimeSpan.FromMilliseconds(500)), "the daemon was killed with the command");
+        }
+        finally
+        {
+            KillStarted(daemon);
+        }
+    }
+
+    [Fact]
+    public async Task WithoutJob_KillTree_KillsTheLiveProcessTree()
+    {
+        using var echo = new EchoArgsFixture();
+        var handle = new ProcessLauncher(ProcessContainment.None).Start(echo.Spec(echo.Exe, "--spawn-child"));
+        var lines = SubscribeStdout(handle);
+        var childPid = int.Parse(await NextLine(lines.Reader));
+        using var child = Process.GetProcessById(childPid);
+
+        handle.KillTree();
+
+        await child.WaitForExitAsync().WaitAsync(Wait);
+        Assert.NotEqual(0, await handle.Exited.WaitAsync(Wait));
+        await handle.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DetachJob_ThenDispose_LeavesTreeAlive_UntilJobDisposed()
+    {
+        using var echo = new EchoArgsFixture();
+        var handle = new ProcessLauncher().Start(echo.Spec(echo.Exe, "--spawn-detached-child"));
+        var lines = SubscribeStdout(handle);
+        using var daemon = Process.GetProcessById(int.Parse(await NextLine(lines.Reader)));
+        try
+        {
+            var job = handle.DetachJob();
+            Assert.NotNull(job);
+            Assert.Null(handle.DetachJob());
+
+            handle.CloseStdin(); // the parent exits on EOF, as flutter does after app.stop
+            Assert.Equal(0, await handle.Exited.WaitAsync(Wait));
+            await handle.DisposeAsync();
+            Assert.False(daemon.WaitForExit(TimeSpan.FromMilliseconds(500)), "disposing the handle killed the detached job");
+
+            job.Dispose();
+            await daemon.WaitForExitAsync().WaitAsync(Wait);
+        }
+        finally
+        {
+            KillStarted(daemon);
+        }
     }
 
     [Fact]
@@ -150,7 +225,7 @@ public class ProcessLauncherTests
     {
         var spec = new ProcessSpec("cmd.exe", ["/d", "/s", "/c", "echo oops 1>&2 & exit 3"], Environment.CurrentDirectory);
 
-        var result = await new ProcessRunner(new ProcessLauncher()).RunAsync(spec, Wait, CancellationToken.None);
+        var result = await new ProcessRunner().RunAsync(spec, Wait, CancellationToken.None);
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains("oops", result.Stderr);

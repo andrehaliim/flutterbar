@@ -30,6 +30,7 @@ public sealed partial class FakeProcessHandle : IProcessHandle
     private readonly IReadOnlyList<string> _startupStderr;
     private Task _chain = Task.CompletedTask;
     private int _killCount;
+    private int _jobDetached;
 
     public FakeProcessHandle(IEnumerable<string>? startupStdout = null, IEnumerable<string>? startupStderr = null, int id = 4242)
     {
@@ -223,6 +224,13 @@ public sealed partial class FakeProcessHandle : IProcessHandle
         }
     }
 
+    /// <summary>The kill-on-close job this fake process "runs in"; handed out once by <see cref="DetachJob"/>.</summary>
+    public FakeJob Job { get; } = new();
+
+    public bool JobDetached => Volatile.Read(ref _jobDetached) != 0;
+
+    public IDisposable? DetachJob() => Interlocked.Exchange(ref _jobDetached, 1) == 0 ? Job : null;
+
     public ValueTask DisposeAsync()
     {
         Disposed = true;
@@ -284,6 +292,13 @@ public sealed partial class FakeProcessHandle : IProcessHandle
 
     [GeneratedRegex("^\\[\\{\"id\":\\d+")]
     private static partial Regex ResponseId();
+
+    public sealed class FakeJob : IDisposable
+    {
+        public bool Disposed { get; private set; }
+
+        public void Dispose() => Disposed = true;
+    }
 
     private sealed record Segment(IReadOnlyList<string> Stdout, IReadOnlyList<string> Stderr);
 

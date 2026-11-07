@@ -1,10 +1,15 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using FlutterBar.Core.Diagnostics;
 
 namespace FlutterBar.Core.Processes;
 
-public sealed class ProcessLauncher : IProcessLauncher
+/// <summary>Starts processes with redirected stdio; <paramref name="containment"/> decides whether they go into a kill-on-close job.</summary>
+public sealed class ProcessLauncher(ProcessContainment containment = ProcessContainment.KillOnCloseJob) : IProcessLauncher
 {
+    public ProcessContainment Containment { get; } = containment;
+
     internal const string CmdExe = "cmd.exe";
 
     internal static bool IsBatchFile(string fileName)
@@ -31,20 +36,20 @@ public sealed class ProcessLauncher : IProcessLauncher
         };
         ApplyCommand(psi, spec);
 
-        var job = new JobObject();
+        var job = Containment == ProcessContainment.KillOnCloseJob ? new JobObject() : null;
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
         var started = false;
         try
         {
             process.Start();
             started = true;
-            job.Assign(process);
+            job?.Assign(process);
             return new Handle(process, job);
         }
         catch
         {
             // Startup failed: clean up, then let the original exception (e.g. Win32Exception) propagate.
-            job.Dispose();
+            job?.Dispose();
             if (started && !process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
@@ -174,13 +179,15 @@ public sealed class ProcessLauncher : IProcessLauncher
         private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(5);
 
         private readonly Process _process;
-        private readonly JobObject _job;
+        private readonly object _processGate = new();
+        private JobObject? _job;
+        private bool _processDisposed;
         private readonly LineEvent _stdout = new();
         private readonly LineEvent _stderr = new();
         private readonly SemaphoreSlim _writeLock = new(1, 1);
         private int _disposed;
 
-        public Handle(Process process, JobObject job)
+        public Handle(Process process, JobObject? job)
         {
             _process = process;
             _job = job;
@@ -236,7 +243,37 @@ public sealed class ProcessLauncher : IProcessLauncher
 
         public void CloseStdin() => _process.StandardInput.Close();
 
-        public void KillTree() => _job.Dispose();
+        public void KillTree()
+        {
+            if (Volatile.Read(ref _job) is { } job)
+            {
+                job.Dispose();
+                return;
+            }
+            lock (_processGate)
+            {
+                if (_processDisposed)
+                {
+                    return;
+                }
+                try
+                {
+                    // Only while it runs: once it exited, Kill(entireProcessTree) would still hunt down its former
+                    // children, i.e. the daemons it detached on purpose.
+                    if (!_process.HasExited)
+                    {
+                        _process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (Exception ex) when (ex is AggregateException or Win32Exception or InvalidOperationException)
+                {
+                    // E.g. a descendant that exited or is not ours to kill; reported, the caller carries on.
+                    DiagLog.Write($"ProcessLauncher: killing the process tree of pid {Id} failed", ex);
+                }
+            }
+        }
+
+        public IDisposable? DetachJob() => Interlocked.Exchange(ref _job, null);
 
         public async ValueTask DisposeAsync()
         {
@@ -248,7 +285,11 @@ public sealed class ProcessLauncher : IProcessLauncher
             var drained = await Task.WhenAny(Exited, Task.Delay(DrainTimeout)).ConfigureAwait(false) == Exited;
             if (drained)
             {
-                _process.Dispose();
+                lock (_processGate)
+                {
+                    _processDisposed = true;
+                    _process.Dispose();
+                }
             }
         }
 

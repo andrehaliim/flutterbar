@@ -2,10 +2,15 @@ using System.Text;
 
 namespace FlutterBar.Core.Processes;
 
+/// <summary>
+/// Runs one-shot commands (flutter devices / emulators, git, adb) to completion. They are not put into a kill-on-close
+/// job: daemons a command starts (the emulator from <c>flutter emulators --launch</c>, the adb server, git fsmonitor) must
+/// keep running after it exits (spec §5.4). On timeout or cancellation the live process tree is killed.
+/// </summary>
 public sealed class ProcessRunner(IProcessLauncher launcher) : IProcessRunner
 {
     public ProcessRunner()
-        : this(new ProcessLauncher())
+        : this(new ProcessLauncher(ProcessContainment.None))
     {
     }
 
@@ -28,13 +33,13 @@ public sealed class ProcessRunner(IProcessLauncher launcher) : IProcessRunner
         }
         catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
         {
-            // Timed out (not cancelled by the caller): kill the tree and report what was captured.
+            // Timed out (not cancelled by the caller): kill the live tree and report what was captured.
             handle.KillTree();
             // Bounded wait for the output to drain; if it does not, report what we have.
             await Task.WhenAny(handle.Exited, Task.Delay(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
             return Result(-1, stdout, stderr);
         }
-        // Caller cancellation propagates; the handle's DisposeAsync kills the process tree.
+        // Caller cancellation propagates; the handle's DisposeAsync kills the live process tree.
     }
 
     private static void Append(StringBuilder sb, string line)
