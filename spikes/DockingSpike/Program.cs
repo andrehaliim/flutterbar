@@ -6,13 +6,20 @@ namespace DockingSpike;
 
 internal static class Program
 {
+    public static volatile bool Exiting;
+
     [STAThread]
     static int Main(string[] args)
     {
         try
         {
             if (args.Contains("--probe")) return Probe();
-            return new Application().Run(new MainWindow());
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            app.Exit += (_, _) => Exiting = true;
+            app.DispatcherUnhandledException += (_, e) => Taskbar.Log("Unhandled: " + e.Exception);
+            var win = new MainWindow();
+            win.Show();
+            return app.Run();
         }
         catch (Exception ex)
         {

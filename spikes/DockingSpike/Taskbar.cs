@@ -30,32 +30,53 @@ internal static class Taskbar
     static void Walk(AutomationElement el, int depth, List<(string cls, string id, string name, System.Windows.Rect r)> acc)
     {
         var c = el.Current;
+        if (c.ProcessId == Environment.ProcessId) return; // our own widget (owned by the taskbar) shows up in its UIA tree
         acc.Add((c.ClassName, c.AutomationId, c.Name, c.BoundingRectangle));
         if (depth >= 6) return;
         foreach (AutomationElement ch in el.FindAll(TreeScope.Children, Condition.TrueCondition))
             Walk(ch, depth + 1, acc);
     }
 
-    // Free area = between rightmost app button and leftmost tray element.
-    public static Result? Compute()
+    static readonly HashSet<string> NotOccupying = new()
     {
-        var tb = Native.FindWindow("Shell_TrayWnd", null);
+        "Windows.UI.Input.InputSite.WindowClass", "Taskbar.TaskbarFrameAutomationPeer",
+        "ReBarWindow32", "TrayNotifyWnd", "Shell_TrayWnd",
+    };
+
+    // Free area = from the right edge of everything non-tray (Start, Search, Widgets, Task View, app buttons)
+    // that lies left of the tray, to the left edge of the leftmost on-screen tray element.
+    public static Result? Compute() => Compute(Native.FindWindow("Shell_TrayWnd", null));
+
+    public static Result? Compute(IntPtr tb)
+    {
         if (tb == IntPtr.Zero) { Log("Shell_TrayWnd not found"); return null; }
         Native.GetWindowRect(tb, out var rect);
         var acc = new List<(string cls, string id, string name, System.Windows.Rect r)>();
         Walk(AutomationElement.FromHandle(tb), 0, acc);
-        int buttonsRight = rect.Left, trayLeft = rect.Right;
-        bool anyButton = false, anyTray = false;
-        foreach (var (cls, id, name, r) in acc)
+        int tbWidth = rect.Right - rect.Left;
+        int trayLeft = rect.Right;
+        bool anyTray = false;
+        foreach (var (cls, id, _, r) in acc)
         {
-            if (r.IsEmpty || r.Width <= 0) continue;
-            if (cls == "Taskbar.TaskListButtonAutomationPeer")
-            { buttonsRight = Math.Max(buttonsRight, (int)r.Right); anyButton = true; }
-            else if (TrayMatch(cls, id))
-            { trayLeft = Math.Min(trayLeft, (int)r.Left); anyTray = true; }
+            if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
+            if (TrayMatch(cls, id)) { trayLeft = Math.Min(trayLeft, (int)r.Left); anyTray = true; }
         }
-        return new Result(rect, buttonsRight, trayLeft, $"buttons={anyButton} tray={anyTray} elements={acc.Count}");
+        int occupiedRight = rect.Left, occupiedCount = 0;
+        foreach (var (cls, id, _, r) in acc)
+        {
+            if (r.IsEmpty || r.Width <= 0 || !InsideTaskbar(r, rect)) continue;
+            if (TrayMatch(cls, id) || NotOccupying.Contains(cls)) continue;
+            if (r.Width >= tbWidth / 2.0) continue; // container
+            if (r.Right > trayLeft + 1) continue;   // belongs to / overlaps tray
+            if (cls == "Image") continue;
+            occupiedRight = Math.Max(occupiedRight, (int)r.Right);
+            occupiedCount++;
+        }
+        return new Result(rect, occupiedRight, trayLeft, $"occupied={occupiedCount} tray={anyTray} elements={acc.Count}");
     }
+
+    static bool InsideTaskbar(System.Windows.Rect r, Native.RECT t) =>
+        r.Left >= t.Left - 1 && r.Right <= t.Right + 1 && r.Top >= t.Top - 2 && r.Bottom <= t.Bottom + 2;
 
     static bool TrayMatch(string cls, string id) =>
         cls.StartsWith("SystemTray.", StringComparison.Ordinal) || id is "SystemTrayIcon" or "NotifyItemIcon";
