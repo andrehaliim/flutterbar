@@ -72,6 +72,15 @@
             </Setter>
         </Style>
 
+        <!-- Config chip: red text when launch.json is invalid or the selected config is gone (spec §10). -->
+        <Style x:Key="Style.ConfigChip" TargetType="Button" BasedOn="{StaticResource Style.Chip}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ConfigHasError}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource Fb.Red}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="Style.Separator" TargetType="Rectangle">
             <Setter Property="Width" Value="1" />
             <Setter Property="Height" Value="18" />
@@ -133,8 +142,11 @@
                             ToolTip="Buka log" AutomationProperties.Name="Buka log" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
-                    <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project" />
-                    <Button Style="{StaticResource Style.Chip}" Command="{Binding BranchChipCommand}" ToolTip="Branch" ContentTemplate="{x:Null}">
+                    <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
+                            AutomationProperties.Name="Project" />
+                    <!-- Collapsed when the project is not a git repo (spec §5.5) -->
+                    <Button Style="{StaticResource Style.Chip}" Command="{Binding BranchChipCommand}" ToolTip="{Binding BranchToolTip}" ContentTemplate="{x:Null}"
+                            AutomationProperties.Name="Branch" Visibility="{Binding BranchVisible, Converter={StaticResource BoolToVis}}">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#x2387;" FontFamily="Segoe UI Symbol" Margin="0,0,4,0" VerticalAlignment="Center" />
                             <TextBlock Text="{Binding Branch}" MaxWidth="140" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
@@ -142,8 +154,10 @@
                                        Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
-                    <Button Style="{StaticResource Style.Chip}" Content="{Binding ConfigName}" Command="{Binding ConfigChipCommand}" ToolTip="Config" />
-                    <Button Style="{StaticResource Style.Chip}" Content="{Binding DeviceName}" Command="{Binding DeviceChipCommand}" ToolTip="Device" />
+                    <Button Style="{StaticResource Style.ConfigChip}" Content="{Binding ConfigName}" Command="{Binding ConfigChipCommand}"
+                            ToolTip="{Binding ConfigToolTip}" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Config" />
+                    <Button Style="{StaticResource Style.Chip}" Content="{Binding DeviceName}" Command="{Binding DeviceChipCommand}" ToolTip="Device"
+                            AutomationProperties.Name="Device" />
                     <TextBlock Text="{Binding Controls.StatusText}" MaxWidth="160" TextTrimming="CharacterEllipsis" Margin="4,0,0,0"
                                VerticalAlignment="Center" Foreground="{DynamicResource Fb.Muted}"
                                Visibility="{Binding Controls.ShowProgress, Converter={StaticResource BoolToVis}}" />
@@ -161,7 +175,7 @@
                             ToolTip="Buka log" AutomationProperties.Name="Buka log" />
                 </StackPanel>
                 <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" ContentTemplate="{x:Null}"
-                        HorizontalAlignment="Left" ToolTip="Project, branch, config, device">
+                        HorizontalAlignment="Left" ToolTip="Project, branch, config, device" AutomationProperties.Name="Pilihan">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding ProjectName}" MaxWidth="110" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                         <TextBlock Text=" · " Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />

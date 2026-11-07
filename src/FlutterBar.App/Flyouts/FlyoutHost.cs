@@ -1,0 +1,173 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Threading;
+using FlutterBar.App.Diagnostics;
+using FlutterBar.App.Docking;
+using FlutterBar.App.Native;
+
+namespace FlutterBar.App.Flyouts;
+
+/// <summary>
+/// The one flyout popup above the widget (spec §7.1, Placement=Top). It registers with
+/// <see cref="TaskbarDocking.TrackPopup"/> (widget topmost reassert suspended while open, popup HWND made topmost).
+/// WPF popups never activate on click, so on open the popup HWND is brought to the foreground explicitly for the
+/// search box to receive keys; losing activation closes it, as do Esc and a click outside (StaysOpen=false).
+/// Each <see cref="Show"/> returns a token cancelled when that content is closed or replaced (in-flight refreshes stop).
+/// </summary>
+internal sealed class FlyoutHost
+{
+    private readonly Func<FrameworkElement?> _anchor;
+    private readonly Popup _popup;
+    private readonly Border _frame;
+    private CancellationTokenSource? _contentCts;
+    private IInputElement? _focus;
+    private HwndSource? _source;
+    private bool _activated;
+
+    public FlyoutHost(Func<FrameworkElement?> anchor)
+    {
+        _anchor = anchor;
+        _frame = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(8),
+            Width = 320,
+            UseLayoutRounding = true,
+            SnapsToDevicePixels = true,
+        };
+        _frame.SetResourceReference(Border.BackgroundProperty, "Fb.Background");
+        _frame.SetResourceReference(Border.BorderBrushProperty, "Fb.Separator");
+        _frame.SetResourceReference(TextElement.ForegroundProperty, "Fb.Foreground");
+        TextElement.SetFontFamily(_frame, new FontFamily("Segoe UI Variable Text, Segoe UI"));
+        TextElement.SetFontSize(_frame, 12);
+        _frame.PreviewKeyDown += OnPreviewKeyDown;
+
+        _popup = new Popup
+        {
+            Child = _frame,
+            Placement = PlacementMode.Top,
+            VerticalOffset = -6,
+            StaysOpen = false,
+            AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.None,
+        };
+        TaskbarDocking.TrackPopup(_popup); // registered first: its Opened handler makes the popup topmost
+        _popup.Opened += OnOpened;
+        _popup.Closed += OnClosed;
+    }
+
+    /// <summary>The popup closed (any reason).</summary>
+    public event Action? Closed;
+
+    public bool IsOpen => _popup.IsOpen;
+
+    public object? Content => _frame.Child;
+
+    /// <summary>Shows <paramref name="content"/> (replacing what is shown) and focuses <paramref name="focus"/>.</summary>
+    public CancellationToken Show(FrameworkElement content, IInputElement? focus)
+    {
+        CancelContent();
+        _contentCts = new CancellationTokenSource();
+        var token = _contentCts.Token;
+        _frame.Child = content;
+        _focus = focus;
+        if (_popup.IsOpen)
+        {
+            FocusContent();
+            return token;
+        }
+
+        var anchor = _anchor();
+        if (anchor is null || !anchor.IsVisible)
+        {
+            AppLog.Write($"flyout {content.GetType().Name} not shown: widget not visible");
+            CancelContent();
+            return token;
+        }
+        _popup.PlacementTarget = anchor;
+        _popup.IsOpen = true;
+        return token;
+    }
+
+    public void Close()
+    {
+        if (_popup.IsOpen)
+        {
+            _popup.IsOpen = false;
+        }
+    }
+
+    private void OnOpened(object? sender, EventArgs e)
+    {
+        _activated = false;
+        _source = PresentationSource.FromVisual(_frame) as HwndSource;
+        if (_source is null)
+        {
+            AppLog.Write("flyout opened without HwndSource: keyboard input unavailable");
+            return;
+        }
+        _source.AddHook(WndProc);
+        _activated = NativeMethods.SetForegroundWindow(_source.Handle);
+        if (!_activated)
+        {
+            AppLog.Limited("flyout-activate", $"flyout SetForegroundWindow(0x{_source.Handle:X}) refused: search box gets no keys until clicked", 30);
+        }
+        FocusContent();
+    }
+
+    private void FocusContent()
+    {
+        var focus = _focus;
+        _frame.Dispatcher.BeginInvoke(() =>
+        {
+            if (_popup.IsOpen && focus is not null)
+            {
+                Keyboard.Focus(focus);
+            }
+        }, DispatcherPriority.Input);
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        _source?.RemoveHook(WndProc);
+        _source = null;
+        _activated = false;
+        CancelContent();
+        Closed?.Invoke();
+    }
+
+    private void CancelContent()
+    {
+        if (_contentCts is { } cts)
+        {
+            _contentCts = null;
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        // Activation moved elsewhere (Alt+Tab, click in another app): close like a Windows flyout.
+        if (msg == NativeMethods.WM_ACTIVATE && (wParam.ToInt64() & 0xFFFF) == NativeMethods.WA_INACTIVE && _activated)
+        {
+            _frame.Dispatcher.BeginInvoke(Close);
+        }
+        return IntPtr.Zero;
+    }
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
+        }
+    }
+}

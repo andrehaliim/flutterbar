@@ -2,8 +2,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
 using FlutterBar.Core.Layout;
+using FlutterBar.Core.Orchestration;
 using FlutterBar.Core.Sessions;
 
 namespace FlutterBar.App.Widget;
@@ -23,12 +23,11 @@ internal enum WidgetChip
 /// <summary>
 /// State of the taskbar widget (spec §7.1). Session state comes from <see cref="RunSession.Changed"/>, which may fire on
 /// any thread with a stale argument: it is marshalled to the dispatcher and <see cref="RunSession.Snapshot"/> re-read.
-/// Reload/Restart/Stop call the session; Run, the log and the chips only raise events (Task 14/15 orchestrate them).
+/// The buttons and chips only raise events: <c>AppController</c> (Task 14) runs, reloads, stops and opens the flyouts,
+/// the LogWindow (Task 15) handles the log button.
 /// </summary>
 internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
 {
-    private static readonly TimeSpan ReloadTimeout = TimeSpan.FromSeconds(60);
-
     private readonly RunSession _session;
     private readonly Dispatcher _dispatcher;
     private readonly object _gate = new();
@@ -42,11 +41,16 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     private WidgetSize _effectiveSize = WidgetSize.Full;
     private bool _taskbarFull;
     private bool _isHidden;
-    private string _projectName = "Pilih project";
+    private string _projectName = UiText.PickProject;
     private string _branch = "—";
-    private string _configName = "Pilih config";
-    private string _deviceName = "Pilih device";
+    private bool _branchVisible;
+    private string? _branchToolTip;
+    private string _configName = UiText.PickConfig;
+    private bool _configHasError;
+    private string? _configToolTip;
+    private string _deviceName = UiText.PickDevice;
     private string? _notice;
+    private bool _preparing;
 
     public WidgetViewModel(RunSession session, Dispatcher dispatcher)
     {
@@ -54,10 +58,10 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         _dispatcher = dispatcher;
         _snapshot = session.Snapshot;
         _controls = SessionControls.From(_snapshot);
-        _run = new RelayCommand(() => RunRequested?.Invoke(), () => _controls.ShowRun);
-        _reload = new RelayCommand(() => _ = ReloadAsync(fullRestart: false), () => _controls.ReloadEnabled);
-        _restart = new RelayCommand(() => _ = ReloadAsync(fullRestart: true), () => _controls.RestartEnabled);
-        _stop = new RelayCommand(() => _ = StopAsync(), () => _controls.StopEnabled);
+        _run = new RelayCommand(() => RunRequested?.Invoke(), () => _controls.ShowRun && !_preparing);
+        _reload = new RelayCommand(() => ReloadRequested?.Invoke(false), () => _controls.ReloadEnabled);
+        _restart = new RelayCommand(() => ReloadRequested?.Invoke(true), () => _controls.RestartEnabled);
+        _stop = new RelayCommand(() => StopRequested?.Invoke(), () => _controls.StopEnabled);
         OpenLogCommand = new RelayCommand(() => OpenLogRequested?.Invoke());
         ProjectChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Project));
         BranchChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Branch));
@@ -83,6 +87,12 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
 
     /// <summary>▶ pressed: Task 14 (AppController.RunAsync) validates project/config/device and starts the session.</summary>
     public event Action? RunRequested;
+
+    /// <summary>⚡ (false) or 🔄 (true) pressed.</summary>
+    public event Action<bool>? ReloadRequested;
+
+    /// <summary>⏹ pressed.</summary>
+    public event Action? StopRequested;
 
     /// <summary>🖥 pressed: Task 15 opens the LogWindow.</summary>
     public event Action? OpenLogRequested;
@@ -126,10 +136,51 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         set => Set(ref _branch, value);
     }
 
+    /// <summary>False when the project is not a git repo (or git is missing): the branch chip is collapsed (spec §5.5).</summary>
+    public bool BranchVisible
+    {
+        get => _branchVisible;
+        set => Set(ref _branchVisible, value);
+    }
+
+    public string? BranchToolTip
+    {
+        get => _branchToolTip;
+        set => Set(ref _branchToolTip, value);
+    }
+
     public string ConfigName
     {
         get => _configName;
         set => Set(ref _configName, value);
+    }
+
+    /// <summary>launch.json invalid or the selected config is gone: the chip turns red (spec §10).</summary>
+    public bool ConfigHasError
+    {
+        get => _configHasError;
+        set => Set(ref _configHasError, value);
+    }
+
+    /// <summary>program / flavor / mode of the selected config, or the validation errors.</summary>
+    public string? ConfigToolTip
+    {
+        get => _configToolTip;
+        set => Set(ref _configToolTip, value);
+    }
+
+    /// <summary>▶ was pressed and the run is being prepared (device refresh etc.): ▶ is disabled meanwhile.</summary>
+    public bool Preparing
+    {
+        get => _preparing;
+        set
+        {
+            if (Set(ref _preparing, value))
+            {
+                _run.Refresh();
+                OnPropertyChanged(nameof(StatusToolTip));
+            }
+        }
     }
 
     public string DeviceName
@@ -138,11 +189,11 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         set => Set(ref _deviceName, value);
     }
 
-    /// <summary>Last reload/restart/stop problem, shown in the status tooltip until the next action (toasts come in Task 14).</summary>
+    /// <summary>Last problem (also shown as a toast), kept in the status tooltip until the next action.</summary>
     public string? Notice
     {
         get => _notice;
-        private set
+        set
         {
             if (Set(ref _notice, value))
             {
@@ -151,7 +202,14 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    public string StatusToolTip => _notice is null ? _controls.StatusText : $"{_controls.StatusText}\n{_notice}";
+    public string StatusToolTip
+    {
+        get
+        {
+            var text = _preparing ? "Menyiapkan run…" : _controls.StatusText;
+            return _notice is null ? text : $"{text}\n{_notice}";
+        }
+    }
 
     public ICommand RunCommand => _run;
 
@@ -213,40 +271,6 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         _reload.Refresh();
         _restart.Refresh();
         _stop.Refresh();
-    }
-
-    private async Task ReloadAsync(bool fullRestart)
-    {
-        var label = fullRestart ? "Hot restart" : "Hot reload";
-        Notice = null;
-        try
-        {
-            var outcome = await _session.ReloadAsync(fullRestart, ReloadTimeout);
-            if (!outcome.Success)
-            {
-                Notice = $"{label} gagal: {outcome.Message}";
-                AppLog.Write($"{label} from widget failed ({outcome.Failure}): {outcome.Message}");
-            }
-        }
-        catch (Exception ex) // fire-and-forget command: report here, never let it go unobserved
-        {
-            Notice = $"{label} gagal: {ex.Message}";
-            AppLog.Write($"{label} from widget threw", ex);
-        }
-    }
-
-    private async Task StopAsync()
-    {
-        Notice = null;
-        try
-        {
-            await _session.StopAsync();
-        }
-        catch (Exception ex) // fire-and-forget command: report here, never let it go unobserved
-        {
-            Notice = $"Stop gagal: {ex.Message}";
-            AppLog.Write("stop from widget threw", ex);
-        }
     }
 
     private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)

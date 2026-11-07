@@ -134,6 +134,7 @@ internal sealed partial class TaskbarWidget : Window
                 break;
             case nameof(WidgetViewModel.ProjectName):
             case nameof(WidgetViewModel.Branch):
+            case nameof(WidgetViewModel.BranchVisible):
             case nameof(WidgetViewModel.ConfigName):
             case nameof(WidgetViewModel.DeviceName):
                 ScheduleRemeasure();

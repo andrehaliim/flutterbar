@@ -1,0 +1,155 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared look of flyouts and toasts. Colours are the Fb.* brushes from Theme/TaskbarTheme (light/dark follows the taskbar). -->
+    <FontFamily x:Key="Fb.IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <BooleanToVisibilityConverter x:Key="Fb.BoolToVis" />
+
+    <Style x:Key="Fb.FlyoutHeader" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="2,0,0,6" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+    </Style>
+
+    <Style x:Key="Fb.MutedText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="2,4" />
+    </Style>
+
+    <Style x:Key="Fb.ErrorText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Red}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="2,4" />
+    </Style>
+
+    <!-- Thin indeterminate bar used as the spinner while git/flutter/scan calls run in the background. -->
+    <Style x:Key="Fb.Spinner" TargetType="ProgressBar">
+        <Setter Property="Height" Value="2" />
+        <Setter Property="IsIndeterminate" Value="True" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Accent}" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+
+    <Style x:Key="Fb.SearchBox" TargetType="TextBox">
+        <Setter Property="Background" Value="{DynamicResource Fb.Chip}" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource Fb.Foreground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Fb.Separator}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+
+    <Style x:Key="Fb.Button" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{DynamicResource Fb.Chip}" CornerRadius="4" Padding="{TemplateBinding Padding}"
+                            BorderThickness="1" BorderBrush="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Fb.Accent}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Fb.IconButton" TargetType="Button" BasedOn="{StaticResource Fb.Button}">
+        <Setter Property="FontFamily" Value="{StaticResource Fb.IconFont}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+    </Style>
+
+    <!-- One row of a flyout list (FlyoutItem): ✓ for the current value, title, muted detail; headers are section captions. -->
+    <DataTemplate x:Key="Fb.ItemTemplate">
+        <Grid Margin="2,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="Check" Text="&#xE73E;" FontFamily="{StaticResource Fb.IconFont}" FontSize="10" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Fb.Accent}" Visibility="{Binding IsCurrent, Converter={StaticResource Fb.BoolToVis}}" />
+            <StackPanel Grid.Column="1">
+                <TextBlock x:Name="Title" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="Detail" Text="{Binding Detail}" FontSize="11" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource Fb.Muted}" />
+            </StackPanel>
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
+                <Setter TargetName="Detail" Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                <Setter TargetName="Title" Property="FontWeight" Value="SemiBold" />
+                <Setter TargetName="Title" Property="FontSize" Value="11" />
+                <Setter TargetName="Title" Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+                <Setter TargetName="Check" Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <Style x:Key="Fb.ItemContainer" TargetType="ListBoxItem">
+        <Setter Property="IsEnabled" Value="{Binding IsEnabled}" />
+        <Setter Property="ToolTip" Value="{Binding ToolTip}" />
+        <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Chip}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <!-- Section captions: enabled (not greyed) but never focused, selected or clicked. -->
+            <DataTrigger Binding="{Binding IsHeader}" Value="True">
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="IsHitTestVisible" Value="False" />
+                <Setter Property="Margin" Value="0,6,0,0" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Fb.FlyoutList" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+        <Setter Property="MaxHeight" Value="320" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ItemTemplate" Value="{StaticResource Fb.ItemTemplate}" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource Fb.ItemContainer}" />
+        <Setter Property="SelectionMode" Value="Single" />
+    </Style>
+</ResourceDictionary>

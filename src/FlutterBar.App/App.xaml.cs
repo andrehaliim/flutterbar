@@ -1,9 +1,9 @@
 ﻿using System.IO;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Docking;
+using FlutterBar.App.Services;
 using FlutterBar.App.Theme;
 using FlutterBar.App.Widget;
 using FlutterBar.Core.Layout;
@@ -15,19 +15,22 @@ using FlutterBar.Core.Settings;
 namespace FlutterBar.App;
 
 /// <summary>
-/// Composition root (Task 13 scope): settings, theme, run session, the widget window and its docking. Task 14 adds the
-/// AppController (flyouts, Run orchestration), Task 15 the LogWindow, Task 16 the full menu and single instance.
+/// Composition root: settings, theme, run session, the widget window and its docking (Task 13), and the
+/// <see cref="AppController"/> that wires flyouts, toasts, Run and the IPC server (Task 14). Task 15 adds the LogWindow,
+/// Task 16 the full menu, the IDE import and single instance.
 /// </summary>
 public partial class App : Application
 {
     private readonly AppSettingsStore _store = new(AppSettingsStore.DefaultPath);
+    private readonly LogBuffer _log = new();
     private AppSettings _settings = new();
+    private SettingsSaver? _saver;
     private TaskbarTheme? _theme;
     private RunSession? _session;
     private WidgetViewModel? _viewModel;
     private TaskbarWidget? _widget;
     private TaskbarDocking? _docking;
-    private Task _saveChain = Task.CompletedTask;
+    private AppController? _controller;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -38,25 +41,26 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, args) => AppLog.Write("unobserved task exception", args.Exception);
         AppLog.Write($"FlutterBar.App start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
 
-        _settings = LoadSettings(); // before any window exists, so the synchronous read cannot stall the taskbar
+        _settings = LoadSettings(out var warning); // before any window exists, so the synchronous read cannot stall the taskbar
+        _saver = new SettingsSaver(_store, _settings);
         _theme = new TaskbarTheme(Resources, Dispatcher);
-        _session = new RunSession(new ProcessLauncher(), new LogBuffer());
+        _session = new RunSession(new ProcessLauncher(), _log);
         _viewModel = new WidgetViewModel(_session, Dispatcher);
-        InitializeLabels(_viewModel, _settings);
-        _viewModel.RunRequested += () => AppLog.Write("Run requested from widget (orchestration arrives with Task 14)");
         _viewModel.OpenLogRequested += () => AppLog.Write("Open log requested from widget (LogWindow arrives with Task 15)");
-        _viewModel.ChipRequested += chip => AppLog.Write($"{chip} chip clicked (flyouts arrive with Task 14)");
+        _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
         CreateWidget("startup");
+        _ = InitializeControllerAsync(_controller);
     }
 
-    private AppSettings LoadSettings()
+    private AppSettings LoadSettings(out string? warning)
     {
+        warning = null;
         try
         {
-            var settings = _store.Load(out var warning);
+            var settings = _store.Load(out warning);
             if (warning is not null)
             {
-                AppLog.Write("settings: " + warning); // toast arrives with Task 14
+                AppLog.Write("settings: " + warning); // toast once the widget is up (AppController.InitializeAsync)
             }
             AppLog.Write($"settings: widget size={settings.Widget.Size} position={settings.Widget.Position} offsetFromRight={settings.Widget.OffsetFromRight?.ToString() ?? "-"} widthOverride={settings.Widget.WidthOverride?.ToString() ?? "-"}");
             return settings;
@@ -64,23 +68,30 @@ public partial class App : Application
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             AppLog.Write("settings: load failed, using defaults", ex);
+            warning = $"settings.json tidak bisa dibaca, memakai default: {ex.Message}";
             return new AppSettings();
         }
     }
 
-    private static void InitializeLabels(WidgetViewModel vm, AppSettings settings)
+    private static async Task InitializeControllerAsync(AppController controller)
     {
-        if (string.IsNullOrWhiteSpace(settings.CurrentProject))
+        try
         {
-            return;
+            await controller.InitializeAsync();
         }
-        vm.ProjectName = Path.GetFileName(settings.CurrentProject.TrimEnd('\\', '/'));
-        if (settings.TryGetProject(settings.CurrentProject, out var state))
+        catch (Exception ex) // startup continuation: report, the widget itself keeps running
         {
-            vm.ConfigName = state.Config ?? vm.ConfigName;
-            vm.DeviceName = state.DeviceId ?? vm.DeviceName;
+            AppLog.Write("AppController initialization failed", ex);
+            controller.ShowToast($"Inisialisasi FlutterBar gagal: {ex.Message}");
         }
     }
+
+    // IPC "show" (any thread). Visibility belongs to the docking (fullscreen / auto-hide); re-evaluate placement now.
+    private void ShowWidgetFromCli() => Dispatcher.BeginInvoke(() =>
+    {
+        AppLog.Write($"show requested via CLI (hidden={_viewModel?.IsHidden})");
+        _docking?.InvalidateLayout();
+    });
 
     /// <summary>Creates a widget window plus its docking; also used when the docking asks for a new window.</summary>
     private void CreateWidget(string why)
@@ -137,6 +148,7 @@ public partial class App : Application
             return;
         }
         var oldHandle = new System.Windows.Interop.WindowInteropHelper(old).Handle;
+        _controller?.OnWidgetRecreating();
         CreateWidget("recreate: " + reason);
         if (oldHandle != IntPtr.Zero && Native.NativeMethods.IsWindow(oldHandle))
         {
@@ -159,26 +171,7 @@ public partial class App : Application
         SaveSettings($"offsetFromRight={offset}");
     }
 
-    /// <summary>
-    /// Snapshot on the UI thread (in-memory JSON round trip), atomic write on a background task, writes serialized.
-    /// The UI thread never waits on file I/O (its input queue is attached to the taskbar's).
-    /// </summary>
-    private void SaveSettings(string what)
-    {
-        var copy = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(_settings)) ?? new AppSettings();
-        _saveChain = _saveChain.ContinueWith(_ =>
-        {
-            try
-            {
-                _store.Save(copy);
-                AppLog.Write($"settings saved ({what})");
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                AppLog.Write($"settings save failed ({what})", ex);
-            }
-        }, TaskScheduler.Default);
-    }
+    private void SaveSettings(string what) => _saver?.Save(what);
 
     private async Task ExitAsync()
     {
@@ -188,6 +181,10 @@ public partial class App : Application
         }
         _exiting = true;
         AppLog.Write("exit requested from widget menu");
+        if (_controller is { } controller)
+        {
+            await controller.DisposeAsync();
+        }
         if (_session is { } session)
         {
             if (session.Snapshot.State is not (SessionState.Idle or SessionState.Failed))
@@ -200,7 +197,10 @@ public partial class App : Application
         _widget?.Close();
         _viewModel?.Dispose();
         _theme?.Dispose();
-        await _saveChain;
+        if (_saver is { } saver)
+        {
+            await saver.FlushAsync();
+        }
         AppLog.Write("FlutterBar.App exit");
         AppLog.Flush(TimeSpan.FromSeconds(1)); // window is gone: nothing left to stall
         Shutdown();

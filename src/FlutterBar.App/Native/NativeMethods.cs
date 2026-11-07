@@ -129,6 +129,14 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool IsWindow(IntPtr hwnd);
 
+    public const int WM_ACTIVATE = 0x0006;
+    public const int WA_INACTIVE = 0;
+
+    /// <summary>Flyouts with a search box: WPF popups do not activate on click, so keyboard input needs an explicit activation.</summary>
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetForegroundWindow(IntPtr hwnd);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern uint RegisterWindowMessage(string name);
 

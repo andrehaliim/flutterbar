@@ -1,0 +1,26 @@
+<UserControl x:Class="FlutterBar.App.Flyouts.BranchFlyout" x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Branch flyout (spec §5.5): search over local branches; picking one runs git switch. -->
+    <StackPanel>
+        <TextBlock Text="Branch" Style="{StaticResource Fb.FlyoutHeader}" />
+        <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
+        <Grid>
+            <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Cari branch" />
+            <TextBlock Text="Cari branch…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=Search}" Value="">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Daftar branch" />
+        <TextBlock x:Name="Message" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
+    </StackPanel>
+</UserControl>
