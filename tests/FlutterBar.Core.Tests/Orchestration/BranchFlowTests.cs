@@ -111,6 +111,21 @@ public class BranchFlowTests
     }
 
     [Fact]
+    public void AdviceToast_AfterPull_SaysPulled()
+    {
+        Assert.Equal(("Pulled. Hot restart?", "Hot restart"), BranchFlow.AdviceToast(BranchChangeAdvice.HotRestart, afterPull: true));
+        Assert.Equal(("Pulled. pubspec changed. Stop and run again.", (string?)null), BranchFlow.AdviceToast(BranchChangeAdvice.RerunRequired, afterPull: true));
+    }
+
+    [Fact]
+    public void CapLines_KeepsSixLinesAndMarksTheCut()
+    {
+        Assert.Equal("a\nb", UiText.CapLines("a\n\nb\n"));
+        var capped = UiText.CapLines(string.Join('\n', Enumerable.Range(1, 10).Select(i => $"line{i}")));
+        Assert.Equal("line1\nline2\nline3\nline4\nline5\nline6\n…", capped);
+    }
+
+    [Fact]
     public void AdviceToast_UsesSpecCopy()
     {
         Assert.Equal(("Branch changed. Hot restart?", "Hot restart"), BranchFlow.AdviceToast(BranchChangeAdvice.HotRestart));

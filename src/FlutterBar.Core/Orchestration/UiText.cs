@@ -20,10 +20,24 @@ public static class UiText
     public const string BranchHotRestart = "Branch changed. Hot restart?";
     public const string HotRestart = "Hot restart";
     public const string PubspecChanged = "pubspec changed. Stop and run again.";
+    public const string PulledHotRestart = "Pulled. Hot restart?";
+    public const string PulledPubspecChanged = "Pulled. pubspec changed. Stop and run again.";
     public const string NoCommitYet = "(no commits yet)";
     public const string ConfirmExit = "Stop the session and exit?";
     public const string ConfirmExitYes = "Exit";
     public const string UnexpectedError = "FlutterBar hit an error. Details are in diag.log";
     public const string PathAdded = "Open a new terminal to pick up the PATH change";
     public const string NeedProject = "Select a project first";
+
+    /// <summary>
+    /// At most <paramref name="maxLines"/> non-empty lines of git output for a toast or inline message, with an ellipsis line
+    /// when text was cut (the full text goes to diag.log).
+    /// </summary>
+    public static string CapLines(string text, int maxLines = 6)
+    {
+        var lines = text.Split(Newline, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return lines.Length <= maxLines ? string.Join(Newline, lines) : string.Join(Newline, lines.Take(maxLines)) + Newline + "…";
+    }
+
+    private const char Newline = '\n';
 }

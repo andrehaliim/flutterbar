@@ -143,8 +143,141 @@ public class GitRemoteTests
         var result = await repo.Service.CommitAndPushAsync(repo.Root, "   ", CancellationToken.None);
 
         Assert.False(result.Success);
+        Assert.Equal("Enter a commit message.", result.Message);
         Assert.Equal(head, await repo.GitAsync("rev-parse", "HEAD"));
         Assert.Equal(head, await repo.GitInAsync(repo.Temp, "--git-dir", remote, "rev-parse", "main"));
+        Assert.Equal("", await repo.GitAsync("diff", "--cached", "--name-only")); // nothing was staged
+    }
+
+    [GitFact]
+    public async Task CommitAndPush_EmptyMessage_NothingToCommit_PushesPendingCommits()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        repo.Write("local.txt", "l\n");
+        await repo.CommitAllAsync("earlier commit");
+
+        var result = await repo.Service.CommitAndPushAsync(repo.Root, "", CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("earlier commit", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "log", "-1", "--format=%s", "main"));
+    }
+
+    [GitFact]
+    public async Task Push_AheadOnly_Pushes()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        repo.Write("local.txt", "l\n");
+        await repo.CommitAllAsync("earlier commit");
+        repo.Write("dirty.txt", "d\n"); // uncommitted changes are left alone
+
+        var result = await repo.Service.PushAsync(repo.Root, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("Pushed to main", result.Message);
+        Assert.Equal("earlier commit", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "log", "-1", "--format=%s", "main"));
+        Assert.Equal(1, (await repo.Service.GetStatusAsync(repo.Root, CancellationToken.None)).ChangedFiles);
+        Assert.Equal("", await repo.GitAsync("diff", "--cached", "--name-only"));
+    }
+
+    [GitFact]
+    public async Task Push_NoUpstream_SetsUpstream()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        await repo.GitAsync("switch", "-c", "feature/y");
+
+        var result = await repo.Service.PushAsync(repo.Root, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("Pushed to feature/y", result.Message);
+        Assert.Equal("origin/feature/y", await repo.GitAsync("rev-parse", "--abbrev-ref", "feature/y@{u}"));
+        Assert.Contains("feature/y", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "branch"));
+    }
+
+    [GitFact]
+    public async Task Push_NothingAhead_ReturnsMessage()
+    {
+        var (repo, _) = await SetupAsync();
+        using var r = repo;
+        var result = await repo.Service.PushAsync(repo.Root, CancellationToken.None);
+        Assert.Equal(new GitResult(false, "Nothing to push."), result);
+    }
+
+    [GitFact]
+    public async Task Push_Rejected_SuggestsPull_NeverForces()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        var other = await repo.CloneAsync(remote);
+        await repo.PushFromAsync(other, "remote.txt", "r\n", "remote commit");
+        var remoteHead = await repo.GitInAsync(repo.Temp, "--git-dir", remote, "rev-parse", "main");
+        repo.Write("local.txt", "l\n");
+        await repo.CommitAllAsync("local commit");
+
+        var result = await repo.Service.PushAsync(repo.Root, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Contains("Pull first", result.Message);
+        Assert.DoesNotContain("Committed locally", result.Message);
+        Assert.DoesNotContain("hint:", result.Message); // advice blocks are switched off
+        Assert.Equal(remoteHead, await repo.GitInAsync(repo.Temp, "--git-dir", remote, "rev-parse", "main"));
+    }
+
+    [GitFact]
+    public async Task Push_DetachedOrConflicted_Refused()
+    {
+        var (repo, _) = await SetupAsync();
+        using var r = repo;
+        var mergeHead = Path.Combine(repo.Root, ".git", "MERGE_HEAD");
+        await File.WriteAllTextAsync(mergeHead, await repo.GitAsync("rev-parse", "HEAD") + "\n");
+        Assert.Equal(new GitResult(false, GitService.ResolveConflictsFirst), await repo.Service.PushAsync(repo.Root, CancellationToken.None));
+        File.Delete(mergeHead);
+        await repo.GitAsync("checkout", "--detach");
+        var detached = await repo.Service.PushAsync(repo.Root, CancellationToken.None);
+        Assert.False(detached.Success);
+        Assert.Contains("detached", detached.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [GitFact]
+    public async Task Pull_RevertOrSequencerInProgress_Refused()
+    {
+        var (repo, _) = await SetupAsync();
+        using var r = repo;
+        var revertHead = Path.Combine(repo.Root, ".git", "REVERT_HEAD");
+        await File.WriteAllTextAsync(revertHead, await repo.GitAsync("rev-parse", "HEAD") + "\n");
+        Assert.Equal(new GitResult(false, GitService.ResolveConflictsFirst), await repo.Service.PullAsync(repo.Root, CancellationToken.None));
+        File.Delete(revertHead);
+
+        Directory.CreateDirectory(Path.Combine(repo.Root, ".git", "sequencer"));
+        Assert.Equal(new GitResult(false, GitService.ResolveConflictsFirst), await repo.Service.PullAsync(repo.Root, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task NetworkTimeout_MentionsCredentialsAndSsh()
+    {
+        var runner = new RecordingRunner(spec => spec.Args.Contains("fetch") ? new ProcessResult(-1, "", "") : new ProcessResult(0, "", ""));
+        var result = await new GitService(runner, "git").FetchAsync("C:\\p", CancellationToken.None);
+        Assert.Equal(new GitResult(false, "git timed out (waiting for credentials or SSH passphrase?)"), result);
+    }
+
+    [Fact]
+    public async Task StatusReads_SkipOptionalLocks_AndGitHintsAreOff()
+    {
+        var runner = new RecordingRunner(spec => new ProcessResult(0, "# branch.head main\n", ""));
+        var git = new GitService(runner, "git");
+
+        await git.GetStatusAsync("C:\\p", CancellationToken.None);
+        await git.FetchAsync("C:\\p", CancellationToken.None);
+
+        var status = Assert.Single(runner.Calls, c => c.Spec.Args.Contains("status"));
+        Assert.Contains("--no-optional-locks", status.Spec.Args);
+        foreach (var (spec, _) in runner.Calls)
+        {
+            Assert.Contains("advice.pushUpdateRejected=false", spec.Args);
+            Assert.Contains("advice.statusHints=false", spec.Args);
+        }
     }
 
     [GitFact]
@@ -156,7 +289,7 @@ public class GitRemoteTests
         var result = await repo.Service.CommitAndPushAsync(repo.Root, "msg", CancellationToken.None);
 
         Assert.False(result.Success);
-        Assert.Equal("Nothing to commit", result.Message);
+        Assert.Equal("Nothing to commit.", result.Message);
     }
 
     [GitFact]
@@ -212,7 +345,7 @@ public class GitRemoteTests
         Assert.True(result.Success, result.Message);
         Assert.Equal("Pushed to main", result.Message);
         Assert.Equal("earlier commit", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "log", "-1", "--format=%s", "main"));
-        Assert.Equal("Nothing to commit", (await repo.Service.CommitAndPushAsync(repo.Root, "unused", CancellationToken.None)).Message);
+        Assert.Equal("Nothing to commit.", (await repo.Service.CommitAndPushAsync(repo.Root, "unused", CancellationToken.None)).Message);
     }
 
     [GitFact]
@@ -267,8 +400,9 @@ public class GitRemoteTests
         var result = await repo.Service.CommitAndPushAsync(repo.Root, "x", CancellationToken.None);
 
         Assert.False(result.Success);
-        Assert.Equal("The upstream branch is gone. Push from a terminal if you want to recreate it.", result.Message);
+        Assert.Equal(GitService.UpstreamGone, result.Message);
         Assert.DoesNotContain("feat", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "branch"));
+        Assert.Equal("", await repo.GitAsync("diff", "--cached", "--name-only")); // refused before add -A
     }
 
     [GitFact]

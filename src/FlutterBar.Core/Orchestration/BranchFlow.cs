@@ -125,10 +125,10 @@ public static class BranchFlow
         }
     }
 
-    /// <summary>Toast text and optional action label for <paramref name="advice"/>.</summary>
-    public static (string Text, string? ActionLabel) AdviceToast(BranchChangeAdvice advice) => advice switch
+    /// <summary>Toast text and optional action label for <paramref name="advice"/>; <paramref name="afterPull"/> words it for a pull.</summary>
+    public static (string Text, string? ActionLabel) AdviceToast(BranchChangeAdvice advice, bool afterPull = false) => advice switch
     {
-        BranchChangeAdvice.HotRestart => (UiText.BranchHotRestart, UiText.HotRestart),
-        _ => (UiText.PubspecChanged, null),
+        BranchChangeAdvice.HotRestart => (afterPull ? UiText.PulledHotRestart : UiText.BranchHotRestart, UiText.HotRestart),
+        _ => (afterPull ? UiText.PulledPubspecChanged : UiText.PubspecChanged, null),
     };
 }

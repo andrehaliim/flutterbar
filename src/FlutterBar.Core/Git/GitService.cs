@@ -95,7 +95,7 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
     private async Task<(GitStatusInfo Status, bool Unmerged)> ReadStatusAsync(string root, CancellationToken ct)
     {
         // --untracked-files=all: a new folder counts its files, not one entry.
-        var result = await RunAsync(root, CommandTimeout, null, ct, "status", "--porcelain=v2", "--branch", "--untracked-files=all")
+        var result = await RunAsync(root, CommandTimeout, null, ct, "--no-optional-locks", "status", "--porcelain=v2", "--branch", "--untracked-files=all")
             .ConfigureAwait(false);
         if (result.ExitCode != 0)
         {
@@ -115,7 +115,8 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         }
         var paths = await RunAsync(
             root, CommandTimeout, null, ct, "rev-parse",
-            "--git-path", "MERGE_HEAD", "--git-path", "CHERRY_PICK_HEAD", "--git-path", "rebase-merge", "--git-path", "rebase-apply")
+            "--git-path", "MERGE_HEAD", "--git-path", "CHERRY_PICK_HEAD", "--git-path", "REVERT_HEAD", "--git-path", "sequencer",
+            "--git-path", "rebase-merge", "--git-path", "rebase-apply")
             .ConfigureAwait(false);
         if (paths.ExitCode != 0)
         {
@@ -167,43 +168,105 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         return await NetworkAsync(root, "Pulled", ct, "pull").ConfigureAwait(false);
     }
 
-    public const string ResolveConflictsFirst = "Resolve conflicts first";
+    public const string ResolveConflictsFirst = "Resolve conflicts first.";
+
+    public const string UpstreamGone = "The upstream branch is gone. Push from a terminal if you want to recreate it.";
 
     /// <summary>Start of the failure text when the commit exists locally but the push failed (the UI then clears the message).</summary>
     public const string CommittedLocallyPrefix = "Committed locally. Push failed: ";
 
     /// <summary>
+    /// <c>git push</c> only (<c>push -u origin &lt;branch&gt;</c> without an upstream), for commits an earlier push left behind.
+    /// Never <c>--force</c>; a rejected push says to pull first. Nothing is staged or committed.
+    /// </summary>
+    public async Task<GitResult> PushAsync(string root, CancellationToken ct)
+    {
+        var (target, error) = await PreparePushAsync(root, ct).ConfigureAwait(false);
+        if (error is not null || target is null)
+        {
+            return error ?? new GitResult(false, "Nothing to push.");
+        }
+        var (status, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+        if (target.HasUpstream && status.Ahead == 0)
+        {
+            return new GitResult(false, "Nothing to push.");
+        }
+        return await PushCoreAsync(root, target, committed: false, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// <c>git add -A</c>, <c>git commit -m</c>, then <c>git push</c> (<c>push -u origin &lt;branch&gt;</c> without an upstream).
-    /// No pull beforehand and never <c>--force</c>; a rejected push says to pull first.
+    /// No pull beforehand and never <c>--force</c>; a rejected push says to pull first. The message is only required when
+    /// there is something to commit; without one, pending commits are pushed.
     /// </summary>
     public async Task<GitResult> CommitAndPushAsync(string root, string message, CancellationToken ct)
     {
+        var (target, error) = await PreparePushAsync(root, ct).ConfigureAwait(false);
+        if (error is not null || target is null)
+        {
+            return error ?? new GitResult(false, "Nothing to commit.");
+        }
+
+        var committed = false;
         if (string.IsNullOrWhiteSpace(message))
         {
-            return new GitResult(false, "Enter a commit message");
+            var (pending, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+            if (pending.ChangedFiles > 0)
+            {
+                return new GitResult(false, "Enter a commit message.");
+            }
         }
+        else
+        {
+            var add = await RunAsync(root, CommandTimeout, null, ct, "add", "-A").ConfigureAwait(false);
+            if (add.ExitCode != 0)
+            {
+                return new GitResult(false, FailureText(add));
+            }
+            // Exit 1 = staged changes exist, 0 = nothing staged.
+            var staged = await RunAsync(root, CommandTimeout, null, ct, "diff", "--cached", "--quiet").ConfigureAwait(false);
+            if (staged.ExitCode != 0 && staged.ExitCode != 1)
+            {
+                return new GitResult(false, FailureText(staged));
+            }
+            if (staged.ExitCode == 1)
+            {
+                // Hooks (lefthook, husky) and GPG pinentry can be slow: same limit as the network commands.
+                var commit = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, "commit", "-m", message).ConfigureAwait(false);
+                if (commit.ExitCode != 0)
+                {
+                    return new GitResult(false, FailureText(commit));
+                }
+                committed = true;
+            }
+        }
+
+        if (!committed)
+        {
+            // Nothing new to commit: still push commits an earlier failed push left behind.
+            var (status, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+            if (target.HasUpstream && status.Ahead == 0)
+            {
+                return new GitResult(false, "Nothing to commit.");
+            }
+        }
+        return await PushCoreAsync(root, target, committed, ct).ConfigureAwait(false);
+    }
+
+    private sealed record PushTarget(string Branch, bool HasUpstream);
+
+    /// <summary>Checks shared by push and commit-and-push, all before anything is staged.</summary>
+    private async Task<(PushTarget? Target, GitResult? Error)> PreparePushAsync(string root, CancellationToken ct)
+    {
         var branch = await GetSymbolicBranchAsync(root).ConfigureAwait(false);
         if (branch is null)
         {
-            return new GitResult(false, "HEAD is detached. Switch to a branch first");
+            return (null, new GitResult(false, "HEAD is detached. Switch to a branch first."));
         }
-
         if (await HasConflictedStateAsync(root, ct).ConfigureAwait(false))
         {
-            return new GitResult(false, ResolveConflictsFirst); // add -A would mark conflict markers as resolved
+            return (null, new GitResult(false, ResolveConflictsFirst)); // add -A would mark conflict markers as resolved
         }
-        var add = await RunAsync(root, CommandTimeout, null, ct, "add", "-A").ConfigureAwait(false);
-        if (add.ExitCode != 0)
-        {
-            return new GitResult(false, FailureText(add));
-        }
-        // Exit 1 = staged changes exist, 0 = nothing staged.
-        var staged = await RunAsync(root, CommandTimeout, null, ct, "diff", "--cached", "--quiet").ConfigureAwait(false);
-        if (staged.ExitCode != 0 && staged.ExitCode != 1)
-        {
-            return new GitResult(false, FailureText(staged));
-        }
-
         var upstream = await RunAsync(root, CommandTimeout, null, ct, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
             .ConfigureAwait(false);
         var hasUpstream = upstream.ExitCode == 0;
@@ -212,45 +275,28 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
             var configured = await RunAsync(root, CommandTimeout, null, ct, "config", "--get", $"branch.{branch}.merge").ConfigureAwait(false);
             if (configured.ExitCode == 0 && configured.Stdout.Trim().Length > 0)
             {
-                return new GitResult(false, "The upstream branch is gone. Push from a terminal if you want to recreate it.");
+                return (null, new GitResult(false, UpstreamGone));
             }
         }
+        return (new PushTarget(branch, hasUpstream), null);
+    }
 
-        var committed = false;
-        if (staged.ExitCode == 1)
-        {
-            // Hooks (lefthook, husky) and GPG pinentry can be slow: same limit as the network commands.
-            var commit = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, "commit", "-m", message).ConfigureAwait(false);
-            if (commit.ExitCode != 0)
-            {
-                return new GitResult(false, FailureText(commit));
-            }
-            committed = true;
-        }
-        else
-        {
-            // Nothing new to commit: still push commits an earlier failed push left behind.
-            var (status, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
-            if (hasUpstream && status.Ahead == 0)
-            {
-                return new GitResult(false, "Nothing to commit");
-            }
-        }
-
-        string[] pushArgs = hasUpstream ? ["push"] : ["push", "-u", "origin", branch];
+    private async Task<GitResult> PushCoreAsync(string root, PushTarget target, bool committed, CancellationToken ct)
+    {
+        string[] pushArgs = target.HasUpstream ? ["push"] : ["push", "-u", "origin", target.Branch];
         var push = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, pushArgs).ConfigureAwait(false);
         if (push.ExitCode == 0)
         {
-            return new GitResult(true, $"Pushed to {branch}");
+            return new GitResult(true, $"Pushed to {target.Branch}");
         }
-        var text = FailureText(push);
+        var text = FailureText(push, network: true);
         // "[rejected]" (non-fast-forward / fetch first) is fixed by pulling; "[remote rejected]" (hook, protected branch) is not.
         var needsPull = text.Contains("[rejected]", StringComparison.Ordinal)
             && (text.Contains("non-fast-forward", StringComparison.OrdinalIgnoreCase)
                 || text.Contains("fetch first", StringComparison.OrdinalIgnoreCase));
         if (needsPull)
         {
-            text += "\nPull first";
+            text += "\nPull first.";
         }
         return new GitResult(false, committed ? CommittedLocallyPrefix + text : text);
     }
@@ -264,7 +310,7 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         }
         // A failed merge reports its conflicts on stdout and only the fetch progress on stderr: keep both.
         var stdout = result.Stdout.Trim();
-        var text = FailureText(result);
+        var text = FailureText(result, network: true);
         return new GitResult(false, stdout.Length > 0 && !text.Contains(stdout, StringComparison.Ordinal) ? $"{text}\n{stdout}" : text);
     }
 
@@ -282,7 +328,14 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         string root, TimeSpan timeout, IReadOnlyDictionary<string, string>? environment, CancellationToken ct, params string[] args)
     {
         // quotepath=off keeps non-ASCII branch names / paths unescaped in the (UTF-8) output.
-        string[] full = ["-c", "core.quotepath=off", .. args];
+        // The advice settings drop git's multi-line "hint:" blocks, which would only fill the toast.
+        string[] full =
+        [
+            "-c", "core.quotepath=off",
+            "-c", "advice.pushUpdateRejected=false", "-c", "advice.pushNonFFCurrent=false", "-c", "advice.pushFetchFirst=false",
+            "-c", "advice.statusHints=false",
+            .. args,
+        ];
         return runner.RunAsync(new ProcessSpec(gitExe, full, root, environment), timeout, ct);
     }
 
@@ -296,7 +349,7 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         return result.Stdout;
     }
 
-    private static string FailureText(ProcessResult result)
+    private static string FailureText(ProcessResult result, bool network = false)
     {
         var text = result.Stderr.Trim();
         if (text.Length > 0)
@@ -309,6 +362,11 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         {
             return text;
         }
-        return result.ExitCode == -1 ? "git timed out" : $"git exited with code {result.ExitCode}";
+        if (result.ExitCode == -1)
+        {
+            // A hidden console cannot show an ssh passphrase or host-key prompt, so a network command just hangs until the limit.
+            return network ? "git timed out (waiting for credentials or SSH passphrase?)" : "git timed out";
+        }
+        return $"git exited with code {result.ExitCode}";
     }
 }

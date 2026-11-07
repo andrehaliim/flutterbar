@@ -24,6 +24,7 @@ internal sealed partial class AppController
     private IReadOnlyList<string> _branches = [];
     private ProjectFlyout? _projectFlyout;
     private BranchFlyout? _branchFlyout;
+    private int _branchFlyoutGeneration = -1; // project the shared branch flyout last showed
 
     public async Task SelectProjectAsync(string path)
     {
@@ -66,7 +67,7 @@ internal sealed partial class AppController
         if (!outcome.Success)
         {
             AppLog.Write($"git switch {branch} failed: {outcome.Message}");
-            ShowToast(outcome.Message); // git stderr as is (spec §5.5)
+            ShowToast(UiText.CapLines(outcome.Message)); // git stderr (spec §5.5), capped; the full text is in diag.log
             return;
         }
         AppLog.Write($"git switch {branch}: {outcome.Message} advice={outcome.Advice?.ToString() ?? "-"}");
@@ -297,8 +298,15 @@ internal sealed partial class AppController
             flyout.FetchRequested += () => Fire(RunGitActionAsync(GitAction.Fetch, null), "Fetch");
             flyout.PullRequested += () => Fire(RunGitActionAsync(GitAction.Pull, null), "Pull");
             flyout.CommitAndPushRequested += message => Fire(RunGitActionAsync(GitAction.CommitAndPush, message), "Commit and push");
+            flyout.PushRequested += () => Fire(RunGitActionAsync(GitAction.Push, null), "Push");
         }
         flyout.Reset();
+        if (_branchFlyoutGeneration != _generation)
+        {
+            // Another project: the typed message and the counts belong to the old one.
+            flyout.ResetForProject();
+            _branchFlyoutGeneration = _generation;
+        }
         flyout.SetBranches(_branches, _gitState.Branch);
         var token = ShowFlyout(WidgetChip.Branch, flyout, flyout.FocusTarget);
         Fire(LoadBranchesAsync(flyout, root, _generation, token), "Branch list");
@@ -310,6 +318,7 @@ internal sealed partial class AppController
         Fetch,
         Pull,
         CommitAndPush,
+        Push,
     }
 
     /// <summary>Changed files and ahead/behind for the flyout; unreadable status hides them.</summary>
@@ -337,9 +346,10 @@ internal sealed partial class AppController
     }
 
     /// <summary>
-    /// Fetch, pull or commit and push from the branch flyout. One at a time; the result is a toast (git stderr on failure,
-    /// also shown in the flyout). After a pull that moved HEAD of a live session the branch-switch advice is shown.
-    /// Results are dropped when the project changed meanwhile.
+    /// Fetch, pull, push or commit and push from the branch flyout. One at a time. While the flyout is open the result is
+    /// shown inside it (a toast would cover it); a toast is only used when it was closed meanwhile. After a pull that moved
+    /// HEAD of a live session the pull advice replaces the plain "Pulled". Git output is capped at a few lines (the full
+    /// text is in diag.log). Results are dropped when the project changed meanwhile.
     /// </summary>
     private async Task RunGitActionAsync(GitAction action, string? commitMessage)
     {
@@ -353,6 +363,7 @@ internal sealed partial class AppController
         _gitBusy = true;
         flyout.SetOperationBusy(true);
         flyout.SetMessage(null);
+        flyout.ClearResult();
         var generation = _generation;
         try
         {
@@ -362,6 +373,7 @@ internal sealed partial class AppController
             {
                 GitAction.Fetch => ToOutcome(await git.FetchAsync(root, ct)),
                 GitAction.Pull => await BranchFlow.PullAsync(git, root, live, ct),
+                GitAction.Push => ToOutcome(await git.PushAsync(root, ct)),
                 _ => ToOutcome(await git.CommitAndPushAsync(root, commitMessage ?? "", ct)),
             });
             if (generation != _generation)
@@ -374,34 +386,70 @@ internal sealed partial class AppController
                 AppLog.Write("git pull: pubspec comparison skipped", adviceError);
             }
             AppLog.Write($"git {action}: success={outcome.Success} message={outcome.Message} advice={outcome.Advice?.ToString() ?? "-"}");
-            if (outcome.Success)
+            var pushed = action is GitAction.CommitAndPush or GitAction.Push;
+            if (outcome.Success && pushed)
             {
-                ShowToast(outcome.Message);
-                if (action == GitAction.CommitAndPush)
-                {
-                    flyout.ClearCommitMessage();
-                }
+                flyout.ClearCommitMessage();
             }
-            else
+            else if (!outcome.Success && outcome.Message.StartsWith(GitService.CommittedLocallyPrefix, StringComparison.Ordinal))
             {
-                if (action == GitAction.CommitAndPush && outcome.Message.StartsWith(GitService.CommittedLocallyPrefix, StringComparison.Ordinal))
-                {
-                    flyout.ClearCommitMessage(); // the commit exists; the next click only pushes
-                }
-                flyout.SetMessage(outcome.Message);
-                ShowToast(outcome.Message); // git stderr as is (spec §5.5)
+                flyout.ClearCommitMessage(); // the commit exists; the next click only pushes
+            }
+            var text = UiText.CapLines(outcome.Message);
+            if (!outcome.Success)
+            {
+                flyout.SetMessage(text);
             }
             await RefreshGitStatusAsync(flyout, root, generation);
-            if (outcome.Advice is { } advice)
+            await RefreshGitAsync(root, generation, watch: false); // e.g. the first commit ends "(no commits yet)"
+            if (generation != _generation)
             {
-                var (text, label) = BranchFlow.AdviceToast(advice);
-                ShowToast(text, label, label is null ? null : () => ReloadAsync(full: true));
+                return;
             }
+            PresentGitResult(flyout, action, outcome, text);
         }
         finally
         {
             _gitBusy = false;
             flyout.SetOperationBusy(false);
+        }
+    }
+
+    /// <summary>Inline in the open branch flyout, else a toast.</summary>
+    private void PresentGitResult(BranchFlyout flyout, GitAction action, BranchSwitchOutcome outcome, string text)
+    {
+        var open = _flyout.IsOpen && ReferenceEquals(_flyout.Content, flyout);
+        if (outcome.Success && outcome.Advice is { } advice)
+        {
+            var (adviceText, label) = BranchFlow.AdviceToast(advice, afterPull: action == GitAction.Pull);
+            Func<Task>? reload = label is null ? null : () => ReloadAsync(full: true);
+            if (open)
+            {
+                flyout.ShowAdvice(adviceText, label, reload is null ? null : () =>
+                {
+                    _flyout.Close();
+                    Fire(reload(), "Hot restart");
+                });
+            }
+            else
+            {
+                ShowToast(adviceText, label, reload);
+            }
+        }
+        else if (outcome.Success)
+        {
+            if (open)
+            {
+                flyout.ShowResult(text);
+            }
+            else
+            {
+                ShowToast(text);
+            }
+        }
+        else if (!open)
+        {
+            ShowToast(text); // when open, the flyout's Message line already shows it
         }
     }
 
