@@ -79,6 +79,52 @@ public static class BranchFlow
         }
     }
 
+    /// <summary>
+    /// <c>git pull</c>; for a live session whose HEAD moved, also compares pubspec between the old and new HEAD (same
+    /// advice as a branch switch). Advice stays null when HEAD did not move.
+    /// </summary>
+    public static async Task<BranchSwitchOutcome> PullAsync(GitService git, string root, bool sessionActive, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(git);
+        string? oldCommit = null;
+        Exception? adviceError = null;
+        if (sessionActive)
+        {
+            try
+            {
+                oldCommit = await git.GetHeadCommitAsync(root).ConfigureAwait(false);
+            }
+            catch (InvalidOperationException ex)
+            {
+                adviceError = ex;
+            }
+        }
+
+        var result = await git.PullAsync(root, ct).ConfigureAwait(false);
+        if (!result.Success)
+        {
+            return new BranchSwitchOutcome(false, result.Message, null);
+        }
+        if (oldCommit is null)
+        {
+            return new BranchSwitchOutcome(true, result.Message, null, adviceError);
+        }
+        try
+        {
+            var newCommit = await git.GetHeadCommitAsync(root).ConfigureAwait(false);
+            if (newCommit == oldCommit)
+            {
+                return new BranchSwitchOutcome(true, result.Message, null);
+            }
+            var advice = await git.AdviseAfterSwitchAsync(root, oldCommit, newCommit).ConfigureAwait(false);
+            return new BranchSwitchOutcome(true, result.Message, advice);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new BranchSwitchOutcome(true, result.Message, null, ex);
+        }
+    }
+
     /// <summary>Toast text and optional action label for <paramref name="advice"/>.</summary>
     public static (string Text, string? ActionLabel) AdviceToast(BranchChangeAdvice advice) => advice switch
     {

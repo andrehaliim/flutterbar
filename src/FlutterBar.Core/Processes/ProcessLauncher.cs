@@ -35,6 +35,13 @@ public sealed class ProcessLauncher(ProcessContainment containment = ProcessCont
             StandardErrorEncoding = new UTF8Encoding(false),
         };
         ApplyCommand(psi, spec);
+        if (spec.Environment is not null)
+        {
+            foreach (var (key, value) in spec.Environment)
+            {
+                psi.Environment[key] = value;
+            }
+        }
 
         var job = Containment == ProcessContainment.KillOnCloseJob ? new JobObject() : null;
         var process = new Process { StartInfo = psi, EnableRaisingEvents = true };

@@ -1,6 +1,11 @@
 namespace FlutterBar.Core.Processes;
 
-public sealed record ProcessSpec(string FileName, IReadOnlyList<string> Args, string WorkingDirectory);
+/// <summary><paramref name="Environment"/> entries are added to (or override) the child's inherited environment.</summary>
+public sealed record ProcessSpec(
+    string FileName,
+    IReadOnlyList<string> Args,
+    string WorkingDirectory,
+    IReadOnlyDictionary<string, string>? Environment = null);
 
 public sealed record ProcessResult(int ExitCode, string Stdout, string Stderr);
 

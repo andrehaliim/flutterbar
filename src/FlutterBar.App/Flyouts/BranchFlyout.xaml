@@ -1,10 +1,39 @@
 <UserControl x:Class="FlutterBar.App.Flyouts.BranchFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Branch flyout (spec §5.5): search over local branches; picking one runs git switch. -->
+    <!-- Branch flyout (spec §5.5): fetch / pull / commit and push, then search over local branches; picking one runs git switch. -->
     <StackPanel>
         <TextBlock Text="Branch" Style="{StaticResource Fb.FlyoutHeader}" />
         <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="FetchButton" Content="Fetch" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Fetch" />
+            <Button x:Name="PullButton" Content="Pull" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Pull" />
+        </StackPanel>
+        <Grid>
+            <TextBox x:Name="CommitMessage" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Commit message" />
+            <TextBlock Text="Commit message" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=CommitMessage}" Value="">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="ChangedText" Style="{StaticResource Fb.MutedText}" VerticalAlignment="Center" Margin="2,0" />
+            <Button x:Name="CommitPushButton" Grid.Column="1" Content="Commit and push" Style="{StaticResource Fb.Button}"
+                    Margin="6,0,0,0" IsEnabled="False" AutomationProperties.Name="Commit and push" />
+        </Grid>
+        <Border Height="1" Background="{DynamicResource Fb.Separator}" Margin="0,0,0,8" />
         <Grid>
             <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Search branches" />
             <TextBlock Text="Search branches…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">

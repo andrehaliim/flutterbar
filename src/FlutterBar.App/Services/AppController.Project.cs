@@ -20,6 +20,7 @@ internal sealed partial class AppController
     private int _generation; // bumped on every project change: results for an older project are dropped
     private HeadWatcher? _headWatcher;
     private GitState? _gitState;
+    private bool _gitBusy; // a fetch / pull / commit and push is running
     private IReadOnlyList<string> _branches = [];
     private ProjectFlyout? _projectFlyout;
     private BranchFlyout? _branchFlyout;
@@ -293,12 +294,114 @@ internal sealed partial class AppController
         {
             flyout = _branchFlyout = new BranchFlyout();
             flyout.BranchChosen += branch => Fire(SwitchBranchAsync(branch), "Switch branch");
+            flyout.FetchRequested += () => Fire(RunGitActionAsync(GitAction.Fetch, null), "Fetch");
+            flyout.PullRequested += () => Fire(RunGitActionAsync(GitAction.Pull, null), "Pull");
+            flyout.CommitAndPushRequested += message => Fire(RunGitActionAsync(GitAction.CommitAndPush, message), "Commit and push");
         }
         flyout.Reset();
         flyout.SetBranches(_branches, _gitState.Branch);
         var token = ShowFlyout(WidgetChip.Branch, flyout, flyout.FocusTarget);
         Fire(LoadBranchesAsync(flyout, root, _generation, token), "Branch list");
+        Fire(RefreshGitStatusAsync(flyout, root, _generation), "Git status");
     }
+
+    private enum GitAction
+    {
+        Fetch,
+        Pull,
+        CommitAndPush,
+    }
+
+    /// <summary>Changed files and ahead/behind for the flyout; unreadable status hides them.</summary>
+    private async Task RefreshGitStatusAsync(BranchFlyout flyout, string root, int generation)
+    {
+        var git = (await _tools).Git;
+        if (git is null)
+        {
+            return;
+        }
+        GitStatusInfo? status;
+        try
+        {
+            status = await Task.Run(() => git.GetStatusAsync(root, _lifetime.Token));
+        }
+        catch (InvalidOperationException ex)
+        {
+            AppLog.Write($"git status of {root} failed", ex);
+            status = null;
+        }
+        if (generation == _generation)
+        {
+            flyout.SetStatus(status);
+        }
+    }
+
+    /// <summary>
+    /// Fetch, pull or commit and push from the branch flyout. One at a time; the result is a toast (git stderr on failure,
+    /// also shown in the flyout). After a pull that moved HEAD of a live session the branch-switch advice is shown.
+    /// Results are dropped when the project changed meanwhile.
+    /// </summary>
+    private async Task RunGitActionAsync(GitAction action, string? commitMessage)
+    {
+        var root = Settings.CurrentProject;
+        var git = (await _tools).Git;
+        var flyout = _branchFlyout;
+        if (_gitBusy || root is null || git is null || flyout is null)
+        {
+            return;
+        }
+        _gitBusy = true;
+        flyout.SetOperationBusy(true);
+        flyout.SetMessage(null);
+        var generation = _generation;
+        try
+        {
+            var live = SessionGuard.IsLive(_session.Snapshot.State);
+            var ct = _lifetime.Token;
+            var outcome = await Task.Run(async () => action switch
+            {
+                GitAction.Fetch => ToOutcome(await git.FetchAsync(root, ct)),
+                GitAction.Pull => await BranchFlow.PullAsync(git, root, live, ct),
+                _ => ToOutcome(await git.CommitAndPushAsync(root, commitMessage ?? "", ct)),
+            });
+            if (generation != _generation)
+            {
+                AppLog.Write($"git {action} in {root} finished after a project change ({outcome.Message}): result dropped");
+                return;
+            }
+            if (outcome.AdviceError is { } adviceError)
+            {
+                AppLog.Write("git pull: pubspec comparison skipped", adviceError);
+            }
+            AppLog.Write($"git {action}: success={outcome.Success} message={outcome.Message} advice={outcome.Advice?.ToString() ?? "-"}");
+            if (outcome.Success)
+            {
+                ShowToast(outcome.Message);
+                if (action == GitAction.CommitAndPush)
+                {
+                    flyout.ClearCommitMessage();
+                }
+            }
+            else
+            {
+                flyout.SetMessage(outcome.Message);
+                ShowToast(outcome.Message); // git stderr as is (spec §5.5)
+            }
+            await RefreshGitStatusAsync(flyout, root, generation);
+            if (outcome.Advice is { } advice)
+            {
+                var (text, label) = BranchFlow.AdviceToast(advice);
+                ShowToast(text, label, label is null ? null : () => ReloadAsync(full: true));
+            }
+        }
+        finally
+        {
+            _gitBusy = false;
+            flyout.SetOperationBusy(false);
+        }
+    }
+
+    private static BranchSwitchOutcome ToOutcome(GitResult result) => new(result.Success, result.Message, null);
 
     private async Task LoadBranchesAsync(BranchFlyout flyout, string root, int generation, CancellationToken token)
     {

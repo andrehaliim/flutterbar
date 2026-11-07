@@ -65,6 +65,46 @@ internal sealed class GitTestRepo : IDisposable
         return result.Stdout.Trim();
     }
 
+    /// <summary>Runs git in <paramref name="dir"/> (another clone) with the same 30 s limit.</summary>
+    public async Task<string> GitInAsync(string dir, params string[] args)
+    {
+        var result = await _runner.RunAsync(new ProcessSpec(GitExe!, args, dir), TimeSpan.FromSeconds(30), CancellationToken.None);
+        Assert.True(result.ExitCode == 0, $"git {string.Join(' ', args)} (in {dir}) failed: {result.Stderr}");
+        return result.Stdout.Trim();
+    }
+
+    /// <summary>Bare repo in the temp folder, added as <c>origin</c>; the current branch is pushed with upstream.</summary>
+    public async Task<string> AddBareRemoteAsync()
+    {
+        var remote = Path.Combine(Temp, "remote.git");
+        await GitAsync("init", "--bare", "-b", "main", remote);
+        await GitAsync("remote", "add", "origin", remote);
+        await GitAsync("push", "-u", "origin", "main");
+        return remote;
+    }
+
+    /// <summary>A second clone of <paramref name="remote"/> (the "other developer") with local identity config.</summary>
+    public async Task<string> CloneAsync(string remote, string name = "other")
+    {
+        var dir = Path.Combine(Temp, name);
+        await GitInAsync(Temp, "clone", remote, dir);
+        await GitInAsync(dir, "config", "user.name", "Other");
+        await GitInAsync(dir, "config", "user.email", "other@example.com");
+        await GitInAsync(dir, "config", "commit.gpgsign", "false");
+        return dir;
+    }
+
+    /// <summary>Commits a file in a clone and pushes it.</summary>
+    public async Task PushFromAsync(string dir, string file, string content, string message)
+    {
+        var path = Path.Combine(dir, file);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllTextAsync(path, content);
+        await GitInAsync(dir, "add", "-A");
+        await GitInAsync(dir, "commit", "-m", message);
+        await GitInAsync(dir, "push");
+    }
+
     public async Task CommitAllAsync(string message)
     {
         await GitAsync("add", "-A");

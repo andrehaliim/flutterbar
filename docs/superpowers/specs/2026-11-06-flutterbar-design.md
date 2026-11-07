@@ -244,6 +244,23 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
   dijalankan. Kalau ada perubahan, muncul toast "pubspec changed. Stop and run again.". Kalau tidak,
   toast "Branch changed. Hot restart?" dengan tombol Hot restart.
 
+#### Fetch, pull, commit and push (flyout branch)
+- Flyout branch punya baris tombol `Fetch` dan `Pull` (menampilkan angka behind bila > 0), lalu kolom
+  `Commit message`, teks `N changed files`, tombol `Commit and push` (aktif hanya bila pesan tidak
+  kosong), pemisah, dan daftar branch. Status (`git status --porcelain=v2 --branch`) dibaca saat flyout
+  dibuka dan setelah setiap aksi.
+- `Fetch` = `git fetch --prune`; `Pull` = `git pull` biasa (merge/rebase mengikuti config git user).
+  `Commit and push` = `git add -A`, `git commit -m <pesan>`, `git push` (atau `git push -u origin <branch>`
+  bila belum ada upstream). Tidak ada pull sebelum push dan tidak pernah `--force`. Push ditolak
+  (non-fast-forward) menampilkan pesan git plus saran "Pull first". HEAD detached ditolak.
+- Perintah jaringan berjalan dengan `GIT_TERMINAL_PROMPT=0` (tidak pernah menunggu input terminal;
+  Git Credential Manager tetap bisa menampilkan login) dan timeout 2 menit.
+- Hasil lewat toast: `Fetched`, `Pulled`, `Pushed to <branch>`, `Nothing to commit`, atau stderr git
+  apa adanya (juga di flyout). Selama aksi berjalan tombol nonaktif dan spinner tampil. Hasil dibuang bila
+  project berganti di tengah jalan.
+- Pull yang menggeser HEAD saat sesi berjalan memakai saran yang sama dengan pindah branch (hot restart,
+  atau "pubspec changed. Stop and run again."). Commit and push tidak memicu saran.
+
 ## 6. Sesi run
 
 ### 6.1 Protokol `flutter run --machine`
