@@ -230,15 +230,16 @@ Akar masalah owner (TERBUKTI; hipotesis awal "instance lama/zombie setelah windo
   owner asli masih utuh: `GetWindowLongPtr(GWLP_HWNDPARENT)` = tray (log: `EXP readback differs: GW_OWNER=0x0 GWLP_HWNDPARENT=0x1C0A10 ... qunsFg=Windows.UI.Core.CoreWindow`).
 - Kode v3.1 memakai `GW_OWNER != tray` sebagai tanda "owner hilang", lalu memanggil `SetWindowLongPtr(GWLP_HWNDPARENT, tray)` lagi. Memasang owner yang SAMA itu justru MENGHAPUS owner
   (log: `prev=0x1C0A10 err=0` lalu GWLP_HWNDPARENT=0x0). Setelah itu setiap pemasangan ulang tidak berefek (`prev=0x0`, kadang `err=87`), sehingga owner tetap 0 dan
-  dicoba lagi tiap tick selamanya. Pulih hanya lewat explorer restart/window baru.
+  dicoba lagi tiap tick selamanya. Log user: owner tetap 0x0 dengan tray baru `0x402E2` dari 17:57:37 sampai 18:24:31 (~27 menit) setelah explorer restart, jadi `TaskbarCreated`/pemasangan ke tray baru TIDAK memulihkan
+  (memasang owner lain juga gagal). Yang memulihkan hanya WINDOW BARU (pada uji kami: window baru memasang owner dengan benar saat startup). Bukti: `2026-11-07-owner-diagnostics.md`.
 - Perbaikan: verifikasi dengan `GetWindowLongPtr(GWLP_HWNDPARENT)` (bukan `GW_OWNER`), JANGAN pernah memasang ulang bila sudah sama dengan tray, verifikasi setelah pasang,
-  log FAILED + `Marshal.GetLastWin32Error()` bila gagal, dan bila gagal 3x berturut-turut buat ulang window (maks sekali per 20 detik).
+  log FAILED + `Marshal.GetLastWin32Error()` bila gagal, dan bila gagal pada 3 tick timer berturut-turut (jarak >= 600 ms; hanya tick timer yang dihitung) buat ulang window (maks sekali per 20 detik).
   Setelah perbaikan: buka/tutup Start tidak lagi mengubah owner (tanpa baris `handle/owner changed`).
 
 ## Spike v3.2
 
 1. **Pelacakan auto-hide**: bila auto-hide menyala, tiap `EVENT_OBJECT_LOCATIONCHANGE` dan tick timer membaca `GetWindowRect(Shell_TrayWnd)`, menghitung bagian yang terlihat
-   di monitornya (irisan dengan `rcMonitor`). < 50% terlihat -> widget disembunyikan; selain itu ditampilkan dengan Y mengikuti rect taskbar hidup
+   di monitor utama (`MonitorFromPoint(0,0, PRIMARY)`, bukan monitor dari HWND taskbar yang tersembunyi; irisan dengan `rcMonitor`). < 50% terlihat -> widget disembunyikan; selain itu ditampilkan dengan Y mengikuti rect taskbar hidup
    (dock di tengah vertikal rect saat itu), sehingga widget ikut meluncur. Saat disembunyikan karena auto-hide, re-layout UIA tidak dijalankan (layout baik terakhir
    dipertahankan, tanpa spam `REJECTED`). Transisi dicatat sekali: `auto-hide: taskbar OFF-SCREEN ...` / `VISIBLE ...`.
 2. **Lifecycle & owner**: lihat akar masalah di atas. Window yang dibuat ulang: instance lama berhenti total (`Teardown`: timer + tick handler, kedua WinEvent hook, hook WndProc;
@@ -246,17 +247,21 @@ Akar masalah owner (TERBUKTI; hipotesis awal "instance lama/zombie setelah windo
 3. **Hide debug info**: item menu kanan "Hide debug info" (checkable); bila dicentang widget hanya menampilkan placeholder statis `▶ ⚡ 🔄 ⏹` (Full), `▶ ⚡ 🔄` (Compact),
    `▶ ⚡` (ButtonsOnly) plus tooltip. Disimpan di `spike-settings.json` (`hideDebug`). Teks hanya ditulis bila berubah. Fitur ini HANYA untuk spike.
    Catatan: "Reset to auto position" kini menyimpan `mode=auto` (bukan menghapus file) supaya `hideDebug` tidak hilang.
-4. Hook uji spike: `--simulate-owner-failure` (instance pertama tidak memasang owner, menguji jalur gagal -> buat ulang).
+4. **Startup/recreate**: `SourceInitialized` terjadi di dalam `Show()` SEBELUM `ShowWindow(SW_SHOWNA)` milik WPF. Reassert pertama kini dijalankan lewat `Dispatcher.BeginInvoke(..., Loaded)` setelah window benar-benar tampil,
+   keputusan sembunyi/tampil memakai `IsWindowVisible(hwnd)` (keadaan nyata), bukan flag `_hidden`; window dimulai di (-32000,-32000) agar tidak berkedip di posisi default. Tanpa ini, spike yang dijalankan saat auto-hide menyala/fullscreen akan tampil di posisi default padahal log menulis visible=False.
+5. Recreate saat mode drag aktif: drag diakhiri dan dicatat (`unsaved drag state dropped`). Hasil query UIA latar tidak diterapkan bila instance sudah mati atau taskbar auto-hide tersembunyi.
+6. Hook uji spike: `--simulate-owner-failure` (instance pertama tidak memasang owner, menguji jalur gagal -> buat ulang).
 
 Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata tengah):
 - Auto-hide dinyalakan lewat `SHAppBarMessage(ABM_SETSTATE)` (state asli dibaca dulu = 0, dicatat, dipulihkan = 0, dikonfirmasi `FINAL=0`; total ~20 detik):
   `auto-hide: taskbar OFF-SCREEN -> hide widget, UIA re-layout paused vis=29% tbRect=(0,1066,1920,1114)`; Y widget ikut turun (1037, 1046, 1057, 1070 ... 1082) lalu `visible=False`;
   tanpa baris `REJECTED` selama tersembunyi. Dimatikan: `auto-hide: taskbar VISIBLE -> show widget`.
 - Tombol Win (Start terbuka/tutup): owner tetap `verified`, tanpa pemasangan ulang.
-- Explorer di-restart sekali (`Stop-Process -Name explorer`, disetujui user): `AttachToTaskbar(handle/owner changed) ... tray=0x60734 owner=0x60734 verified (before=0x0)`, instance sama.
-- `--simulate-owner-failure`: `FAILED to set owner ... lastError=0 consecutiveFails=1`, lalu `widget window destroyed inst=3f9e35 (owner attach failed 3x) -> old instance stopped, recreating`;
+- Explorer di-restart sekali (`Stop-Process -Name explorer`, disetujui user): `AttachToTaskbar(handle/owner changed) ... tray=0x60734 owner=0x60734 verified (before=0x0)`, instance sama. CATATAN: ini pada window yang owner-nya masih sehat; log user (owner sudah 0 sebelum restart) menunjukkan pemasangan ke tray baru gagal sampai ~27 menit. Pemasangan ulang saja tidak cukup; wajib verifikasi + buat ulang window.
+- `--simulate-owner-failure`: `FAILED to set owner ... lastError=0 consecutiveFails=1`, lalu `widget window destroyed inst=3f9e35 (owner attach failed 3x, tick timer) -> old instance stopped, recreating`;
   instance baru `inst=b76562` owner `verified`; 0 baris log dari instance lama setelahnya.
 - `spike-settings.json` dengan `hideDebug=true`: log `settings: loaded ... hideDebug=True`; tangkapan layar menunjukkan placeholder statis.
+- Spike dijalankan dengan auto-hide ON dan taskbar sudah tersembunyi: `auto-hide: taskbar OFF-SCREEN ... [startup]`, `visible=False`, tangkapan layar menunjukkan widget tidak tampil; setelah kursor ke tepi bawah `VISIBLE -> show widget` dan widget tampil. State auto-hide asli (0) dipulihkan (FINAL=0).
 - Belum diuji otomatis: klik item menu "Hide debug info" (butuh mouse), auto-hide lewat jendela Settings Windows, multi-monitor.
 
 ## Checklist manual v3.2 (pakai ini; menggantikan checklist v3.1)
@@ -292,6 +297,8 @@ Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata te
 | Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
 | Explorer restart: owner terpasang lagi (log owner≠0x0) | BELUM DIUJI (user) |
 | Hide debug info: teks widget diam | BELUM DIUJI (user) |
+| Auto-hide ON sebelum spike dijalankan: widget tetap tersembunyi sampai taskbar muncul | BELUM DIUJI (user) |
+| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | BELUM DIUJI (user) |
 
 ## Checklist manual v3.1 (tidak dipakai lagi, digantikan checklist v3.2)
 
@@ -437,12 +444,16 @@ Pengamatan otomatis v3.2 (build ke direktori scratch; 1920x1080, DPI 96, rata te
 - **Debounce (v3.1)**: terapkan penempatan baru hanya bila (ukuran, x) yang sama (toleransi 3 px) keluar dari 2 query UIA berturut-turut; layout pertama
   setelah startup / `ResetToAuto()` / `TaskbarCreated` diterapkan langsung; log kandidat yang ditahan. `ResetToAuto()` saat drag aktif harus keluar dari mode drag dulu.
 - **Visibilitas auto-hide (v3.2)**: bila auto-hide menyala, pada tiap `EVENT_OBJECT_LOCATIONCHANGE` taskbar dan tiap tick timer baca `GetWindowRect(Shell_TrayWnd)`, hitung bagian yang terlihat
-  di monitornya (irisan dengan `rcMonitor` dari `GetMonitorInfo`). < 50% terlihat -> sembunyikan widget; selain itu tampilkan dan taruh Y di tengah vertikal rect taskbar saat itu
+  di monitor utama (`MonitorFromPoint(0,0, MONITOR_DEFAULTTOPRIMARY)`, atau monitor yang di-cache saat taskbar terlihat; JANGAN `MonitorFromWindow` taskbar yang tersembunyi) (irisan dengan `rcMonitor` dari `GetMonitorInfo`). < 50% terlihat -> sembunyikan widget; selain itu tampilkan dan taruh Y di tengah vertikal rect taskbar saat itu
   (widget ikut meluncur). Jangan jalankan re-layout UIA selagi tersembunyi oleh auto-hide (pertahankan layout baik terakhir, jangan spam log); log sekali per transisi.
   Posisi Y selalu dari rect taskbar hidup, bukan dari rect hasil query UIA yang basi.
 - **Aturan lifecycle window dibuat ulang (v3.2)**: window lama harus berhenti total sebelum yang baru dibuat (stop timer, lepas semua WinEvent hook dan hook WndProc, semua handler
   cek flag mati dan tidak menulis log), `_hwnd` selalu handle window hidup instance itu, dan `Close()` window lama setelah yang baru tampil. Log memuat id instance agar zombie terlihat.
 - **Verifikasi owner (v3.2)**: verifikasi owner dengan `GetWindowLongPtr(hwnd, GWLP_HWNDPARENT) == Shell_TrayWnd`, BUKAN `GetWindow(GW_OWNER)` (mengembalikan 0 selama Start/Search terbuka).
   JANGAN memasang ulang bila sudah sama (itu menghapus owner). Setelah `SetWindowLongPtr` verifikasi hasilnya; bila tidak sama log FAILED dengan `Marshal.GetLastWin32Error()`,
-  dan bila gagal berulang buat ulang window (dibatasi, mis. maks sekali per 20 detik).
+  dan bila gagal berulang (3 tick timer berturut-turut) buat ulang window (dibatasi, mis. maks sekali per 20 detik).
+  `TaskbarCreated` + pemasangan ulang owner SAJA tidak cukup: log user menunjukkan owner tetap 0 selama ~27 menit dengan tray baru; hanya window baru yang memulihkan. Wajib verifikasi + buat ulang.
 - **Debug info hanya untuk spike (v3.2)**: teks debug widget, item "Hide debug info", dan hook `--simulate-owner-failure` TIDAK dibawa ke produksi.
+- **Visibilitas saat startup/recreate (v3.2 fix)**: `SourceInitialized` datang sebelum WPF menampilkan window, jadi jangan memutuskan hide/show di sana. Jalankan Reassert pertama setelah window tampil
+  (`Dispatcher.BeginInvoke(..., DispatcherPriority.Loaded)` atau `ContentRendered`), dan putuskan sembunyi/tampil dari `IsWindowVisible(hwnd)` (keadaan nyata), bukan dari flag cache. Mulai di luar layar
+  agar tidak berkedip. Saat window dibuat ulang selagi mode drag aktif, akhiri drag dan log bahwa state drag yang belum disimpan dibuang.

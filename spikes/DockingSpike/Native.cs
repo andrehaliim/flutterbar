@@ -15,7 +15,7 @@ internal static class Native
     public const uint EVENT_SYSTEM_FOREGROUND = 0x3;
     public const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
     public const int OBJID_WINDOW = 0;
-    public const uint MONITOR_DEFAULTTONEAREST = 2;
+    public const uint MONITOR_DEFAULTTONEAREST = 2, MONITOR_DEFAULTTOPRIMARY = 1;
     public const uint ABM_GETSTATE = 4;
     public const uint ABS_AUTOHIDE = 1;
     public const uint WINEVENT_OUTOFCONTEXT = 0;
@@ -51,6 +51,7 @@ internal static class Native
     [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, System.Text.StringBuilder sb, int max);
+    [DllImport("user32.dll")] public static extern IntPtr MonitorFromPoint(POINT p, uint flags);
     [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr h, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO mi);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);

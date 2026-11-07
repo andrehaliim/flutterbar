@@ -26,7 +26,7 @@ public partial class MainWindow : Window
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     readonly Dictionary<string, DateTime> _lastLog = new();
     readonly Dictionary<uint, string> _procNames = new();
-    bool _locPending, _queryRunning, _hidden, _fullscreen, _inReassert, _dead, _noFit;
+    bool _locPending, _queryRunning, _fullscreen, _inReassert, _dead, _noFit;
     bool _autoHide;
     string _align = "tengah";
     DateTime _lastQuery = DateTime.MinValue;
@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Left = -32000; Top = -32000; // no flash at the default position before the first placement
         Program.FirstInstanceId ??= _id;
         SourceInitialized += OnSourceInitialized;
         _timer.Tick += OnTick;
@@ -199,8 +200,14 @@ public partial class MainWindow : Window
         _autoHide = IsAutoHide();
         _align = ReadAlignment();
         AttachToTaskbar("startup", true);
-        _timer.Start();
-        Reassert("startup");
+        // SourceInitialized fires inside Show() BEFORE WPF's own ShowWindow(SW_SHOWNA): the first Reassert must run after the window is really shown,
+        // otherwise a hide decision (auto-hide/fullscreen at startup or recreate) is overridden by WPF's show.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_dead) return;
+            _timer.Start();
+            Reassert("startup");
+        }, DispatcherPriority.Loaded);
     }
 
     IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -249,7 +256,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            _ownerFails++;
+            if (_lastReason == "timer") _ownerFails++; // count timer ticks only (>= 600 ms apart)
             LogLimited("attach", $"{Now()} AttachToTaskbar({why}) inst={_id} hwnd=0x{_hwnd:X}: FAILED to set owner: tray=0x{tray:X} owner=0x{owner:X} before=0x{before:X} lastError={err} consecutiveFails={_ownerFails}");
         }
     }
@@ -277,6 +284,12 @@ public partial class MainWindow : Window
     {
         if (_dead) return;
         _dead = true;
+        if (_dragMode || _dragging)
+        {
+            Taskbar.Log($"{Now()} inst={_id} recreate while drag mode active: ending drag, unsaved drag state dropped (x={_dragX})");
+            _dragMode = false; _dragging = false; _dragX = null;
+            if (IsMouseCaptured) ReleaseMouseCapture();
+        }
         Teardown();
         if (Program.Exiting) return;
         Taskbar.Log($"{Now()} widget window destroyed inst={_id} ({why}) -> old instance stopped, recreating");
@@ -343,7 +356,7 @@ public partial class MainWindow : Window
             try
             {
                 var r = Taskbar.Compute(tray);
-                if (r is not null) _layout = r;
+                if (r is not null && !_dead && !_abHidden) _layout = r;
             }
             catch (Exception ex)
             {
@@ -468,6 +481,7 @@ public partial class MainWindow : Window
             var tray = Native.FindWindow("Shell_TrayWnd", null);
             if (tray == IntPtr.Zero) { Info.Text = "taskbar not found"; return; }
             if (tray != _tray || Native.GetWindowLongPtr(_hwnd, Native.GWLP_HWNDPARENT) != tray) AttachToTaskbar("handle/owner changed", false);
+            else _ownerFails = 0;
             bool timer = reason == "timer";
 
             // v3.2 auto-hide tracking: visible fraction of the taskbar rect on its monitor; < 50% = hidden by auto-hide.
@@ -477,7 +491,7 @@ public partial class MainWindow : Window
             if (_autoHide)
             {
                 var mi = new Native.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Native.MONITORINFO>() };
-                if (Native.GetMonitorInfo(Native.MonitorFromWindow(tray, Native.MONITOR_DEFAULTTONEAREST), ref mi))
+                if (Native.GetMonitorInfo(Native.MonitorFromPoint(new Native.POINT { X = 0, Y = 0 }, Native.MONITOR_DEFAULTTOPRIMARY), ref mi))
                 {
                     long tbArea = Math.Max(1L, (long)(tbr.Right - tbr.Left) * (tbr.Bottom - tbr.Top));
                     long vw = Math.Max(0, Math.Min(tbr.Right, mi.rcMonitor.Right) - Math.Max(tbr.Left, mi.rcMonitor.Left));
@@ -557,13 +571,15 @@ public partial class MainWindow : Window
             if (noFit != _noFit) { _noFit = noFit; Taskbar.Log($"{Now()} taskbar full: {(noFit ? "nothing fits even ButtonsOnly -> widget STAYS VISIBLE (ButtonsOnly, last X) with hint" : "fits again")} gaps: {gapTxt}"); }
             bool wantVisible = !fs && !_abHidden;
 
+            // decide from the ACTUAL window state, not a cached flag (WPF may show the window behind our back)
+            bool actuallyVisible = Native.IsWindowVisible(_hwnd);
             if (!wantVisible)
             {
-                if (!_hidden) { Native.ShowWindow(_hwnd, 0); _hidden = true; }
+                if (actuallyVisible) Native.ShowWindow(_hwnd, 0);
             }
             else
             {
-                if (_hidden) { Native.ShowWindow(_hwnd, 4); _hidden = false; _lastPos = default; }
+                if (!actuallyVisible) { Native.ShowWindow(_hwnd, 4); _lastPos = default; }
                 bool moved = haveGap && _lastPos != (x, y, w, h);
                 // always reassert topmost; move/size only when the target changed
                 uint flags = Native.SWP_NOACTIVATE | (moved && !_dragging ? 0u : Native.SWP_NOMOVE | Native.SWP_NOSIZE);

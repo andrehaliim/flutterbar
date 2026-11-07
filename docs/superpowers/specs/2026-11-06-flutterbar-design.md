@@ -353,7 +353,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   tertutup taskbar Windows 11.
 - **Auto-hide:** status dan posisi taskbar dipantau (`SHAppBarMessage`). Widget ikut sembunyi dan
   muncul bersama taskbar. Aturan visibilitas (v3.2): saat auto-hide menyala, tiap perubahan lokasi taskbar dan tiap tick timer
-  membaca rect `Shell_TrayWnd` dan menghitung bagian yang terlihat di monitornya (irisan dengan `rcMonitor`). Bila < 50% tinggi
+  membaca rect `Shell_TrayWnd` dan menghitung bagian yang terlihat di monitor utama (irisan dengan `rcMonitor`; bukan monitor dari HWND taskbar yang tersembunyi). Bila < 50% tinggi
   taskbar terlihat widget disembunyikan; selain itu ditampilkan dengan Y di tengah vertikal rect taskbar saat itu (ikut meluncur).
   Re-layout UIA dilewati selagi tersembunyi oleh auto-hide.
 - **Owner (v3.2):** diverifikasi lewat `GetWindowLongPtr(GWLP_HWNDPARENT)`, bukan `GetWindow(GW_OWNER)` (0 selama Start/Search terbuka);
