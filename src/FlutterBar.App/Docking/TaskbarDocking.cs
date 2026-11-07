@@ -85,7 +85,7 @@ internal sealed partial class TaskbarDocking
         }
     }
 
-    /// <summary>Required width per size in DIPs (measured by the widget, WidthOverride applied). Defaults to the spike widths.</summary>
+    /// <summary>Required width per size in DIPs (measured by the widget). Defaults to the spike widths.</summary>
     public Func<IReadOnlyDictionary<WidgetSize, double>>? RequiredWidths { get; set; }
 
     public bool IsManual => _manualOffset is not null;

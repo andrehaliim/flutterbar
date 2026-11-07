@@ -36,7 +36,7 @@ deskband).
 | Topik | Keputusan |
 |---|---|
 | Bentuk | Widget yang menempel di taskbar, dengan perilaku seperti project referensi |
-| Layout | Adaptif: Full, Compact, atau Buttons only. User bisa memilih atau resize, dan widget menyusut otomatis kalau ruang kurang |
+| Layout | Adaptif: Full, Compact, atau Buttons only. User memilih lewat menu Size, dan widget menyusut otomatis kalau ruang kurang |
 | Bahasa teks | **Semua teks UI dan CLI berbahasa Inggris** (keputusan user 2026-11-08, menggantikan aturan awal teks UI Bahasa Indonesia): sentence case, singkat, tanpa "please", "successfully", atau tanda seru. Dokumen ini tetap berbahasa Indonesia, hanya teks yang dikutip dalam tanda kutip yang mengikuti copy di app |
 | Tombol | Idle: ▶ Run. Running: ⚡ Hot reload, 🔄 Hot restart, ⏹ Stop |
 | Log | `LogWindow` terpisah yang dibuka dari widget |
@@ -176,7 +176,7 @@ dalam bahasa manusia.
     "C:\\Work\\gts-mobile": { "lastUsed": "2026-11-06T10:42:00+07:00", "config": "beta", "deviceId": "chrome" }
   },
   "currentProject": "C:\\Work\\gts-mobile",
-  "widget": { "size": "full", "position": "auto", "offsetFromRight": null, "widthOverride": null },
+  "widget": { "size": "full", "position": "auto", "offsetFromRight": null },
   "startWithWindows": false
 }
 ```
@@ -317,8 +317,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Flyout device dibagi dua bagian: "Terhubung" dan "Emulator (offline)".
 
 ### 7.2 Aturan adaptif
-- Ukuran pilihan user (`widget.size`) bisa diatur lewat menu Size, atau dengan drag tepi kiri widget
-  (lebar disimpan di `widthOverride`).
+- Ukuran pilihan user (`widget.size`) hanya diatur lewat menu Size (tidak ada resize manual; `widthOverride` lama
+  di settings.json diabaikan dan dibuang saat disimpan).
 - Kalau area kosong taskbar lebih kecil dari lebar ukuran pilihan, widget turun satu tingkat, lalu
   dicek lagi. Kalau "Buttons only" pun tidak muat (mode `auto`), widget TIDAK disembunyikan: tetap tampil di posisi
   valid terakhir (atau di kiri `TrayNotifyWnd` bila belum ada) dalam ukuran "tombol saja", dengan pesan

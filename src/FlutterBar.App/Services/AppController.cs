@@ -231,7 +231,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
     /// <summary>
     /// One-session rule for a selection change (brief Step 7). While ▶ is still being prepared nothing runs yet: the run
     /// is cancelled ("Run cancelled"). Once flutter is being launched, wait for the launch and ask like for any session:
-    /// Ya = stop, Batal = keep the session and the old selection. True = the caller may change the selection.
+    /// Stop = stop, Cancel = keep the session and the old selection. True = the caller may change the selection.
     /// </summary>
     private async Task<bool> MayChangeSelectionAsync(string what)
     {

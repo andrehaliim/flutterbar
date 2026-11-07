@@ -1,30 +1,69 @@
 <ContextMenu x:Class="FlutterBar.App.Menu.WidgetContextMenu" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Placement="Top">
-    <!-- Right-click menu (spec §7.4). "Drag widget" / "Reset to auto position" are English on purpose (user decision).
-         Opening/closing is tracked by TaskbarDocking (class handlers): topmost reassert suspended, menu HWND topmost. -->
+             Placement="Top" Style="{StaticResource Fb.ContextMenu}">
+    <!-- Right-click menu (spec §7.4), styled by Menu/MenuStyles.xaml. "Drag widget" / "Reset to auto position" are English on purpose
+         (user decision). Checkable items (Drag widget, Start with Windows) and the Size items show a check mark in the icon column.
+         Opening/closing is tracked by TaskbarDocking (class handlers): topmost reassert suspended, menu and submenu HWND topmost. -->
     <MenuItem Header="Size">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE740;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
         <MenuItem x:Name="SizeFull" Header="Full" Click="OnSizeClick" />
         <MenuItem x:Name="SizeCompact" Header="Compact" Click="OnSizeClick" />
         <MenuItem x:Name="SizeButtons" Header="Buttons only" Click="OnSizeClick" />
     </MenuItem>
-    <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick" />
-    <MenuItem Header="Reset to auto position" Click="OnResetClick" />
-    <Separator />
+    <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE7C2;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <MenuItem Header="Reset to auto position" Click="OnResetClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE777;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <Separator Style="{StaticResource Fb.MenuSeparator}" />
     <MenuItem Header="Manage projects">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
         <MenuItem Header="Root folders…" Click="OnScanRootsClick" />
         <MenuItem Header="Add project…" Click="OnAddProjectClick" />
         <MenuItem Header="Hidden projects…" Click="OnHiddenProjectsClick" />
-        <Separator />
+        <Separator Style="{StaticResource Fb.MenuSeparator}" />
         <MenuItem Header="Rescan" Click="OnRescanClick" />
     </MenuItem>
-    <MenuItem x:Name="ImportItem" Header="Import config from IDE…" Click="OnImportClick" />
-    <MenuItem x:Name="LaunchJsonItem" Header="Open launch.json" Click="OnOpenLaunchJsonClick" />
-    <MenuItem Header="Open log" Click="OnOpenLogClick" />
-    <Separator />
-    <MenuItem Header="Add CLI to PATH…" Click="OnAddToPathClick" />
-    <MenuItem x:Name="StartupItem" Header="Start with Windows" IsCheckable="True" Click="OnStartupClick" />
-    <Separator />
-    <MenuItem Header="Exit" Click="OnExitClick" />
+    <MenuItem x:Name="ImportItem" Header="Import config from IDE…" Click="OnImportClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE896;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <MenuItem x:Name="LaunchJsonItem" Header="Open launch.json" Click="OnOpenLaunchJsonClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <MenuItem Header="Open log" Click="OnOpenLogClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE756;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <Separator Style="{StaticResource Fb.MenuSeparator}" />
+    <MenuItem Header="Add CLI to PATH…" Click="OnAddToPathClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE713;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <MenuItem x:Name="StartupItem" Header="Start with Windows" IsCheckable="True" Click="OnStartupClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <Separator Style="{StaticResource Fb.MenuSeparator}" />
+    <MenuItem Header="Exit" Click="OnExitClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE711;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
 </ContextMenu>

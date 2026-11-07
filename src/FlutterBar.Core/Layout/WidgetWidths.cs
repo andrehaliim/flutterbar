@@ -17,25 +17,3 @@ public static class WidgetSizeNames
         _ => "full",
     };
 }
-
-public static class WidgetWidths
-{
-    /// <summary>
-    /// Required width per size: the measured widths, with <paramref name="widthOverride"/> (left-edge resize, spec §7.2)
-    /// replacing the preferred size's width. The override never goes below the next smaller size's width (otherwise the
-    /// size order breaks) and is ignored for ButtonsOnly. Units are whatever the caller uses consistently (DIPs in the app).
-    /// </summary>
-    public static IReadOnlyDictionary<WidgetSize, double> Resolve(
-        IReadOnlyDictionary<WidgetSize, double> measured,
-        WidgetSize preferred,
-        double? widthOverride)
-    {
-        var widths = new Dictionary<WidgetSize, double>(measured);
-        if (widthOverride is { } width && preferred != WidgetSize.ButtonsOnly)
-        {
-            var smaller = preferred == WidgetSize.Full ? WidgetSize.Compact : WidgetSize.ButtonsOnly;
-            widths[preferred] = Math.Max(width, measured.TryGetValue(smaller, out var min) ? min : 0);
-        }
-        return widths;
-    }
-}

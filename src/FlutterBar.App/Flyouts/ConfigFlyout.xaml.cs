@@ -24,7 +24,7 @@ internal sealed partial class ConfigFlyout : UserControl
 
     public event Action<string>? ConfigChosen;
 
-    /// <summary>"Import from IDE" (the import dialog belongs to Task 16).</summary>
+    /// <summary>"Import from IDE": same flow as the menu item (always available).</summary>
     public event Action? ImportRequested;
 
     public event Action? CreateDefaultRequested;
@@ -32,7 +32,7 @@ internal sealed partial class ConfigFlyout : UserControl
     public event Action? OpenFileRequested;
 
     /// <summary>The list when it has rows, else the first action button.</summary>
-    public IInputElement FocusTarget => List.HasItems ? List : MissingPanel.IsVisible ? ImportButton : OpenButton;
+    public IInputElement FocusTarget => List.HasItems ? List : ImportButton;
 
     /// <summary>Warning line at the top (why the flyout was opened for the user), or null to hide it.</summary>
     public void SetNotice(string? text)
@@ -47,7 +47,7 @@ internal sealed partial class ConfigFlyout : UserControl
         MissingPanel.Visibility = Visibility.Collapsed;
         ErrorPanel.Visibility = Visibility.Collapsed;
         Errors.ItemsSource = null;
-        FileActions.Visibility = Visibility.Collapsed;
+        OpenButton.Visibility = Visibility.Collapsed;
         _list.SetItems([]);
         List.Visibility = Visibility.Collapsed;
         SetMessage(null);
@@ -62,7 +62,7 @@ internal sealed partial class ConfigFlyout : UserControl
         MissingPanel.Visibility = result.FileExists ? Visibility.Collapsed : Visibility.Visible;
         ErrorPanel.Visibility = chip.ErrorLines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         Errors.ItemsSource = chip.ErrorLines;
-        FileActions.Visibility = result.FileExists ? Visibility.Visible : Visibility.Collapsed;
+        OpenButton.Visibility = result.FileExists ? Visibility.Visible : Visibility.Collapsed;
         _list.SetItems([.. result.Configs.Select(c => new FlyoutItem
         {
             Title = c.Name,

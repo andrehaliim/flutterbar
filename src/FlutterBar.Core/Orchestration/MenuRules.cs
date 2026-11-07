@@ -14,10 +14,7 @@ public static class WidgetSizeMenu
         _ => "Full",
     };
 
-    /// <summary>
-    /// Writes <c>widget.size</c>. <c>widthOverride</c> is the width of the preferred size (left-edge resize, spec §7.2),
-    /// so a different size drops it: the old width must not carry over. False (nothing changed) for the same size.
-    /// </summary>
+    /// <summary>Writes <c>widget.size</c>. False (nothing changed) for the same size.</summary>
     public static bool Apply(WidgetSettings widget, WidgetSize size)
     {
         ArgumentNullException.ThrowIfNull(widget);
@@ -26,7 +23,6 @@ public static class WidgetSizeMenu
             return false;
         }
         widget.Size = WidgetSizeNames.ToSettingName(size);
-        widget.WidthOverride = null;
         return true;
     }
 }

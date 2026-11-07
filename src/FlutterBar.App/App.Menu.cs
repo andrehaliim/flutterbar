@@ -76,7 +76,7 @@ public partial class App
         }
     }
 
-    /// <summary>Size menu: <c>widget.size</c> changes and the per-size <c>widthOverride</c> is dropped (<see cref="WidgetSizeMenu.Apply"/>).</summary>
+    /// <summary>Size menu: <c>widget.size</c> changes (<see cref="WidgetSizeMenu.Apply"/>).</summary>
     private void ChangeSize(TaskbarWidget widget, TaskbarDocking docking, WidgetSize size)
     {
         if (!WidgetSizeMenu.Apply(_settings.Widget, size))
@@ -84,10 +84,9 @@ public partial class App
             return;
         }
         widget.PreferredSize = size;
-        widget.WidthOverride = null;
         docking.PreferredSize = size; // re-evaluates the placement
         docking.InvalidateLayout();
-        SaveSettings($"size={_settings.Widget.Size} (widthOverride cleared)");
+        SaveSettings($"size={_settings.Widget.Size}");
     }
 
     /// <summary>"Exit": with an active session the user confirms "Stop the session and exit?" first; then stop and exit.</summary>

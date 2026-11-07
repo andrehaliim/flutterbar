@@ -53,14 +53,11 @@ internal sealed partial class TaskbarWidget : Window
     /// <summary>Preferred size from settings (<c>widget.size</c>).</summary>
     public WidgetSize PreferredSize { get; set; } = WidgetSize.Full;
 
-    /// <summary><c>widget.widthOverride</c> in DIPs (left-edge resize), or null.</summary>
-    public double? WidthOverride { get; set; }
-
-    /// <summary>Required width per size in DIPs: each layout measured unconstrained, then <see cref="WidthOverride"/> applied.</summary>
+    /// <summary>Required width per size in DIPs: each layout measured unconstrained.</summary>
     public IReadOnlyDictionary<WidgetSize, double> RequiredWidths()
     {
         _measured ??= MeasureLayouts();
-        return WidgetWidths.Resolve(_measured, PreferredSize, WidthOverride);
+        return _measured;
     }
 
     /// <summary>

@@ -193,39 +193,4 @@ public sealed class DockingRulesTests
             Assert.Equal(size, WidgetSizeNames.Parse(WidgetSizeNames.ToSettingName(size)));
         }
     }
-
-    private static readonly IReadOnlyDictionary<WidgetSize, double> Measured = new Dictionary<WidgetSize, double>
-    {
-        [WidgetSize.Full] = 520,
-        [WidgetSize.Compact] = 260,
-        [WidgetSize.ButtonsOnly] = 120,
-    };
-
-    [Fact]
-    public void Widths_NoOverride_Measured()
-    {
-        Assert.Equal(Measured, WidgetWidths.Resolve(Measured, WidgetSize.Full, null));
-    }
-
-    [Fact]
-    public void Widths_OverrideReplacesPreferredSize()
-    {
-        var widths = WidgetWidths.Resolve(Measured, WidgetSize.Full, 400);
-
-        Assert.Equal(400, widths[WidgetSize.Full]);
-        Assert.Equal(260, widths[WidgetSize.Compact]);
-    }
-
-    [Fact]
-    public void Widths_OverrideNotBelowNextSmallerSize()
-    {
-        Assert.Equal(260, WidgetWidths.Resolve(Measured, WidgetSize.Full, 100)[WidgetSize.Full]);
-        Assert.Equal(120, WidgetWidths.Resolve(Measured, WidgetSize.Compact, 50)[WidgetSize.Compact]);
-    }
-
-    [Fact]
-    public void Widths_ButtonsOnlyIgnoresOverride()
-    {
-        Assert.Equal(120, WidgetWidths.Resolve(Measured, WidgetSize.ButtonsOnly, 300)[WidgetSize.ButtonsOnly]);
-    }
 }

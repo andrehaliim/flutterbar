@@ -15,6 +15,7 @@ namespace FlutterBar.App.Docking;
 /// </summary>
 internal sealed partial class TaskbarDocking
 {
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Popup, object?> s_hookedSubmenus = [];
     private static TaskbarDocking? s_active; // the live instance (UI thread only)
     private readonly HashSet<object> _openPopups = [];
 
@@ -24,6 +25,9 @@ internal sealed partial class TaskbarDocking
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.ClosedEvent, new RoutedEventHandler((s, _) => s_active?.OnPopupClosed(s)));
         EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.OpenedEvent, new RoutedEventHandler((s, _) => s_active?.OnPopupOpened(s)));
         EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.ClosedEvent, new RoutedEventHandler((s, _) => s_active?.OnPopupClosed(s)));
+        // Submenus are Popups inside the MenuItem template (not ContextMenus): track them through MenuItem's routed events.
+        EventManager.RegisterClassHandler(typeof(MenuItem), MenuItem.SubmenuOpenedEvent, new RoutedEventHandler((s, _) => s_active?.OnSubmenuOpened(s)));
+        EventManager.RegisterClassHandler(typeof(MenuItem), MenuItem.SubmenuClosedEvent, new RoutedEventHandler((s, _) => s_active?.OnSubmenuClosed(s)));
     }
 
     private bool TopmostSuspended => _openPopups.Count > 0;
@@ -42,6 +46,27 @@ internal sealed partial class TaskbarDocking
         if (!_dead && _window.ContextMenu is { } menu)
         {
             _openPopups.Add(menu);
+        }
+    }
+
+    // The submenu popup lives in the MenuItem template (PART_Popup); it is tracked like a flyout Popup: suspension plus topmost HWND.
+    private void OnSubmenuOpened(object sender)
+    {
+        if (sender is MenuItem item && item.Template?.FindName("PART_Popup", item) is Popup popup)
+        {
+            OnPopupOpened(popup); // suspend now; the popup HWND may not exist yet, so also hook its own Opened (topmost)
+            if (s_hookedSubmenus.TryAdd(popup, null))
+            {
+                popup.Opened += (_, _) => s_active?.OnPopupOpened(popup);
+            }
+        }
+    }
+
+    private void OnSubmenuClosed(object sender)
+    {
+        if (sender is MenuItem item && item.Template?.FindName("PART_Popup", item) is Popup popup)
+        {
+            OnPopupClosed(popup);
         }
     }
 

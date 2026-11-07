@@ -123,15 +123,15 @@
     <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
         <!-- All three sizes stay in the tree (Hidden, not Collapsed) so each can be measured for the size choice. -->
         <Grid x:Name="Root" ClipToBounds="True">
-            <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | 🖥 log -->
+            <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | log (console glyph) -->
             <DockPanel x:Name="FullPanel" Margin="6,0" LastChildFill="True">
                 <Ellipse x:Name="DotFull" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <Rectangle Style="{StaticResource Style.Separator}" />
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                     <Rectangle Style="{StaticResource Style.Separator}" />
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE7F4;"
-                            ToolTip="Open log" AutomationProperties.Name="Open log" />
+                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                            Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
                     <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
@@ -156,15 +156,15 @@
                 </StackPanel>
             </DockPanel>
 
-            <!-- Compact: ● project · config ▾ | buttons | 🖥 log -->
+            <!-- Compact: ● project · config ▾ | buttons | log (console glyph) -->
             <DockPanel x:Name="CompactPanel" Margin="6,0" LastChildFill="True" Visibility="Hidden">
                 <Ellipse x:Name="DotCompact" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                     <Rectangle Style="{StaticResource Style.Separator}" />
                     <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                     <Rectangle Style="{StaticResource Style.Separator}" />
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE7F4;"
-                            ToolTip="Open log" AutomationProperties.Name="Open log" />
+                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                            Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
                 </StackPanel>
                 <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" ContentTemplate="{x:Null}"
                         HorizontalAlignment="Left" ToolTip="Project, branch, config, device" AutomationProperties.Name="Options">

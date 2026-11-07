@@ -41,7 +41,7 @@ internal sealed partial class AppController
             _manageDialog?.SetBusy(false, null);
         }
         RefreshManageDialog();
-        ShowToast($"Rescan finished: {_catalog.Count} projects");
+        ShowToast($"Rescan finished: {_catalog.Count} {(_catalog.Count == 1 ? "project" : "projects")}");
     }
 
     /// <summary>

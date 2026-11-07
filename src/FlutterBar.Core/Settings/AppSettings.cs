@@ -90,11 +90,7 @@ public sealed class ProjectState
 
 public sealed class WidgetSettings
 {
-    /// <summary>Upper bound for <see cref="WidthOverride"/> in DIPs; larger values are treated as corrupt.</summary>
-    public const double MaxWidthOverride = 4096;
-
     private int? _offsetFromRight;
-    private double? _widthOverride;
 
     public string Size { get; set; } = "full";
 
@@ -112,12 +108,6 @@ public sealed class WidgetSettings
         set => _offsetFromRight = ManualPlacement.IsValidOffset(value) ? value : null;
     }
 
-    /// <summary>Width of the preferred size after a left-edge resize, in DIPs; values outside (0, <see cref="MaxWidthOverride"/>] become null.</summary>
-    public double? WidthOverride
-    {
-        get => _widthOverride;
-        set => _widthOverride = value is > 0 and <= MaxWidthOverride ? value : null;
-    }
 }
 
 /// <summary>

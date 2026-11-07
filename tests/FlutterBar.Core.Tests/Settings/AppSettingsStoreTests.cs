@@ -47,7 +47,6 @@ public sealed class AppSettingsStoreTests : IDisposable
         var settings = new AppSettings { CurrentProject = "C:\\Work\\app", StartWithWindows = true };
         settings.ScanRoots.Add("C:\\Work");
         settings.Widget.OffsetFromRight = 500;
-        settings.Widget.WidthOverride = 420;
         var used = new DateTimeOffset(2026, 11, 6, 10, 42, 0, TimeSpan.FromHours(7));
         settings.Projects["c:\\work\\APP"] = new ProjectState { LastUsed = used, Config = "beta", DeviceId = "chrome" };
 
@@ -60,7 +59,6 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.True(loaded.StartWithWindows);
         Assert.Equal(["C:\\Work"], loaded.ScanRoots);
         Assert.Equal(500, loaded.Widget.OffsetFromRight);
-        Assert.Equal(420, loaded.Widget.WidthOverride);
         var state = loaded.Projects["C:\\Work\\app"];
         Assert.Equal(used, state.LastUsed);
         Assert.Equal("beta", state.Config);
@@ -155,16 +153,21 @@ public sealed class AppSettingsStoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("420")]
     [InlineData("0")]
-    [InlineData("-20")]
     [InlineData("50000")]
-    public void Load_AbsurdWidthOverride_Ignored(string value)
+    public void Load_StoredWidthOverride_IsDropped_AndNotWrittenBack(string value)
     {
-        File.WriteAllText(SettingsPath, "{\"widget\":{\"widthOverride\":" + value + "}}");
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"size\":\"compact\",\"offsetFromRight\":300,\"widthOverride\":" + value + "}}");
+        var store = new AppSettingsStore(SettingsPath);
 
-        var settings = new AppSettingsStore(SettingsPath).Load(out _);
+        var settings = store.Load(out var warning);
+        store.Save(settings);
 
-        Assert.Null(settings.Widget.WidthOverride);
+        Assert.Null(warning);
+        Assert.Equal("compact", settings.Widget.Size);
+        Assert.Equal(300, settings.Widget.OffsetFromRight);
+        Assert.DoesNotContain("widthOverride", File.ReadAllText(SettingsPath), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

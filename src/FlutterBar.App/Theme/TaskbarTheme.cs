@@ -95,6 +95,12 @@ internal sealed class TaskbarTheme : IDisposable
         Set("Fb.Red", light ? 0xFFC42B1C : 0xFFFF6B6B);
         Set("Fb.Grey", light ? 0xFF8A8A8A : 0xFF8A8A8A);
         Set("Fb.Warning", light ? 0xFFBC5B00 : 0xFFF7A034);
+        Set("Fb.Menu.Background", light ? 0xFFF9F9F9 : 0xFF2C2C2C);
+        Set("Fb.Menu.Border", light ? 0xFFE5E5E5 : 0xFF3A3A3A);
+        Set("Fb.Menu.Hover", light ? 0xFFEAEAEA : 0xFF3D3D3D);
+        Set("Fb.Menu.Foreground", light ? 0xFF1A1A1A : 0xFFF3F3F3);
+        Set("Fb.Menu.Disabled", light ? 0xFF9A9A9A : 0xFF7A7A7A);
+        Set("Fb.Menu.Separator", light ? 0xFFE0E0E0 : 0xFF404040);
         _resources["Fb.Accent"] = SystemParameters.WindowGlassBrush is SolidColorBrush accent ? Frozen(accent.Color) : Frozen(Color.FromRgb(0x00, 0x78, 0xD4));
     }
 

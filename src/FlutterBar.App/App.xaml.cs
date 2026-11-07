@@ -151,7 +151,7 @@ public partial class App : Application
             {
                 AppLog.Write("settings: " + warning); // toast once the widget is up (AppController.InitializeAsync)
             }
-            AppLog.Write($"settings: widget size={settings.Widget.Size} position={settings.Widget.Position} offsetFromRight={settings.Widget.OffsetFromRight?.ToString() ?? "-"} widthOverride={settings.Widget.WidthOverride?.ToString() ?? "-"}");
+            AppLog.Write($"settings: widget size={settings.Widget.Size} position={settings.Widget.Position} offsetFromRight={settings.Widget.OffsetFromRight?.ToString() ?? "-"}");
             return settings;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -223,7 +223,6 @@ public partial class App : Application
         var widget = new TaskbarWidget(vm)
         {
             PreferredSize = WidgetSizeNames.Parse(_settings.Widget.Size),
-            WidthOverride = _settings.Widget.WidthOverride,
         };
         var docking = new TaskbarDocking(widget)
         {
@@ -243,13 +242,6 @@ public partial class App : Application
         };
         docking.HiddenChanged += hidden => vm.IsHidden = hidden;
         docking.ManualOffsetChanged += SaveManualOffset;
-        docking.WidthOverrideChanged += width =>
-        {
-            _settings.Widget.WidthOverride = width;
-            widget.WidthOverride = _settings.Widget.WidthOverride; // validated value
-            docking.InvalidateLayout();
-            SaveSettings($"widthOverride={width}");
-        };
         docking.RecreateRequested += reason => Dispatcher.BeginInvoke(() => Recreate(widget, reason));
 
         if (_settings.Widget.OffsetFromRight is { } offset)

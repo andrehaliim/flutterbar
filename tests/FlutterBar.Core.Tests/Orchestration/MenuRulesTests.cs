@@ -14,24 +14,21 @@ public sealed class MenuRulesTests
     public void SizeLabels_AreSpecCopy(WidgetSize size, string label) => Assert.Equal(label, WidgetSizeMenu.Label(size));
 
     [Fact]
-    public void ChangeSize_WritesSettingName_AndDropsWidthOverride()
+    public void ChangeSize_WritesSettingName()
     {
-        var widget = new WidgetSettings { Size = "full", WidthOverride = 480 };
+        var widget = new WidgetSettings { Size = "full" };
 
         Assert.True(WidgetSizeMenu.Apply(widget, WidgetSize.Compact));
 
         Assert.Equal("compact", widget.Size);
-        Assert.Null(widget.WidthOverride);
     }
 
     [Fact]
-    public void SameSize_KeepsWidthOverride()
+    public void SameSize_ChangesNothing()
     {
-        var widget = new WidgetSettings { Size = "full", WidthOverride = 480 };
+        var widget = new WidgetSettings { Size = "full" };
 
         Assert.False(WidgetSizeMenu.Apply(widget, WidgetSize.Full));
-
-        Assert.Equal(480, widget.WidthOverride);
     }
 
     [Fact]
