@@ -38,10 +38,12 @@ public static class ProjectListEditor
         return true;
     }
 
-    private static bool Remove(List<string> list, string path)
+    // Removal never throws: a blank or relative entry written by hand is removed by its exact stored text (that is
+    // what the dialog passes back); an absolute path also removes its normalized variants.
+    private static bool Remove(List<string> list, string? path)
     {
-        var key = Key(path);
-        return list.RemoveAll(p => Same(p, key)) > 0;
+        var key = path is not null && !string.IsNullOrWhiteSpace(path) && Path.IsPathFullyQualified(path) ? PathKey.Normalize(path) : null;
+        return list.RemoveAll(p => string.Equals(p, path, StringComparison.Ordinal) || (key is not null && Same(p, key))) > 0;
     }
 
     private static string Key(string path)

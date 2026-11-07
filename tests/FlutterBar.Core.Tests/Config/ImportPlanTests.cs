@@ -94,7 +94,7 @@ public sealed class ImportPlanTests : IDisposable
         var profile = Assert.Single(discovery.Rows, r => r.Title == "GTS Mobile Live Profile");
         Assert.False(profile.IsChecked);
         Assert.True(profile.IsEnabled);
-        Assert.Equal("lib/main_live.dart tidak ada", profile.Note);
+        Assert.Equal(ImportPlan.MissingProgramNote, profile.Note);
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public sealed class ImportPlanTests : IDisposable
 
         Assert.False(row.IsChecked);
         Assert.True(row.IsEnabled);
-        Assert.Equal("lib/main.dart tidak ada", row.Note);
+        Assert.Equal("file program tidak ada — config akan merah setelah diimport", row.Note);
     }
 
     [Fact]

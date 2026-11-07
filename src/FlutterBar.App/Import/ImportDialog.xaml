@@ -28,11 +28,11 @@
                                   ToolTip="{Binding ToolTip}" ToolTipService.ShowOnDisabled="True" Click="OnRowClick"
                                   Foreground="{DynamicResource Fb.Foreground}" VerticalContentAlignment="Top">
                             <StackPanel Margin="4,0,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding NoteText}" Margin="8,0,0,0" Foreground="{DynamicResource Fb.Warning}" />
-                                </StackPanel>
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                                 <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource Fb.Muted}" TextTrimming="CharacterEllipsis" />
+                                <!-- "sudah ada", or the missing-program warning (the row can still be checked) -->
+                                <TextBlock Text="{Binding NoteText}" FontSize="11" Foreground="{DynamicResource Fb.Warning}" TextWrapping="Wrap"
+                                           Visibility="{Binding HasNote, Converter={StaticResource Fb.BoolToVis}}" />
                             </StackPanel>
                         </CheckBox>
                     </DataTemplate>

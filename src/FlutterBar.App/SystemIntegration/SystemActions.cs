@@ -46,9 +46,14 @@ internal sealed class SystemActions(AppController ui, IUserRegistry registry)
             ui.ShowToast($"Folder CLI sudah ada di PATH user: {folder}");
             return;
         }
+        if (!ui.CanShowToast)
+        {
+            AppLog.Write("add to PATH: toast tidak bisa ditampilkan (widget hidden by fullscreen/auto-hide), PATH not changed");
+            return;
+        }
         if (!await ui.ConfirmAsync($"Tambahkan {folder} ke PATH user?", "Tambahkan", UiText.ConfirmNo))
         {
-            AppLog.Write("add to PATH: cancelled by the user");
+            AppLog.Write("add to PATH: dibatalkan user (Batal, closed, or replaced by another toast), PATH not changed");
             return;
         }
         try

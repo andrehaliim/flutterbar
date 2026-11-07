@@ -66,4 +66,28 @@ public sealed class ProjectListEditorTests
     [InlineData("   ")]
     [InlineData(@"relative\dir")]
     public void InvalidPath_Throws(string path) => Assert.Throws<ArgumentException>(() => ProjectListEditor.AddScanRoot(_settings, path));
+
+    [Fact]
+    public void Remove_HandWrittenBlankOrRelativeEntry_ByExactString()
+    {
+        _settings.ScanRoots = ["", "   ", @"relative\dir", @"C:\Work"];
+        _settings.HiddenProjects = [@"old\project"];
+
+        Assert.True(ProjectListEditor.RemoveScanRoot(_settings, ""));
+        Assert.True(ProjectListEditor.RemoveScanRoot(_settings, "   "));
+        Assert.True(ProjectListEditor.RemoveScanRoot(_settings, @"relative\dir"));
+        Assert.True(ProjectListEditor.Unhide(_settings, @"old\project"));
+
+        Assert.Equal([@"C:\Work"], _settings.ScanRoots);
+        Assert.Empty(_settings.HiddenProjects);
+    }
+
+    [Fact]
+    public void Remove_UnknownRelativePath_ReturnsFalseWithoutThrowing()
+    {
+        _settings.ManualProjects = [@"D:\apps\one"];
+
+        Assert.False(ProjectListEditor.RemoveManual(_settings, @"not\stored"));
+        Assert.Equal([@"D:\apps\one"], _settings.ManualProjects);
+    }
 }

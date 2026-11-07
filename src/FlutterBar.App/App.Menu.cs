@@ -160,8 +160,21 @@ public partial class App
     /// dialog for any folder (the current project in settings.json is not changed); <c>--open-menu-after &lt;seconds&gt;</c>
     /// opens the right-click menu once, so UI Automation can expand/invoke its items.
     /// </summary>
+    /// <remarks>
+    /// Also <c>--fail-startup</c> (throws at the end of startup, after the widget and the IPC server exist) and
+    /// <c>--fail-startup-late</c> (throws from a dispatcher callback before the first idle) to check that a broken startup
+    /// releases the single-instance lock and exits with code 1.
+    /// </remarks>
     private void ApplyDebugMenuSwitches(string[] args)
     {
+        if (args.Contains("--fail-startup-late"))
+        {
+            Dispatcher.BeginInvoke(new Action(() => throw new InvalidOperationException("debug: --fail-startup-late")), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+        if (args.Contains("--fail-startup"))
+        {
+            throw new InvalidOperationException("debug: --fail-startup");
+        }
         var import = Array.IndexOf(args, "--open-import");
         if (import >= 0 && import + 1 < args.Length)
         {

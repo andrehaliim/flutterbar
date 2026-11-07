@@ -88,7 +88,7 @@ public static class UserPathEditor
         }
     }
 
-    private static string Normalize(string segment)
+    internal static string Normalize(string segment)
     {
         var s = segment.Trim().Trim('"').Trim();
         return s.TrimEnd('\\', '/');

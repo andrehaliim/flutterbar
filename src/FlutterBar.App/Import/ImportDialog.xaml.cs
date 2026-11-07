@@ -87,6 +87,8 @@ internal sealed partial class ImportDialog : Window
 
         public string ToolTip => Row.ToolTip;
 
-        public string NoteText => Row.Note is null ? "" : $"({Row.Note})";
+        public bool HasNote => Row.Note is not null;
+
+        public string NoteText => Row.Note is null ? "" : Row.IsEnabled ? "⚠ " + Row.Note : Row.Note; // ⚠ only for the checkable warning
     }
 }

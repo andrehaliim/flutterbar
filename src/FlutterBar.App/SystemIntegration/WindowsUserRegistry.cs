@@ -5,10 +5,19 @@ namespace FlutterBar.App.SystemIntegration;
 
 /// <summary>
 /// The real HKCU behind <see cref="IUserRegistry"/>. Only reached from the menu items "Tambahkan CLI ke PATH" and
-/// "Start with Windows" (and reading the Start-with-Windows state); call off the UI thread.
+/// "Start with Windows" (and reading the Start-with-Windows state and, on Rescan, PATH); call off the UI thread.
 /// </summary>
 internal sealed class WindowsUserRegistry : IUserRegistry
 {
+    private const string MachineEnvironmentKey = @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
+
+    /// <summary>Machine PATH (HKLM, read-only, unexpanded) for re-reading PATH on Rescan; null when missing.</summary>
+    public static string? ReadMachinePath()
+    {
+        using var key = Registry.LocalMachine.OpenSubKey(MachineEnvironmentKey, writable: false);
+        return key?.GetValue("Path", null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
+    }
+
     public RegistryValue? Read(string subKey, string name)
     {
         using var key = Registry.CurrentUser.OpenSubKey(subKey, writable: false);

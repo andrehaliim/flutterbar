@@ -43,6 +43,8 @@ public partial class App : Application
     private SystemActions? _system;
     private SingleInstanceLock? _instance;
     private bool _exiting;
+    private bool _startupCompleted;
+    private bool _startupFailed;
     private DateTime _lastErrorToast = DateTime.MinValue;
 
     private static string DiagPath => Path.Combine(Path.GetDirectoryName(AppSettingsStore.DefaultPath) ?? ".", "diag.log");
@@ -67,6 +69,30 @@ public partial class App : Application
             AppLog.Write("single instance: abandoned mutex taken over (the previous instance ended without releasing it)");
         }
 
+        // We hold the mutex now: a startup failure must end the process, or a windowless process would keep the mutex
+        // and every later launch would hand over to it and exit (e.g. logon start while Explorer is still coming up).
+        try
+        {
+            StartFirstInstance(e.Args);
+        }
+        catch (Exception ex) // top of startup: logged, mutex released, process ends with exit code 1
+        {
+            FailStartup("startup failed after taking the single-instance lock", ex);
+            return;
+        }
+        // Until the first idle (window shown, first placement done) an unhandled UI exception still counts as startup.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_startupFailed)
+            {
+                _startupCompleted = true;
+                AppLog.Write("startup completed");
+            }
+        }, DispatcherPriority.ApplicationIdle);
+    }
+
+    private void StartFirstInstance(string[] args)
+    {
         _settings = LoadSettings(out var warning); // before any window exists, so the synchronous read cannot stall the taskbar
         _saver = new SettingsSaver(_store, _settings);
         _theme = new TaskbarTheme(Resources, Dispatcher);
@@ -83,20 +109,20 @@ public partial class App : Application
         _controller.Observe(RefreshStartupAsync(null), "Start with Windows");
 #if DEBUG
         // Debug-only switches for checking the LogWindow while the widget is hidden (e.g. fullscreen).
-        if (e.Args.Contains("--fill-log"))
+        if (args.Contains("--fill-log"))
         {
             DebugLogFiller.Fill(_log, 20_000);
         }
-        DebugLogFiller.GcOnLogClose = e.Args.Contains("--gc-on-log-close");
-        if (e.Args.Contains("--stream-log"))
+        DebugLogFiller.GcOnLogClose = args.Contains("--gc-on-log-close");
+        if (args.Contains("--stream-log"))
         {
             DebugLogFiller.StreamInBackground(_log, 20);
         }
-        if (e.Args.Contains("--open-log"))
+        if (args.Contains("--open-log"))
         {
             Dispatcher.BeginInvoke(() => LogWindow.ShowAt(null));
         }
-        if (e.Args.Contains("--close-log-after-6s"))
+        if (args.Contains("--close-log-after-6s"))
         {
             var closeTimer = new DispatcherTimer(TimeSpan.FromSeconds(6), DispatcherPriority.Normal, (t, _) =>
             {
@@ -104,7 +130,7 @@ public partial class App : Application
                 LogWindow.CloseIfOpen();
             }, Dispatcher);
         }
-        ApplyDebugMenuSwitches(e.Args);
+        ApplyDebugMenuSwitches(args);
 #endif
     }
 
@@ -149,23 +175,30 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Second instance: ask the running one to show its widget (IPC <c>show</c>), then exit. No window exists here.</summary>
+    /// <summary>
+    /// Second instance: ask the running one to show its widget (IPC <c>show</c>), then exit. No window exists here. The
+    /// first instance may still be starting (pipe not listening yet): retried for up to ~3 s.
+    /// </summary>
     private async Task HandOverToFirstInstanceAsync()
     {
         try
         {
             var client = new IpcClient(PipeNames.ForCurrentUser());
-            var response = await Task.Run(() => client.SendAsync(new IpcRequest("show", null), TimeSpan.FromSeconds(3), CancellationToken.None));
+            var (response, attempts) = await Task.Run(() =>
+                StartupGuard.RequestShowAsync(client, TimeSpan.FromSeconds(3), TimeSpan.FromMilliseconds(250), CancellationToken.None));
             AppLog.Write(response is null
-                ? "second instance: the running instance's pipe is not reachable (still starting?), exiting"
-                : $"second instance: show -> exit {response.ExitCode} {response.Message}");
+                ? $"second instance: the running instance's pipe was not reachable after {attempts} attempt(s), exiting"
+                : $"second instance: show -> exit {response.ExitCode} {response.Message} (attempt {attempts})");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             AppLog.Write("second instance: show request failed, exiting", ex);
         }
-        AppLog.Flush(TimeSpan.FromSeconds(1));
-        Shutdown();
+        finally
+        {
+            AppLog.Flush(TimeSpan.FromSeconds(1));
+            Shutdown();
+        }
     }
 
     // IPC "show" (any thread): second launch or the CLI. Visibility belongs to the docking (fullscreen / auto-hide):
@@ -300,6 +333,24 @@ public partial class App : Application
         Shutdown();
     }
 
+    /// <summary>
+    /// Startup broke (before the first idle): log synchronously, release the single-instance mutex so the next launch
+    /// starts normally, and end the process with exit code 1. Shutdown closes any window already created.
+    /// </summary>
+    private void FailStartup(string what, Exception ex)
+    {
+        if (_startupFailed)
+        {
+            return;
+        }
+        _startupFailed = true;
+        AppLog.Flush(TimeSpan.FromSeconds(1)); // earlier entries first; later AppLog writes go straight to diag.log
+        DiagLog.Write($"{what}: releasing the single-instance lock and exiting with code {StartupGuard.FailedExitCode}", ex);
+        _instance?.Dispose();
+        _instance = null;
+        Shutdown(StartupGuard.FailedExitCode);
+    }
+
     private void InstallGlobalHandlers()
     {
         DispatcherUnhandledException += OnDispatcherUnhandledException;
@@ -315,8 +366,13 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        e.Handled = true; // never the default crash dialog; during startup the process ends below instead
+        if (StartupGuard.OnUnhandledUiException(_startupCompleted) == UnhandledAction.ExitProcess)
+        {
+            FailStartup("unhandled UI exception during startup", e.Exception);
+            return;
+        }
         AppLog.Write("unhandled UI exception (kept running)", e.Exception);
-        e.Handled = true;
         var now = DateTime.UtcNow;
         if (now - _lastErrorToast < TimeSpan.FromSeconds(10) || _controller is not { } controller)
         {

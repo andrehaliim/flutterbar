@@ -1,7 +1,9 @@
 using System.IO;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Projects;
+using FlutterBar.App.SystemIntegration;
 using FlutterBar.Core.Config;
+using FlutterBar.Core.Integration;
 using FlutterBar.Core.Orchestration;
 using FlutterBar.Core.Projects;
 
@@ -17,12 +19,16 @@ internal sealed partial class AppController
     /// <summary>Observes a fire-and-forget task from the menu or a dialog: failures are logged and toasted.</summary>
     public void Observe(Task task, string what) => Fire(task, what);
 
+    /// <summary>False while the docking hides the widget (fullscreen / auto-hide): toasts are then only logged.</summary>
+    public bool CanShowToast => WidgetShown();
+
     /// <summary>Yes/no question in a toast above the widget (false when dismissed or when the widget is hidden).</summary>
     public Task<bool> ConfirmAsync(string message, string yes, string no) => _toast.ConfirmAsync(message, yes, no);
 
     /// <summary>"Rescan": PATH lookups are forgotten (spec §5.2) and the roots are scanned again.</summary>
     public async Task RescanAsync()
     {
+        await RefreshProcessPathAsync();
         _paths.ClearCache();
         AppLog.Write("rescan requested: PATH lookup cache cleared");
         _manageDialog?.SetBusy(true, "Mencari project…");
@@ -36,6 +42,31 @@ internal sealed partial class AppController
         }
         RefreshManageDialog();
         ShowToast($"Rescan selesai: {_catalog.Count} project");
+    }
+
+    /// <summary>
+    /// A process keeps the PATH it started with: re-read machine + user PATH from the registry (read-only) so flutter/fvm
+    /// installed or added to PATH since FlutterBar started are found, and flutter's own child processes inherit it too.
+    /// Session-only entries of the current PATH are kept (<see cref="EnvironmentPath.Compose"/>).
+    /// </summary>
+    private static async Task RefreshProcessPathAsync()
+    {
+        try
+        {
+            var path = await Task.Run(() =>
+            {
+                var machine = WindowsUserRegistry.ReadMachinePath();
+                var user = new WindowsUserRegistry().Read(UserPathEditor.SubKey, UserPathEditor.ValueName)?.Data;
+                var fresh = EnvironmentPath.Compose(machine, user, Environment.GetEnvironmentVariable("PATH"));
+                Environment.SetEnvironmentVariable("PATH", fresh);
+                return fresh;
+            });
+            AppLog.Write($"rescan: process PATH re-read from the registry ({path.Split(';').Length} entries)");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            AppLog.Write("rescan: PATH could not be re-read from the registry, keeping the current one", ex);
+        }
     }
 
     /// <summary>"Tambah project…" from the menu: the same flow as the project flyout's button (added and selected).</summary>
@@ -116,7 +147,18 @@ internal sealed partial class AppController
 
     private void EditLists(Func<string, bool> edit, string path, string what, bool rescan)
     {
-        if (!edit(path))
+        bool changed;
+        try
+        {
+            changed = edit(path);
+        }
+        catch (ArgumentException ex) // a path that cannot be normalized (e.g. relative): say which one
+        {
+            AppLog.Write($"{what}: rejected \"{path}\"", ex);
+            ShowToast(ex.Message);
+            return;
+        }
+        if (!changed)
         {
             return;
         }

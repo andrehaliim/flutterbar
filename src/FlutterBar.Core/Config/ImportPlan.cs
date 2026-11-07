@@ -10,12 +10,13 @@ public sealed record ImportDiscovery(IReadOnlyList<ImportRow> Rows, bool LaunchJ
 /// "Import config dari IDE" (spec §4.2) without UI: discovery into checklist rows, and applying the selection through
 /// <see cref="IdeConfigImporter.Merge"/> and <see cref="LaunchConfigStore.Save"/>. A name already in launch.json is shown
 /// as "sudah ada", unchecked and disabled, because <see cref="IdeConfigImporter.Merge"/> skips existing names anyway. A config
-/// whose <c>program</c> file is missing is offered unchecked ("… tidak ada"): launch.json validation would reject the whole
+/// whose <c>program</c> file is missing is offered unchecked with <see cref="MissingProgramNote"/>: launch.json validation would reject the whole
 /// file because of it.
 /// </summary>
 public static class ImportPlan
 {
     public const string AlreadyExistsNote = "sudah ada";
+    public const string MissingProgramNote = "file program tidak ada — config akan merah setelah diimport";
     public const string NothingFoundText = "Tidak ada config Flutter di .idea/workspace.xml, .run/*.xml, atau .vscode/launch.json.";
 
     public static string SourceLabel(string source) => source switch
@@ -32,7 +33,7 @@ public static class ImportPlan
         return [.. candidates.Select(c =>
         {
             var missing = !c.AlreadyExists && programExists is not null && !programExists(c.Config);
-            var note = c.AlreadyExists ? AlreadyExistsNote : missing ? $"{c.Config.Program} tidak ada" : null;
+            var note = c.AlreadyExists ? AlreadyExistsNote : missing ? MissingProgramNote : null;
             return new ImportRow(c, c.Config.Name, Detail(c), ToolTip(c.Config), IsChecked: !c.AlreadyExists && !missing, IsEnabled: !c.AlreadyExists, note);
         })];
     }
