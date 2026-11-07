@@ -88,12 +88,42 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
 
     public async Task<GitStatusInfo> GetStatusAsync(string root, CancellationToken ct)
     {
-        var result = await RunAsync(root, CommandTimeout, null, ct, "status", "--porcelain=v2", "--branch").ConfigureAwait(false);
+        var (status, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+        return status;
+    }
+
+    private async Task<(GitStatusInfo Status, bool Unmerged)> ReadStatusAsync(string root, CancellationToken ct)
+    {
+        // --untracked-files=all: a new folder counts its files, not one entry.
+        var result = await RunAsync(root, CommandTimeout, null, ct, "status", "--porcelain=v2", "--branch", "--untracked-files=all")
+            .ConfigureAwait(false);
         if (result.ExitCode != 0)
         {
             throw new InvalidOperationException($"git status failed (exit {result.ExitCode}): {FailureText(result)}");
         }
-        return ParseStatus(result.Stdout);
+        var unmerged = result.Stdout.Split('\n').Any(l => l.StartsWith("u ", StringComparison.Ordinal));
+        return (ParseStatus(result.Stdout), unmerged);
+    }
+
+    /// <summary>Unmerged paths, or a merge / rebase / cherry-pick still in progress.</summary>
+    private async Task<bool> HasConflictedStateAsync(string root, CancellationToken ct)
+    {
+        var (_, unmerged) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+        if (unmerged)
+        {
+            return true;
+        }
+        var paths = await RunAsync(
+            root, CommandTimeout, null, ct, "rev-parse",
+            "--git-path", "MERGE_HEAD", "--git-path", "CHERRY_PICK_HEAD", "--git-path", "rebase-merge", "--git-path", "rebase-apply")
+            .ConfigureAwait(false);
+        if (paths.ExitCode != 0)
+        {
+            return false;
+        }
+        return paths.Stdout
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(p => File.Exists(Path.GetFullPath(p, root)) || Directory.Exists(Path.GetFullPath(p, root)));
     }
 
     internal static GitStatusInfo ParseStatus(string porcelainV2)
@@ -128,8 +158,19 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         NetworkAsync(root, "Fetched", ct, "fetch", "--prune");
 
     /// <summary>Plain <c>git pull</c>: merge or rebase follows the user's git config.</summary>
-    public Task<GitResult> PullAsync(string root, CancellationToken ct) =>
-        NetworkAsync(root, "Pulled", ct, "pull");
+    public async Task<GitResult> PullAsync(string root, CancellationToken ct)
+    {
+        if (await HasConflictedStateAsync(root, ct).ConfigureAwait(false))
+        {
+            return new GitResult(false, ResolveConflictsFirst);
+        }
+        return await NetworkAsync(root, "Pulled", ct, "pull").ConfigureAwait(false);
+    }
+
+    public const string ResolveConflictsFirst = "Resolve conflicts first";
+
+    /// <summary>Start of the failure text when the commit exists locally but the push failed (the UI then clears the message).</summary>
+    public const string CommittedLocallyPrefix = "Committed locally. Push failed: ";
 
     /// <summary>
     /// <c>git add -A</c>, <c>git commit -m</c>, then <c>git push</c> (<c>push -u origin &lt;branch&gt;</c> without an upstream).
@@ -147,40 +188,71 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
             return new GitResult(false, "HEAD is detached. Switch to a branch first");
         }
 
+        if (await HasConflictedStateAsync(root, ct).ConfigureAwait(false))
+        {
+            return new GitResult(false, ResolveConflictsFirst); // add -A would mark conflict markers as resolved
+        }
         var add = await RunAsync(root, CommandTimeout, null, ct, "add", "-A").ConfigureAwait(false);
         if (add.ExitCode != 0)
         {
             return new GitResult(false, FailureText(add));
         }
-        // Exit 1 = staged changes exist, 0 = nothing staged (so nothing to commit).
+        // Exit 1 = staged changes exist, 0 = nothing staged.
         var staged = await RunAsync(root, CommandTimeout, null, ct, "diff", "--cached", "--quiet").ConfigureAwait(false);
-        if (staged.ExitCode == 0)
-        {
-            return new GitResult(false, "Nothing to commit");
-        }
-        if (staged.ExitCode != 1)
+        if (staged.ExitCode != 0 && staged.ExitCode != 1)
         {
             return new GitResult(false, FailureText(staged));
-        }
-        var commit = await RunAsync(root, CommandTimeout, null, ct, "commit", "-m", message).ConfigureAwait(false);
-        if (commit.ExitCode != 0)
-        {
-            return new GitResult(false, FailureText(commit));
         }
 
         var upstream = await RunAsync(root, CommandTimeout, null, ct, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
             .ConfigureAwait(false);
-        string[] pushArgs = upstream.ExitCode == 0 ? ["push"] : ["push", "-u", "origin", branch];
+        var hasUpstream = upstream.ExitCode == 0;
+        if (!hasUpstream)
+        {
+            var configured = await RunAsync(root, CommandTimeout, null, ct, "config", "--get", $"branch.{branch}.merge").ConfigureAwait(false);
+            if (configured.ExitCode == 0 && configured.Stdout.Trim().Length > 0)
+            {
+                return new GitResult(false, "The upstream branch is gone. Push from a terminal if you want to recreate it.");
+            }
+        }
+
+        var committed = false;
+        if (staged.ExitCode == 1)
+        {
+            // Hooks (lefthook, husky) and GPG pinentry can be slow: same limit as the network commands.
+            var commit = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, "commit", "-m", message).ConfigureAwait(false);
+            if (commit.ExitCode != 0)
+            {
+                return new GitResult(false, FailureText(commit));
+            }
+            committed = true;
+        }
+        else
+        {
+            // Nothing new to commit: still push commits an earlier failed push left behind.
+            var (status, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
+            if (hasUpstream && status.Ahead == 0)
+            {
+                return new GitResult(false, "Nothing to commit");
+            }
+        }
+
+        string[] pushArgs = hasUpstream ? ["push"] : ["push", "-u", "origin", branch];
         var push = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, pushArgs).ConfigureAwait(false);
         if (push.ExitCode == 0)
         {
             return new GitResult(true, $"Pushed to {branch}");
         }
         var text = FailureText(push);
-        var rejected = text.Contains("rejected", StringComparison.OrdinalIgnoreCase)
-            || text.Contains("non-fast-forward", StringComparison.OrdinalIgnoreCase)
-            || text.Contains("fetch first", StringComparison.OrdinalIgnoreCase);
-        return new GitResult(false, rejected ? $"{text}\nPull first" : text);
+        // "[rejected]" (non-fast-forward / fetch first) is fixed by pulling; "[remote rejected]" (hook, protected branch) is not.
+        var needsPull = text.Contains("[rejected]", StringComparison.Ordinal)
+            && (text.Contains("non-fast-forward", StringComparison.OrdinalIgnoreCase)
+                || text.Contains("fetch first", StringComparison.OrdinalIgnoreCase));
+        if (needsPull)
+        {
+            text += "\nPull first";
+        }
+        return new GitResult(false, committed ? CommittedLocallyPrefix + text : text);
     }
 
     private async Task<GitResult> NetworkAsync(string root, string successMessage, CancellationToken ct, params string[] args)

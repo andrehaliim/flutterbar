@@ -190,6 +190,108 @@ public class GitRemoteTests
         Assert.Contains("detached", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [GitFact]
+    public async Task Status_UntrackedFolder_CountsEachFile()
+    {
+        using var repo = await GitTestRepo.CreateAsync();
+        repo.Write("newdir/a.txt", "a\n");
+        repo.Write("newdir/b.txt", "b\n");
+        Assert.Equal(2, (await repo.Service.GetStatusAsync(repo.Root, CancellationToken.None)).ChangedFiles);
+    }
+
+    [GitFact]
+    public async Task CommitAndPush_AheadOnly_PushesWithoutNewCommit()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        repo.Write("local.txt", "l\n");
+        await repo.CommitAllAsync("earlier commit");
+
+        var result = await repo.Service.CommitAndPushAsync(repo.Root, "unused", CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("Pushed to main", result.Message);
+        Assert.Equal("earlier commit", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "log", "-1", "--format=%s", "main"));
+        Assert.Equal("Nothing to commit", (await repo.Service.CommitAndPushAsync(repo.Root, "unused", CancellationToken.None)).Message);
+    }
+
+    [GitFact]
+    public async Task CommitAndPush_PushRejected_CommittedLocallyPrefix_ThenRetryAfterPullPushes()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        await repo.GitAsync("config", "pull.rebase", "false");
+        var other = await repo.CloneAsync(remote);
+        await repo.PushFromAsync(other, "remote.txt", "r\n", "remote commit");
+        repo.Write("local.txt", "l\n");
+
+        var rejected = await repo.Service.CommitAndPushAsync(repo.Root, "local commit", CancellationToken.None);
+
+        Assert.False(rejected.Success);
+        Assert.StartsWith(GitService.CommittedLocallyPrefix, rejected.Message);
+        Assert.Contains("Pull first", rejected.Message);
+        Assert.Equal("local commit", await repo.GitAsync("log", "-1", "--format=%s"));
+
+        Assert.True((await repo.Service.PullAsync(repo.Root, CancellationToken.None)).Success);
+        var retry = await repo.Service.CommitAndPushAsync(repo.Root, "again", CancellationToken.None);
+
+        Assert.True(retry.Success, retry.Message);
+        Assert.Equal(await repo.GitAsync("rev-parse", "HEAD"), await repo.GitInAsync(repo.Temp, "--git-dir", remote, "rev-parse", "main"));
+    }
+
+    [GitFact]
+    public async Task CommitAndPush_RemoteRejectedByHook_NoPullHint()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        await File.WriteAllTextAsync(Path.Combine(remote, "hooks", "pre-receive"), "#!/bin/sh\necho protected\nexit 1\n");
+        repo.Write("local.txt", "l\n");
+
+        var result = await repo.Service.CommitAndPushAsync(repo.Root, "local commit", CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.StartsWith(GitService.CommittedLocallyPrefix, result.Message);
+        Assert.DoesNotContain("Pull first", result.Message);
+    }
+
+    [GitFact]
+    public async Task CommitAndPush_GoneUpstream_Refused()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        await repo.GitAsync("switch", "-c", "feat");
+        await repo.GitAsync("config", "branch.feat.remote", "origin");
+        await repo.GitAsync("config", "branch.feat.merge", "refs/heads/feat"); // configured, but origin has no such branch
+        repo.Write("lib/x.dart", "// x\n");
+
+        var result = await repo.Service.CommitAndPushAsync(repo.Root, "x", CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Equal("The upstream branch is gone. Push from a terminal if you want to recreate it.", result.Message);
+        Assert.DoesNotContain("feat", await repo.GitInAsync(repo.Temp, "--git-dir", remote, "branch"));
+    }
+
+    [GitFact]
+    public async Task ConflictedMerge_RefusesCommitAndPushAndPull()
+    {
+        var (repo, remote) = await SetupAsync();
+        using var _ = repo;
+        await repo.GitAsync("config", "pull.rebase", "false");
+        var other = await repo.CloneAsync(remote);
+        await repo.PushFromAsync(other, "lib/main.dart", "void main() { remote(); }\n", "remote edit");
+        repo.Write("lib/main.dart", "void main() { local(); }\n");
+        await repo.CommitAllAsync("local edit");
+        Assert.False((await repo.Service.PullAsync(repo.Root, CancellationToken.None)).Success); // leaves the merge in progress
+        var head = await repo.GitAsync("rev-parse", "HEAD");
+
+        var push = await repo.Service.CommitAndPushAsync(repo.Root, "resolve", CancellationToken.None);
+        var pull = await repo.Service.PullAsync(repo.Root, CancellationToken.None);
+
+        Assert.Equal(new GitResult(false, GitService.ResolveConflictsFirst), push);
+        Assert.Equal(new GitResult(false, GitService.ResolveConflictsFirst), pull);
+        Assert.Equal(head, await repo.GitAsync("rev-parse", "HEAD"));
+    }
+
     [Fact]
     public async Task NetworkCommands_UseNoTerminalPrompt_TwoMinuteTimeout_NeverForce()
     {
@@ -202,8 +304,8 @@ public class GitRemoteTests
         await git.PullAsync("C:\\p", CancellationToken.None);
         await git.CommitAndPushAsync("C:\\p", "msg", CancellationToken.None);
 
-        var network = runner.Calls.Where(c => c.Spec.Args.Any(a => a is "fetch" or "pull" or "push")).ToList();
-        Assert.Equal(3, network.Count);
+        var network = runner.Calls.Where(c => c.Spec.Args.Any(a => a is "fetch" or "pull" or "push" or "commit")).ToList();
+        Assert.Equal(4, network.Count); // commit shares the limit: hooks and GPG can be slow
         foreach (var (spec, timeout) in network)
         {
             Assert.Equal("0", spec.Environment?["GIT_TERMINAL_PROMPT"]);

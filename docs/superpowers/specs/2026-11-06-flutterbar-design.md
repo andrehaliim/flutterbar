@@ -253,6 +253,16 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
   `Commit and push` = `git add -A`, `git commit -m <pesan>`, `git push` (atau `git push -u origin <branch>`
   bila belum ada upstream). Tidak ada pull sebelum push dan tidak pernah `--force`. Push ditolak
   (non-fast-forward) menampilkan pesan git plus saran "Pull first". HEAD detached ditolak.
+- `git add -A` berlaku untuk SELURUH repo (sama dengan VS Code), bukan hanya folder project; jumlah file
+  berubah (`--untracked-files=all`) juga sebatas repo. Di monorepo, perubahan di luar folder project ikut ter-commit.
+- Tidak ada yang perlu di-commit tetapi ada commit yang belum terkirim (ahead > 0, atau belum ada upstream)
+  = hanya `git push`. "Nothing to commit" hanya bila tidak ada keduanya. Commit berhasil tetapi push gagal:
+  pesan diawali "Committed locally. Push failed: ..." dan kolom pesan dikosongkan (klik berikutnya hanya push).
+  Saran "Pull first" hanya untuk `[rejected]` non-fast-forward / fetch first, bukan `[remote rejected]`.
+- Ditolak dengan "Resolve conflicts first" (Commit and push dan Pull) bila ada entri unmerged atau
+  merge/rebase/cherry-pick yang belum selesai. Upstream sudah hilang di remote: ditolak dengan
+  "The upstream branch is gone. Push from a terminal if you want to recreate it." (tidak membuat ulang diam-diam).
+- `git commit` memakai batas 2 menit (hook pre-commit, GPG). Daftar branch dinonaktifkan selama aksi git berjalan.
 - Perintah jaringan berjalan dengan `GIT_TERMINAL_PROMPT=0` (tidak pernah menunggu input terminal;
   Git Credential Manager tetap bisa menampilkan login) dan timeout 2 menit.
 - Hasil lewat toast: `Fetched`, `Pulled`, `Pushed to <branch>`, `Nothing to commit`, atau stderr git

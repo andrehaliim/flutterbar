@@ -384,6 +384,10 @@ internal sealed partial class AppController
             }
             else
             {
+                if (action == GitAction.CommitAndPush && outcome.Message.StartsWith(GitService.CommittedLocallyPrefix, StringComparison.Ordinal))
+                {
+                    flyout.ClearCommitMessage(); // the commit exists; the next click only pushes
+                }
                 flyout.SetMessage(outcome.Message);
                 ShowToast(outcome.Message); // git stderr as is (spec §5.5)
             }

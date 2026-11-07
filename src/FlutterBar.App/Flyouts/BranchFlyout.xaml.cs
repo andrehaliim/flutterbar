@@ -17,7 +17,7 @@ internal sealed partial class BranchFlyout : UserControl
         _list = new FlyoutList(List, Search);
         _list.Chosen += item =>
         {
-            if (item.Value is string branch)
+            if (!_operating && item.Value is string branch)
             {
                 BranchChosen?.Invoke(branch);
             }
@@ -64,6 +64,7 @@ internal sealed partial class BranchFlyout : UserControl
     public void SetOperationBusy(bool busy)
     {
         _operating = busy;
+        List.IsEnabled = !busy; // no branch switch while fetch / pull / push runs
         UpdateEnabled();
     }
 
