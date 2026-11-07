@@ -707,7 +707,10 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
     - `bool IsHidden`
     - `ICommand RunCommand, ReloadCommand, RestartCommand, StopCommand, OpenLogCommand`
 
-- [ ] **Step 1: Docking produksi.** Pindahkan teknik spike ke `TaskbarDocking` (detail teknik v2 dan v3 di `docs/superpowers/spikes/2026-11-06-docking-findings.md`, bagian "Spike v3" dan "Catatan untuk Task 13"):
+- [ ] **Step 1: Docking produksi.** Pindahkan teknik spike ke `TaskbarDocking` (detail teknik v2, v3, dan v3.1 di `docs/superpowers/spikes/2026-11-06-docking-findings.md`, bagian "Spike v3", "Spike v3.1", dan "Catatan untuk Task 13"):
+  - **Catatan (keputusan user, v3.1):** `WidgetLayoutPolicy.Choose` mengembalikan `null` bila tidak ada ukuran yang muat (kode Core Task 12 tidak berubah). Di mode `auto`, `null` BUKAN berarti sembunyikan: widget tetap tampil di posisi valid terakhir (atau kiri `TrayNotifyWnd`) dalam ukuran `ButtonsOnly` dan menampilkan pesan "Taskbar penuh — gunakan Drag widget" (tooltip/teks), plus log. Widget hanya disembunyikan untuk fullscreen dan auto-hide.
+  - Filter elemen UIA (v3.1): hanya hitung terisi Start (`StartButton`), Search, Task View, Widgets, `Taskbar.TaskListButtonAutomationPeer`, kelas tombol taskbar yang dikenal, dan jendela widget proses lain; abaikan tooltip/thumbnail/popup, elemen setinggi < 50% taskbar, dan elemen di luar rect taskbar.
+  - Debounce (v3.1): terapkan penempatan baru (pindah/ubah ukuran) hanya bila hasil (ukuran, x) yang sama keluar dari 2 query UIA berturut-turut (toleransi x 3 px); layout pertama setelah startup atau setelah `ResetToAuto()` diterapkan langsung. Log saat kandidat ditahan.
   - Sanity check layout: hasil UIA tanpa elemen tray atau tanpa kotak terisi ditolak (pertahankan layout terakhir yang baik, log); `TrayNotifyWnd` (Win32) sebagai sumber/cek kiri tray (selisih > 300 px dengan UIA -> pakai TrayNotifyWnd).
   - Penangguhan topmost saat popup/menu/tooltip terbuka, dan topmost-kan HWND popup (`HwndSource`), menu dibuka ke atas.
   - Filter elemen UIA milik ProcessId sendiri.

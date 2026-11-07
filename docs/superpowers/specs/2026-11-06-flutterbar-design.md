@@ -319,8 +319,10 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Ukuran pilihan user (`widget.size`) bisa diatur lewat menu Size, atau dengan drag tepi kiri widget
   (lebar disimpan di `widthOverride`).
 - Kalau area kosong taskbar lebih kecil dari lebar ukuran pilihan, widget turun satu tingkat, lalu
-  dicek lagi. Kalau "tombol saja" pun tidak muat, widget disembunyikan. Saat ruang cukup lagi, widget
-  kembali ke ukuran pilihan.
+  dicek lagi. Kalau "tombol saja" pun tidak muat (mode `auto`), widget TIDAK disembunyikan: tetap tampil di posisi
+  valid terakhir (atau di kiri `TrayNotifyWnd` bila belum ada) dalam ukuran "tombol saja", dengan pesan
+  "Taskbar penuh — gunakan Drag widget". Widget hanya disembunyikan untuk fullscreen dan auto-hide. Saat ruang
+  cukup lagi, widget kembali ke ukuran pilihan.
 - Lebar dihitung ulang saat taskbar berubah (tombol aplikasi bertambah atau berkurang, DPI berubah,
   monitor berubah).
 
@@ -337,6 +339,12 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   disimpan sebagai `widget.offsetFromRight` = jarak dari tepi KANAN taskbar dalam piksel fisik (tahan terhadap
   perubahan tombol aplikasi/rata taskbar; di-clamp ke taskbar bila resolusi berubah). Mode manual TIDAK menghindari
   tombol aplikasi; owner, topmost, fullscreen, dan auto-hide tetap berlaku. "Reset to auto position" kembali ke `auto`.
+- **Stabilitas (v3.1):** hanya elemen berikut yang dihitung terisi: Start (`StartButton`), Search, Task View, Widgets,
+  tombol aplikasi (`Taskbar.TaskListButtonAutomationPeer`), kelas tombol taskbar yang dikenal, dan jendela widget
+  proses lain di taskbar. Elemen transien (tooltip, thumbnail, popup), elemen dengan tinggi < 50% tinggi taskbar,
+  dan elemen di luar rect taskbar diabaikan. Penempatan baru (pindah/ubah ukuran) baru diterapkan bila hasil
+  (ukuran, x) yang sama keluar dari 2 query UIA berturut-turut (sekitar 1-2 detik); layout pertama setelah
+  startup atau setelah "Reset to auto position" diterapkan langsung.
 - Hasil layout UIA tanpa elemen tray atau tanpa kotak terisi dianggap tidak valid (layout terakhir yang baik
   dipertahankan); `TrayNotifyWnd` dipakai sebagai cadangan/cek kiri tray. Selama menu/tooltip/popup terbuka,
   reassert topmost ditangguhkan dan HWND popup di-topmost-kan.

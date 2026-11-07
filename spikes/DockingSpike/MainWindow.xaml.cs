@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(600) };
     readonly Dictionary<string, DateTime> _lastLog = new();
     readonly Dictionary<uint, string> _procNames = new();
-    bool _locPending, _queryRunning, _hidden, _fullscreen, _inReassert, _dead, _noGap;
+    bool _locPending, _queryRunning, _hidden, _fullscreen, _inReassert, _dead, _noFit;
     bool _autoHide;
     string _align = "tengah";
     DateTime _lastQuery = DateTime.MinValue;
@@ -36,6 +36,14 @@ public partial class MainWindow : Window
     bool _menuOpen, _dragMode, _dragged, _dragging;
     int? _dragX;
     int _dragStartCursor, _dragStartX;
+    // v3.1 placement state (auto mode): sizes Full 300 / Compact 260 / ButtonsOnly 120 (logical px), debounced by 2 consecutive UIA queries
+    static readonly int[] SizeW = { 300, 260, 120 };
+    static readonly string[] SizeName = { "Full", "Compact", "ButtonsOnly" };
+    record Placement(int Size, int X, bool NoFit);
+    Placement? _applied, _pending;
+    int? _lastValidX;
+    bool _immediate = true;
+    Taskbar.Result? _evalLayout;
 
     public MainWindow()
     {
@@ -115,7 +123,8 @@ public partial class MainWindow : Window
         _settings = new SpikeSettings();
         SpikeSettings.Delete();
         _lastPos = default;
-        Taskbar.Log($"{Now()} reset to auto position");
+        _applied = null; _pending = null; _evalLayout = null; _immediate = true; // next auto layout applies immediately
+        Taskbar.Log($"{Now()} reset to auto position (drag mode exited, immediate-apply armed)");
         Reassert("reset-auto");
     }
 
@@ -181,7 +190,7 @@ public partial class MainWindow : Window
         if (_taskbarCreatedMsg != 0 && (uint)msg == _taskbarCreatedMsg)
         {
             Taskbar.Log($"{Now()} TaskbarCreated received (explorer restarted)");
-            _layout = null;
+            _layout = null; _immediate = true; _evalLayout = null;
             AttachToTaskbar("TaskbarCreated", true);
             Reassert("TaskbarCreated");
         }
@@ -342,6 +351,53 @@ public partial class MainWindow : Window
         return r.Left <= mi.rcMonitor.Left && r.Top <= mi.rcMonitor.Top && r.Right >= mi.rcMonitor.Right && r.Bottom >= mi.rcMonitor.Bottom;
     }
 
+    // Pick the largest size that fits a gap (Full -> Compact -> ButtonsOnly; rightmost fitting gap per size). Nothing fits: ButtonsOnly at the last valid X.
+    Placement Choose(List<(int L, int R)> gaps, double scale, IntPtr tray, Native.RECT tbr)
+    {
+        for (int i = 0; i < SizeW.Length; i++)
+        {
+            int ws = (int)(SizeW[i] * scale);
+            for (int g = gaps.Count - 1; g >= 0; g--)
+                if (gaps[g].R - gaps[g].L >= ws) return new Placement(i, gaps[g].R - ws, false);
+        }
+        int wb = (int)(SizeW[2] * scale);
+        int x;
+        if (_lastValidX is int lv) x = lv;
+        else
+        {
+            var tn = Native.FindWindowEx(tray, IntPtr.Zero, "TrayNotifyWnd", null);
+            x = tn != IntPtr.Zero && Native.GetWindowRect(tn, out var tnr) && tnr.Left > tbr.Left ? tnr.Left - Gap - wb : tbr.Right - wb;
+        }
+        return new Placement(2, Math.Clamp(x, tbr.Left, Math.Max(tbr.Left, tbr.Right - wb)), true);
+    }
+
+    static bool SamePlacement(Placement a, Placement b) => a.Size == b.Size && a.NoFit == b.NoFit && Math.Abs(a.X - b.X) <= 3;
+
+    // Called once per new UIA layout. A different placement is applied only after 2 consecutive queries agree (immediate on startup/reset).
+    void Evaluate(List<(int L, int R)> gaps, double scale, IntPtr tray, Native.RECT tbr, string gapTxt)
+    {
+        var cand = Choose(gaps, scale, tray, tbr);
+        string desc = $"{SizeName[cand.Size]} x={cand.X}{(cand.NoFit ? " NOFIT" : "")}";
+        if (_applied is null || _immediate)
+        {
+            Apply(cand, $"immediate ({(_applied is null ? "first layout" : "after startup/reset")})", gapTxt);
+        }
+        else if (SamePlacement(cand, _applied)) { _pending = null; }
+        else if (_pending is not null && SamePlacement(cand, _pending)) Apply(cand, "confirmed by 2 consecutive queries", gapTxt);
+        else
+        {
+            _pending = cand;
+            Taskbar.Log($"{Now()} placement candidate {desc} held back (applied {SizeName[_applied.Size]} x={_applied.X}); needs 2 consecutive queries; gaps: {gapTxt}");
+        }
+    }
+
+    void Apply(Placement cand, string why, string gapTxt)
+    {
+        _applied = cand; _pending = null; _immediate = false;
+        if (!cand.NoFit) _lastValidX = cand.X;
+        Taskbar.Log($"{Now()} placement APPLIED {SizeName[cand.Size]} x={cand.X}{(cand.NoFit ? " NOFIT (stay visible, hint)" : "")} [{why}] gaps: {gapTxt}");
+    }
+
     void Reassert(string reason)
     {
         if (_inReassert || _dead || _hwnd == IntPtr.Zero) return;
@@ -366,11 +422,12 @@ public partial class MainWindow : Window
 
             uint dpi = Native.GetDpiForWindow(_hwnd);
             double scale = dpi / 96.0;
-            int w = (int)(300 * scale), h = (int)(40 * scale);
+            int sizeIdx = 0;
+            int w = (int)(SizeW[0] * scale), h = (int)(40 * scale);
             var res = _layout;
             int x = 0, y = 0;
             string gapTxt = "?";
-            bool haveGap = false;
+            bool haveGap = false, noFit = false;
             Native.GetWindowRect(tray, out var tbr);
             int yDock = tbr.Top + (tbr.Bottom - tbr.Top - h) / 2;
             int xMax = Math.Max(tbr.Left, tbr.Right - w);
@@ -389,18 +446,20 @@ public partial class MainWindow : Window
             {
                 var gaps = Taskbar.Gaps(res, Gap);
                 gapTxt = string.Join(" ", gaps.Select(g => $"[{g.L}..{g.R}]={g.R - g.L}"));
-                for (int i = gaps.Count - 1; i >= 0; i--)
+                if (!ReferenceEquals(res, _evalLayout))
                 {
-                    if (gaps[i].R - gaps[i].L >= w)
-                    {
-                        x = gaps[i].R - w;
-                        y = res.Taskbar.Top + (res.Taskbar.Bottom - res.Taskbar.Top - h) / 2;
-                        haveGap = true;
-                        gapTxt += $" -> pakai [{gaps[i].L}..{gaps[i].R}]";
-                        break;
-                    }
+                    _evalLayout = res;
+                    Evaluate(gaps, scale, tray, tbr, gapTxt);
                 }
-                if (!haveGap) gapTxt += " -> TIDAK ADA gap cukup";
+                if (_applied is { } ap)
+                {
+                    sizeIdx = ap.Size; noFit = ap.NoFit;
+                    w = (int)(SizeW[sizeIdx] * scale);
+                    x = Math.Clamp(ap.X, tbr.Left, Math.Max(tbr.Left, tbr.Right - w));
+                    y = res.Taskbar.Top + (res.Taskbar.Bottom - res.Taskbar.Top - h) / 2;
+                    haveGap = true;
+                    gapTxt += $" -> {SizeName[sizeIdx]} x={x}{(noFit ? " (TIDAK MUAT)" : "")}";
+                }
             }
             else
             {
@@ -413,9 +472,8 @@ public partial class MainWindow : Window
                 }
                 else gapTxt = "(no layout, no TrayNotifyWnd)";
             }
-            bool noGap = !_dragMode && !manual && res is not null && !haveGap;
-            if (noGap != _noGap) { _noGap = noGap; Taskbar.Log($"{Now()} gap fit -> {(noGap ? "NONE (hide widget)" : "ok")} gaps: {gapTxt}"); }
-            bool wantVisible = !fs && !noGap;
+            if (noFit != _noFit) { _noFit = noFit; Taskbar.Log($"{Now()} taskbar full: {(noFit ? "nothing fits even ButtonsOnly -> widget STAYS VISIBLE (ButtonsOnly, last X) with hint" : "fits again")} gaps: {gapTxt}"); }
+            bool wantVisible = !fs;
 
             if (!wantVisible)
             {
@@ -432,7 +490,15 @@ public partial class MainWindow : Window
                 if (moved && !_dragging) _lastPos = (x, y, w, h);
             }
             string modeTxt = _dragMode ? "drag" : _settings.Mode;
-            Info.Text = $"mode={modeTxt} off={_settings.OffsetFromRight?.ToString() ?? "-"} gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}";
+            Info.FontSize = sizeIdx == 2 ? 9 : 11;
+            Info.Margin = sizeIdx == 2 ? new Thickness(3, 0, 3, 0) : new Thickness(5, 1, 5, 1);
+            Info.Text = sizeIdx switch
+            {
+                0 => $"[Full] mode={modeTxt} off={_settings.OffsetFromRight?.ToString() ?? "-"} gap={gapTxt}\nDPI={dpi} ({scale * 100:F0}%) rata={_align} fs={(fs ? "ya" : "tidak")} ah={(_autoHide ? "ya" : "tidak")} last={_lastReason}",
+                1 => $"[Compact] mode={modeTxt} x={x}\nDPI={dpi} rata={_align}",
+                _ => noFit ? "\u25B6 \u26A1 Taskbar penuh \u2014 gunakan Drag widget" : "\u25B6 \u26A1",
+            };
+            ToolTip = noFit ? "Taskbar penuh \u2014 gunakan Drag widget" : null;
 
             var posLog = $"mode={_settings.Mode}/{(_dragMode ? "drag" : "-")} off={_settings.OffsetFromRight} align={_align} dpi={dpi} trayLeft={res?.TrayLeft} win=({x},{y},{x + w},{y + h}) visible={wantVisible} gaps={gapTxt}";
             if (posLog != _lastPosLog)
