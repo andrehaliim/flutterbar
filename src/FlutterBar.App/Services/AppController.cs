@@ -83,8 +83,8 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
     }
 
     /// <summary>
-    /// "Import dari IDE" in the config flyout, with the project root. Task 16 handles it (import dialog); until then
-    /// nobody subscribes and the request is only written to diag.log.
+    /// "Import dari IDE" in the config flyout, with the project root. The app opens the import dialog
+    /// (<c>Import/ImportFlow</c>); without a subscriber the request is only written to diag.log.
     /// </summary>
     public event Action<string>? ImportRequested;
 

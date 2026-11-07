@@ -21,4 +21,9 @@ public static class UiText
     public const string HotRestart = "Hot restart";
     public const string PubspecChanged = "pubspec berubah, stop lalu run ulang";
     public const string NoCommitYet = "(belum ada commit)";
+    public const string ConfirmExit = "Stop sesi dan keluar?";
+    public const string ConfirmExitYes = "Ya, keluar";
+    public const string UnexpectedError = "FlutterBar mengalami error, detail di diag.log";
+    public const string PathAdded = "Buka terminal baru agar PATH terbaca";
+    public const string NeedProject = "Pilih project dulu";
 }

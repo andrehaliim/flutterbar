@@ -1,0 +1,50 @@
+<Window x:Class="FlutterBar.App.Import.ImportDialog" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Import config dari IDE" Width="560" Height="520" MinWidth="420" MinHeight="320"
+        WindowStartupLocation="CenterScreen" ShowInTaskbar="True"
+        Background="{DynamicResource Fb.Background}" Foreground="{DynamicResource Fb.Foreground}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12" UseLayoutRounding="True">
+    <!-- Independent top-level window (never owned by the taskbar-owned widget). Spec §4.2: checklist of IDE run configs. -->
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="ProjectText" Style="{StaticResource Fb.FlyoutHeader}" TextTrimming="CharacterEllipsis" />
+        <ProgressBar x:Name="Spinner" Grid.Row="1" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
+        <TextBlock x:Name="ErrorText" Grid.Row="2" Style="{StaticResource Fb.ErrorText}" Visibility="Collapsed" />
+
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="Rows" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding IsEnabled}" Margin="2,4"
+                                  ToolTip="{Binding ToolTip}" ToolTipService.ShowOnDisabled="True" Click="OnRowClick"
+                                  Foreground="{DynamicResource Fb.Foreground}" VerticalContentAlignment="Top">
+                            <StackPanel Margin="4,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding NoteText}" Margin="8,0,0,0" Foreground="{DynamicResource Fb.Warning}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource Fb.Muted}" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </CheckBox>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <TextBlock x:Name="FootText" Grid.Row="4" Style="{StaticResource Fb.MutedText}" Margin="2,10,2,6" />
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ImportButton" Style="{StaticResource Fb.Button}" Content="Import" IsDefault="True" IsEnabled="False" Click="OnImportClick" />
+            <Button Style="{StaticResource Fb.Button}" Content="Batal" IsCancel="True" Margin="0" Click="OnCancelClick" />
+        </StackPanel>
+    </Grid>
+</Window>

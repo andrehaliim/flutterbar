@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlutterBar.Core\FlutterBar.Core.csproj" />
+    <!-- Copies flutterbar.exe next to FlutterBar.App.exe: "Tambahkan CLI ke PATH" adds this folder (Task 16). -->
+    <ProjectReference Include="..\FlutterBar.Cli\FlutterBar.Cli.csproj" />
   </ItemGroup>
 
 </Project>

@@ -118,15 +118,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Window.ContextMenu>
-        <!-- Task 13 menu only; Task 16 builds the full menu. Labels "Drag widget" / "Reset to auto position" are English (user decision). -->
-        <ContextMenu Placement="Top">
-            <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragItemClick" />
-            <MenuItem Header="Reset to auto position" Click="OnResetClick" />
-            <Separator />
-            <MenuItem Header="Keluar" Click="OnExitClick" />
-        </ContextMenu>
-    </Window.ContextMenu>
+    <!-- Right-click menu: Menu/WidgetContextMenu, assigned in code (Task 16). -->
 
     <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
         <!-- All three sizes stay in the tree (Hidden, not Collapsed) so each can be measured for the size choice. -->

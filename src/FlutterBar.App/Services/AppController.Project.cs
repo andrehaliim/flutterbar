@@ -261,22 +261,17 @@ internal sealed partial class AppController
             return;
         }
         var folder = dialog.FolderName;
-        var isFlutter = await Task.Run(() =>
-        {
-            var pubspec = Path.Combine(folder, "pubspec.yaml");
-            return File.Exists(pubspec) && PubspecInspector.IsFlutterApp(File.ReadAllText(pubspec));
-        });
-        if (!isFlutter)
+        if (!await IsFlutterProjectAsync(folder))
         {
             ShowToast($"Bukan project Flutter (pubspec.yaml dengan flutter sdk tidak ada): {folder}");
             return;
         }
-        if (!Settings.ManualProjects.Any(p => string.Equals(Path.GetFullPath(p).TrimEnd('\\'), Path.GetFullPath(folder).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+        if (ProjectListEditor.AddManual(Settings, folder))
         {
-            Settings.ManualProjects.Add(folder);
             _saver.Save("manual project added");
         }
         await RebuildCatalogAsync();
+        RefreshManageDialog();
         await SelectProjectAsync(folder);
     }
 

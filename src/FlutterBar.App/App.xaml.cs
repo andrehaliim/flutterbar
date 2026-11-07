@@ -3,12 +3,18 @@ using System.Windows;
 using System.Windows.Threading;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Docking;
+using FlutterBar.App.Import;
 using FlutterBar.App.Log;
 using FlutterBar.App.Services;
+using FlutterBar.App.SystemIntegration;
 using FlutterBar.App.Theme;
 using FlutterBar.App.Widget;
+using FlutterBar.Core.Diagnostics;
+using FlutterBar.Core.Integration;
+using FlutterBar.Core.Ipc;
 using FlutterBar.Core.Layout;
 using FlutterBar.Core.Logging;
+using FlutterBar.Core.Orchestration;
 using FlutterBar.Core.Processes;
 using FlutterBar.Core.Sessions;
 using FlutterBar.Core.Settings;
@@ -17,8 +23,9 @@ namespace FlutterBar.App;
 
 /// <summary>
 /// Composition root: settings, theme, run session, the widget window and its docking (Task 13), and the
-/// <see cref="AppController"/> that wires flyouts, toasts, Run and the IPC server (Task 14). the LogWindow (Task 15),
-/// Task 16 the full menu, the IDE import and single instance.
+/// <see cref="AppController"/> that wires flyouts, toasts, Run and the IPC server (Task 14), the LogWindow (Task 15), and
+/// (Task 16) single instance, global exception handlers, the right-click menu (<c>App.Menu.cs</c>), the IDE import and the
+/// PATH / Start-with-Windows integration.
 /// </summary>
 public partial class App : Application
 {
@@ -32,15 +39,33 @@ public partial class App : Application
     private TaskbarWidget? _widget;
     private TaskbarDocking? _docking;
     private AppController? _controller;
+    private ImportFlow? _importFlow;
+    private SystemActions? _system;
+    private SingleInstanceLock? _instance;
     private bool _exiting;
+    private DateTime _lastErrorToast = DateTime.MinValue;
+
+    private static string DiagPath => Path.Combine(Path.GetDirectoryName(AppSettingsStore.DefaultPath) ?? ".", "diag.log");
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        DispatcherUnhandledException += OnDispatcherUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += (_, args) => AppLog.Write("unhandled exception (terminating)", args.ExceptionObject as Exception);
-        TaskScheduler.UnobservedTaskException += (_, args) => AppLog.Write("unobserved task exception", args.Exception);
+        DiagLog.Initialize(DiagPath);
+        InstallGlobalHandlers();
+
+        // Before anything else, and before the IPC server can start: only the mutex owner may listen on the pipe.
+        _instance = SingleInstanceLock.TryAcquire(SingleInstanceLock.NameForCurrentUser(), out var abandoned);
+        if (_instance is null)
+        {
+            AppLog.Write($"second instance pid={Environment.ProcessId}: FlutterBar already runs, asking it to show the widget");
+            _ = HandOverToFirstInstanceAsync();
+            return;
+        }
         AppLog.Write($"FlutterBar.App start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
+        if (abandoned)
+        {
+            AppLog.Write("single instance: abandoned mutex taken over (the previous instance ended without releasing it)");
+        }
 
         _settings = LoadSettings(out var warning); // before any window exists, so the synchronous read cannot stall the taskbar
         _saver = new SettingsSaver(_store, _settings);
@@ -50,8 +75,12 @@ public partial class App : Application
         LogWindow.Configure(_log);
         _viewModel.OpenLogRequested += OpenLog;
         _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
+        _importFlow = new ImportFlow(_controller);
+        _controller.ImportRequested += _importFlow.Open; // "Belum ada config → Import dari IDE"
+        _system = new SystemActions(_controller, new WindowsUserRegistry());
         CreateWidget("startup");
         _ = InitializeControllerAsync(_controller);
+        _controller.Observe(RefreshStartupAsync(null), "Start with Windows");
 #if DEBUG
         // Debug-only switches for checking the LogWindow while the widget is hidden (e.g. fullscreen).
         if (e.Args.Contains("--fill-log"))
@@ -75,6 +104,7 @@ public partial class App : Application
                 LogWindow.CloseIfOpen();
             }, Dispatcher);
         }
+        ApplyDebugMenuSwitches(e.Args);
 #endif
     }
 
@@ -119,11 +149,38 @@ public partial class App : Application
         }
     }
 
-    // IPC "show" (any thread). Visibility belongs to the docking (fullscreen / auto-hide); re-evaluate placement now.
+    /// <summary>Second instance: ask the running one to show its widget (IPC <c>show</c>), then exit. No window exists here.</summary>
+    private async Task HandOverToFirstInstanceAsync()
+    {
+        try
+        {
+            var client = new IpcClient(PipeNames.ForCurrentUser());
+            var response = await Task.Run(() => client.SendAsync(new IpcRequest("show", null), TimeSpan.FromSeconds(3), CancellationToken.None));
+            AppLog.Write(response is null
+                ? "second instance: the running instance's pipe is not reachable (still starting?), exiting"
+                : $"second instance: show -> exit {response.ExitCode} {response.Message}");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            AppLog.Write("second instance: show request failed, exiting", ex);
+        }
+        AppLog.Flush(TimeSpan.FromSeconds(1));
+        Shutdown();
+    }
+
+    // IPC "show" (any thread): second launch or the CLI. Visibility belongs to the docking (fullscreen / auto-hide):
+    // a hidden widget stays hidden (logged); a visible one is re-placed and flashes once.
     private void ShowWidgetFromCli() => Dispatcher.BeginInvoke(() =>
     {
-        AppLog.Write($"show requested via CLI (hidden={_viewModel?.IsHidden})");
+        var hidden = _viewModel?.IsHidden == true;
+        AppLog.Write(hidden
+            ? "show requested: widget hidden by fullscreen or auto-hide, left hidden"
+            : "show requested: widget re-placed and flashed");
         _docking?.InvalidateLayout();
+        if (!hidden)
+        {
+            _widget?.Flash();
+        }
     });
 
     /// <summary>Creates a widget window plus its docking; also used when the docking asks for a new window.</summary>
@@ -141,9 +198,7 @@ public partial class App : Application
             RequiredWidths = widget.RequiredWidths,
         };
 
-        widget.DragModeToggled += on => docking.DragMode = on;
-        widget.ResetPositionRequested += () => ResetPosition(docking);
-        widget.ExitRequested += () => _ = ExitAsync();
+        WireMenu(widget, docking);
         widget.RequiredWidthsChanged += docking.InvalidateLayout;
         widget.LocationChanged += (_, _) => _controller?.OnWidgetMoved(); // open flyout/toast follow the widget
         widget.SizeChanged += (_, _) => _controller?.OnWidgetMoved();
@@ -224,11 +279,13 @@ public partial class App : Application
         {
             if (session.Snapshot.State is not (SessionState.Idle or SessionState.Failed))
             {
-                await session.StopAsync(); // exit confirmation dialog arrives with Task 16
+                await session.StopAsync(); // confirmed in RequestExitAsync; the Job Object kills whatever remains
             }
             await session.DisposeAsync();
         }
         LogWindow.CloseIfOpen();
+        _importFlow?.CloseIfOpen();
+        _controller?.CloseDialogs();
         _docking?.Stop();
         _widget?.Close();
         _viewModel?.Dispose();
@@ -239,12 +296,40 @@ public partial class App : Application
         }
         AppLog.Write("FlutterBar.App exit");
         AppLog.Flush(TimeSpan.FromSeconds(1)); // window is gone: nothing left to stall
+        _instance?.Dispose(); // on the UI thread, which acquired it
         Shutdown();
+    }
+
+    private void InstallGlobalHandlers()
+    {
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        // Terminating: write synchronously, AppLog's queue would never be flushed.
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            DiagLog.Write($"unhandled exception (terminating={args.IsTerminating}): {args.ExceptionObject.GetType().FullName}", args.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            AppLog.Write("unobserved task exception", args.Exception);
+            args.SetObserved();
+        };
     }
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         AppLog.Write("unhandled UI exception (kept running)", e.Exception);
         e.Handled = true;
+        var now = DateTime.UtcNow;
+        if (now - _lastErrorToast < TimeSpan.FromSeconds(10) || _controller is not { } controller)
+        {
+            return; // no toast storm: at most one per 10 s
+        }
+        _lastErrorToast = now;
+        try
+        {
+            controller.ShowToast(UiText.UnexpectedError);
+        }
+        catch (Exception ex) // the handler itself must not throw (that would end the process)
+        {
+            AppLog.Write("error toast could not be shown", ex);
+        }
     }
 }

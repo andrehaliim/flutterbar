@@ -222,7 +222,7 @@ internal sealed partial class AppController
         }
         else
         {
-            AppLog.Write($"Import dari IDE requested for {root}: no handler yet (Task 16 wires ImportRequested)");
+            AppLog.Write($"Import dari IDE requested for {root}: no ImportRequested handler");
         }
     }
 

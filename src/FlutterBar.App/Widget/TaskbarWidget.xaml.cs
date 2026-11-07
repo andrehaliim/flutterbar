@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using FlutterBar.App.Menu;
 using FlutterBar.Core.Layout;
 using FlutterBar.Core.Sessions;
 
@@ -24,6 +25,7 @@ internal sealed partial class TaskbarWidget : Window
     private IReadOnlyDictionary<WidgetSize, double>? _measured;
     private bool _remeasurePending;
     private bool _dragCue;
+    private DispatcherTimer? _flash;
 
     public TaskbarWidget(WidgetViewModel vm)
     {
@@ -32,6 +34,8 @@ internal sealed partial class TaskbarWidget : Window
         _dots = [DotFull, DotCompact, DotButtons];
         _blink = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = TimeSpan.FromMilliseconds(500) };
         _blink.Tick += OnBlink;
+        Menu = new WidgetContextMenu();
+        ContextMenu = Menu;
         DataContext = vm;
         vm.PropertyChanged += OnViewModelChanged;
         Closed += OnClosed;
@@ -40,11 +44,8 @@ internal sealed partial class TaskbarWidget : Window
         ApplyFrame();
     }
 
-    public event Action<bool>? DragModeToggled;
-
-    public event Action? ResetPositionRequested;
-
-    public event Action? ExitRequested;
+    /// <summary>The right-click menu (spec §7.4); the app subscribes to its events.</summary>
+    public WidgetContextMenu Menu { get; }
 
     /// <summary>Content changed so the required widths changed: the docking must re-evaluate the placement.</summary>
     public event Action? RequiredWidthsChanged;
@@ -79,9 +80,22 @@ internal sealed partial class TaskbarWidget : Window
     public void SetDragCue(bool on)
     {
         _dragCue = on;
-        DragItem.IsChecked = on;
+        Menu.DragChecked = on;
         Cursor = on ? Cursors.SizeWE : null;
         ApplyFrame();
+    }
+
+    /// <summary>Second launch / <c>show</c>: one short accent pulse of the frame so the user sees where the widget is.</summary>
+    public void Flash()
+    {
+        _flash?.Stop();
+        Frame.SetResourceReference(Border.BorderBrushProperty, "Fb.Accent");
+        _flash = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Normal, (t, _) =>
+        {
+            ((DispatcherTimer)t!).Stop();
+            _flash = null;
+            ApplyFrame();
+        }, Dispatcher);
     }
 
     private Dictionary<WidgetSize, double> MeasureLayouts()
@@ -203,17 +217,12 @@ internal sealed partial class TaskbarWidget : Window
         ToolTip = _vm.TaskbarFull ? TaskbarFullText : null;
     }
 
-    private void OnDragItemClick(object sender, RoutedEventArgs e) => DragModeToggled?.Invoke(DragItem.IsChecked);
-
-    private void OnResetClick(object sender, RoutedEventArgs e) => ResetPositionRequested?.Invoke();
-
-    private void OnExitClick(object sender, RoutedEventArgs e) => ExitRequested?.Invoke();
-
     private void OnClosed(object? sender, EventArgs e)
     {
         _vm.PropertyChanged -= OnViewModelChanged;
         _blink.Stop();
         _blink.Tick -= OnBlink;
+        _flash?.Stop();
         DataContext = null;
     }
 }
