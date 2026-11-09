@@ -1,4 +1,6 @@
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Native;
 using FlutterBar.Core.Docking;
@@ -9,7 +11,9 @@ namespace FlutterBar.App.Docking;
 /// <summary>
 /// "Drag widget" mode (spec §7.3): horizontal move with mouse capture (never <c>Window.DragMove</c>, which activates the
 /// window and moves both axes). The gesture only works while Drag widget is checked, so normal clicks on chips and
-/// buttons never start it. Layout is not recomputed meanwhile. The width only comes from the Size menu (no manual resize).
+/// buttons never start it. Even in drag mode a press is only a pending gesture: the move (and the capture) starts once
+/// the cursor travelled the system drag distance, so a click without movement still reaches the chips and buttons.
+/// Layout is not recomputed meanwhile. The width only comes from the Size menu (no manual resize).
 /// </summary>
 internal sealed partial class TaskbarDocking
 {
@@ -23,6 +27,9 @@ internal sealed partial class TaskbarDocking
     private enum Gesture
     {
         None,
+
+        /// <summary>Pressed in drag mode but not moved far enough yet: the press still belongs to the clicked control.</summary>
+        Pending,
         Move,
     }
 
@@ -91,24 +98,29 @@ internal sealed partial class TaskbarDocking
 
     private void OnDragDown(object sender, MouseButtonEventArgs e)
     {
-        if (!_dragMode || _dead || _gesture != Gesture.None)
+        // A Pending press whose release happened outside the window is simply replaced.
+        if (!_dragMode || _dead || _gesture == Gesture.Move)
         {
             return;
         }
         if (!NativeMethods.GetCursorPos(out var p) || NativeMethods.WindowBox(_hwnd) is not { } win)
         {
+            _gesture = Gesture.None;
             return;
         }
-        _gesture = Gesture.Move;
+        // Not handled: until the cursor moves, the press belongs to the chip/button under it (a plain click works).
+        _gesture = Gesture.Pending;
         _gestureStartCursor = p.X;
         _gestureStartRect = win;
-        _window.CaptureMouse();
-        e.Handled = true; // in drag mode a press never reaches the chips/buttons
     }
 
     private void OnDragMove(object sender, MouseEventArgs e)
     {
-        if (_gesture == Gesture.None || !_window.IsMouseCaptured)
+        if (_gesture == Gesture.Pending && !TryStartMove(e))
+        {
+            return;
+        }
+        if (_gesture != Gesture.Move || !_window.IsMouseCaptured)
         {
             return;
         }
@@ -128,9 +140,45 @@ internal sealed partial class TaskbarDocking
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Pending → Move once the cursor travelled the system drag distance (physical px). Capturing the window takes the
+    /// capture away from a pressed Button, which then releases without a Click.
+    /// </summary>
+    private bool TryStartMove(MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            _gesture = Gesture.None; // released outside the window: no up event reached us
+            return false;
+        }
+        if (!NativeMethods.GetCursorPos(out var p))
+        {
+            return false;
+        }
+        var threshold = SystemParameters.MinimumHorizontalDragDistance * VisualTreeHelper.GetDpi(_window).DpiScaleX;
+        if (Math.Abs(p.X - _gestureStartCursor) < threshold)
+        {
+            return false;
+        }
+        // Still Pending while capturing: the pressed Button's LostMouseCapture bubbles up to the window (OnLostCapture).
+        if (!_window.CaptureMouse())
+        {
+            _gesture = Gesture.None;
+            return false;
+        }
+        _gesture = Gesture.Move;
+        AppLog.Write($"drag start inst={_id} x={_gestureStartRect.Left}");
+        return true;
+    }
+
     private void OnDragUp(object sender, MouseButtonEventArgs e)
     {
-        if (_gesture == Gesture.None)
+        if (_gesture == Gesture.Pending)
+        {
+            _gesture = Gesture.None; // no movement: the click goes through to the control
+            return;
+        }
+        if (_gesture != Gesture.Move)
         {
             return;
         }
@@ -140,7 +188,8 @@ internal sealed partial class TaskbarDocking
 
     private void OnLostCapture(object sender, MouseEventArgs e)
     {
-        if (_gesture == Gesture.None)
+        // Only the window losing its own capture ends a move; a child's LostMouseCapture also bubbles up here.
+        if (_gesture != Gesture.Move || _window.IsMouseCaptured)
         {
             return;
         }

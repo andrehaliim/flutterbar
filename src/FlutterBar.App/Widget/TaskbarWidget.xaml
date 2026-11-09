@@ -150,9 +150,6 @@
                             ToolTip="{Binding ConfigToolTip}" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Config" />
                     <Button Style="{StaticResource Style.Chip}" Content="{Binding DeviceName}" Command="{Binding DeviceChipCommand}" ToolTip="Device"
                             AutomationProperties.Name="Device" />
-                    <TextBlock Text="{Binding Controls.StatusText}" MaxWidth="160" TextTrimming="CharacterEllipsis" Margin="4,0,0,0"
-                               VerticalAlignment="Center" Foreground="{DynamicResource Fb.Muted}"
-                               Visibility="{Binding Controls.ShowProgress, Converter={StaticResource BoolToVis}}" />
                 </StackPanel>
             </DockPanel>
 

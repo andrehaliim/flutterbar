@@ -45,7 +45,7 @@ public sealed class SessionControlsTests
     [Fact]
     public void Starting_NoProgressYet_DefaultText()
     {
-        Assert.Equal("Memulai…", SessionControls.From(Snap(SessionState.Starting)).StatusText);
+        Assert.Equal("Starting…", SessionControls.From(Snap(SessionState.Starting)).StatusText);
     }
 
     [Fact]
@@ -122,6 +122,7 @@ public sealed class SessionControlsTests
         var c = SessionControls.From(Snap(SessionState.Stopping));
 
         Assert.Equal(StatusDot.Stopping, c.Dot);
+        Assert.Equal("Stopping…", c.StatusText);
         Assert.False(c.ShowRun || c.ShowReload || c.ShowRestart || c.ShowStop);
     }
 

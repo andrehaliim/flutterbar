@@ -27,7 +27,7 @@ public class NoIndonesianStringsTests
         "menghapus", "dibuka", "membuka", "menyalin", "kembali", "simpan", "hapus", "lihat", "pilihan",
         "daftar", "tutup", "baca", "pindah", "harus", "berupa", "menunggu", "kesalahan", "menyiapkan",
         "berikutnya", "sebelumnya", "selesai", "siap", "membutuhkan", "angka", "notifikasi", "absolut",
-        "nyalakan", "menyalakan", "mengalami", "tambahkan", "wajib", "diisi", "diimpor", "ditolak", "bernilai", "berisi", "stabilitas", "terbaca", "dihentikan", "tepat", "kiri", "kanan", "boleh", "kedalaman", "ditelusuri",
+        "nyalakan", "menyalakan", "mengalami", "tambahkan", "wajib", "diisi", "diimpor", "ditolak", "bernilai", "berisi", "stabilitas", "terbaca", "dihentikan", "tepat", "kiri", "kanan", "boleh", "kedalaman", "ditelusuri", "memulai", "menghentikan",
     ];
 
     private static readonly Regex WordRegex = new(

@@ -316,7 +316,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 | State | Titik status | Tombol |
 |---|---|---|
 | Idle | abu-abu | ▶ (aktif kalau config dan device sudah dipilih) |
-| Starting | kuning berkedip, progress tampil di tooltip atau di layout lengkap | ⏳ ⏹ (⏹ membatalkan build) |
+| Starting | kuning berkedip, progress tampil di tooltip ⏳ dan titik status (juga tercatat di log; tidak ada teks di samping chip) | ⏳ ⏹ (⏹ membatalkan build) |
 | Running | hijau | ⚡ 🔄 ⏹ |
 | Reloading | hijau, tombol yang ditekan berubah jadi spinner | ⚡ 🔄 ⏹ (request kedua ditolak selama masih reloading) |
 | Stopping | abu-abu berkedip | — |
@@ -376,7 +376,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Mendukung taskbar rata tengah maupun rata kiri.
 - **Posisi `manual`:** deteksi `auto` tidak bisa melihat widget overlay pihak ketiga (mis. TrafficMonitor) yang tidak
   muncul di taskbar UI Automation, sehingga ada mode manual. Run pertama = `auto`. Dengan "Drag widget" dicentang,
-  user menggeser widget secara horizontal (Y tetap menempel taskbar); saat dicentang lagi/dimatikan, posisi terkunci dan
+  user menggeser widget secara horizontal (Y tetap menempel taskbar; geser baru dimulai setelah kursor bergerak sejauh jarak drag sistem, jadi klik tanpa gerakan tetap mengenai chip/tombol); saat dicentang lagi/dimatikan, posisi terkunci dan
   disimpan sebagai `widget.offsetFromRight` = jarak dari tepi KANAN taskbar dalam piksel fisik (tahan terhadap
   perubahan tombol aplikasi/rata taskbar; di-clamp ke taskbar bila resolusi berubah). Mode manual TIDAK menghindari
   tombol aplikasi; owner, topmost, fullscreen, dan auto-hide tetap berlaku. "Reset to auto position" kembali ke `auto`.
@@ -429,6 +429,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **Toolbar:** pencarian (filter teks), toggle "Errors only", lompat ke error sebelumnya/berikutnya,
   Clear (mengosongkan tampilan, buffer CLI tidak ikut kosong), dan Copy (pilihan atau semua).
 - **Auto-scroll:** berhenti saat user scroll ke atas, dan aktif lagi saat kembali ke bawah.
+  Selama tidak mengikuti bagian bawah (dan ada yang bisa di-scroll), tombol bulat "Jump to latest" muncul di pojok kanan
+  bawah daftar; klik atau `Ctrl+End` loncat ke baris terbaru dan auto-scroll aktif lagi.
 
 ## 9. CLI `flutterbar`
 

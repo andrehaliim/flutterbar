@@ -49,7 +49,7 @@ public sealed record SessionControls(
         switch (snapshot.State)
         {
             case SessionState.Starting:
-                return Buttons(StatusDot.Starting, snapshot.Progress ?? "Memulai…", progress: true, run: false, reload: false, stop: true);
+                return Buttons(StatusDot.Starting, snapshot.Progress ?? "Starting…", progress: true, run: false, reload: false, stop: true);
 
             case SessionState.Running:
                 {
@@ -70,7 +70,7 @@ public sealed record SessionControls(
                 }
 
             case SessionState.Stopping:
-                return Buttons(StatusDot.Stopping, "Menghentikan…", progress: false, run: false, reload: false, stop: false);
+                return Buttons(StatusDot.Stopping, "Stopping…", progress: false, run: false, reload: false, stop: false);
 
             case SessionState.Failed:
                 return Buttons(StatusDot.Error, snapshot.FailureMessage ?? "App stopped", progress: false, run: true, reload: false, stop: false);

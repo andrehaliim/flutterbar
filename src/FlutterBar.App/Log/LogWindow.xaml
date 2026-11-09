@@ -46,6 +46,36 @@
             <Setter Property="Width" Value="28" />
         </Style>
 
+        <!-- Round "jump to latest" button floating over the bottom-right of the list (clear of the scrollbar). -->
+        <Style x:Key="Log.JumpButton" TargetType="Button">
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,0,28,14" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="FontFamily" Value="{StaticResource Log.Icons}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="Content" Value="&#xE896;" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{DynamicResource Fb.Chip}" BorderBrush="{DynamicResource Fb.Separator}"
+                                BorderThickness="1" CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Fb.Hover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="Log.ToggleButton" TargetType="ToggleButton">
             <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
             <Setter Property="Padding" Value="10,4" />
@@ -259,13 +289,18 @@
 
         <Rectangle DockPanel.Dock="Top" Height="1" Fill="{DynamicResource Fb.Separator}" />
 
-        <ListBox x:Name="List" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource Log.RowTemplate}"
-                 ItemContainerStyle="{StaticResource Log.ItemContainer}" SelectionMode="Extended"
-                 Background="Transparent" BorderThickness="0" Foreground="{DynamicResource Fb.Foreground}"
-                 FontFamily="{StaticResource Log.Mono}" FontSize="12.5"
-                 VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
-                 VirtualizingPanel.ScrollUnit="Item" ScrollViewer.CanContentScroll="True"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 MouseDoubleClick="OnListDoubleClick" AutomationProperties.Name="Log" />
+        <Grid>
+            <ListBox x:Name="List" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource Log.RowTemplate}"
+                     ItemContainerStyle="{StaticResource Log.ItemContainer}" SelectionMode="Extended"
+                     Background="Transparent" BorderThickness="0" Foreground="{DynamicResource Fb.Foreground}"
+                     FontFamily="{StaticResource Log.Mono}" FontSize="12.5"
+                     VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                     VirtualizingPanel.ScrollUnit="Item" ScrollViewer.CanContentScroll="True"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     MouseDoubleClick="OnListDoubleClick" AutomationProperties.Name="Log" />
+            <!-- Shown only while the list is scrolled away from the end (LogWindow.UpdateJumpButton); Ctrl+End does the same. -->
+            <Button x:Name="JumpButton" Style="{StaticResource Log.JumpButton}" Click="OnJumpToLatestClick"
+                    ToolTip="Jump to latest (Ctrl+End)" AutomationProperties.Name="Jump to latest" />
+        </Grid>
     </DockPanel>
 </Window>

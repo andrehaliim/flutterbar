@@ -34,6 +34,17 @@ public partial class LogWindow : Window
     /// <summary>What to restore after the rows were rebuilt (rows are new objects: identity is the Seq of the line).</summary>
     private sealed record ResetState(long? FirstVisibleSeq, HashSet<long> SelectedSeqs);
 
+    /// <summary>"Follow the end" flag; every change also refreshes the jump-to-latest button.</summary>
+    private bool AtBottom
+    {
+        get => _atBottom;
+        set
+        {
+            _atBottom = value;
+            UpdateJumpButton();
+        }
+    }
+
     private LogWindow(LogBuffer buffer)
     {
 #if DEBUG
@@ -50,6 +61,7 @@ public partial class LogWindow : Window
         InputBindings.Add(new KeyBinding(new RelayKeyCommand(() => SearchBox.Focus()), Key.F, ModifierKeys.Control));
         InputBindings.Add(new KeyBinding(new RelayKeyCommand(() => Navigate(forward: true)), Key.F3, ModifierKeys.None));
         InputBindings.Add(new KeyBinding(new RelayKeyCommand(() => Navigate(forward: false)), Key.F3, ModifierKeys.Shift));
+        PreviewKeyDown += OnPreviewKeyDown;
 #if DEBUG
         PreviewKeyDown += OnDebugKeyDown;
 #endif
@@ -132,13 +144,39 @@ public partial class LogWindow : Window
         var now = IsAtBottom(sv);
         if (e.ExtentHeightChange == 0)
         {
-            _atBottom = now; // the user scrolled (or the window was resized)
+            AtBottom = now; // the user scrolled (or the window was resized)
         }
         else if (now)
         {
-            _atBottom = true; // content shrank until the end is in view
+            AtBottom = true; // content shrank until the end is in view
         }
         // else: content grew; stay "at bottom" if we were, and OnRowsChanged scrolls
+        UpdateJumpButton(); // the extent may have changed (the button needs something to scroll to)
+    }
+
+    /// <summary>Jump to latest: visible only while the list stopped following the end and there is something below.</summary>
+    private void UpdateJumpButton()
+    {
+        var show = !_atBottom && _scroll is { } sv && sv.ExtentHeight > sv.ViewportHeight;
+        JumpButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnJumpToLatestClick(object sender, RoutedEventArgs e) => JumpToLatest();
+
+    private void JumpToLatest()
+    {
+        AtBottom = true;
+        ScrollToEnd();
+    }
+
+    // Preview so Ctrl+End also works while the list or the search box has focus (both handle End themselves).
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.End && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            e.Handled = true;
+            JumpToLatest();
+        }
     }
 
     // Rows are about to be replaced: remember the first visible line and the selection.
@@ -226,7 +264,7 @@ public partial class LogWindow : Window
     {
         if (seq is not { } target)
         {
-            _atBottom = true;
+            AtBottom = true;
             ScrollToEnd();
             return;
         }
@@ -239,7 +277,7 @@ public partial class LogWindow : Window
         }
         if (index < 0)
         {
-            _atBottom = true; // the line was evicted from the buffer
+            AtBottom = true; // the line was evicted from the buffer
             ScrollToEnd();
             return;
         }
@@ -248,7 +286,7 @@ public partial class LogWindow : Window
 
     private void SelectAndReveal(LogRow row)
     {
-        _atBottom = false;
+        AtBottom = false;
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
         {
             List.SelectedItems.Clear();

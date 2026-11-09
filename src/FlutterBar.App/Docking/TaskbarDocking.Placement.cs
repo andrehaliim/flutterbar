@@ -187,7 +187,7 @@ internal sealed partial class TaskbarDocking
             {
                 NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
             }
-            var move = _gesture == Gesture.None && NativeMethods.WindowBox(_hwnd) != new Box(x, y, x + w, y + h);
+            var move = _gesture != Gesture.Move && NativeMethods.WindowBox(_hwnd) != new Box(x, y, x + w, y + h);
             var flags = NativeMethods.SWP_NOACTIVATE | (move ? 0 : NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE);
             if (TopmostSuspended)
             {
