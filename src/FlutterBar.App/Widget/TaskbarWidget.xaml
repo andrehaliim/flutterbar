@@ -2,12 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="FlutterBar"
-        WindowStyle="None" AllowsTransparency="False" ShowInTaskbar="False" Topmost="True"
+        WindowStyle="None" AllowsTransparency="True" ShowInTaskbar="False" Topmost="True"
         ShowActivated="False" ResizeMode="NoResize" Width="300" Height="40"
         UseLayoutRounding="True" SnapsToDevicePixels="True"
-        Background="{DynamicResource Fb.Background}" Foreground="{DynamicResource Fb.Foreground}"
+        Background="Transparent" Foreground="{DynamicResource Fb.Foreground}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12">
-    <!-- ShowInTaskbar/Owner must not be touched after creation: the owner is set to Shell_TrayWnd by TaskbarDocking. -->
+    <!-- ShowInTaskbar/Owner must not be touched after creation: the owner is set to Shell_TrayWnd by TaskbarDocking.
+         AllowsTransparency (layered window) so the background can be translucent: Backdrop below carries Fb.Background with
+         the user's opacity (spec §7.6), the content above stays opaque. -->
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <FontFamily x:Key="Style.IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
@@ -129,69 +131,72 @@
 
     <!-- Right-click menu: Menu/WidgetContextMenu, assigned in code (Task 16). -->
 
-    <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
-        <!-- All three sizes stay in the tree (Hidden, not Collapsed) so each can be measured for the size choice. -->
-        <Grid x:Name="Root" ClipToBounds="True">
-            <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | Flutter tools, log (console glyph) -->
-            <DockPanel x:Name="FullPanel" Margin="6,0" LastChildFill="True">
-                <Ellipse x:Name="DotFull" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Rectangle Style="{StaticResource Style.Separator}" />
-                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
-                    <Rectangle Style="{StaticResource Style.Separator}" />
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
-                            Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
-                        <Path Style="{StaticResource Style.FlutterLogo}" />
-                    </Button>
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
-                            Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
-                    <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
-                            AutomationProperties.Name="Project" />
-                    <!-- Collapsed when the project is not a git repo (spec §5.5) -->
-                    <Button Style="{StaticResource Style.Chip}" Command="{Binding BranchChipCommand}" ToolTip="{Binding BranchToolTip}" ContentTemplate="{x:Null}"
-                            AutomationProperties.Name="Branch" Visibility="{Binding BranchVisible, Converter={StaticResource BoolToVis}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#x2387;" FontFamily="Segoe UI Symbol" Margin="0,0,4,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Branch}" MaxWidth="140" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                            <TextBlock Text="&#xE70D;" FontFamily="{StaticResource Style.IconFont}" FontSize="8" Margin="6,1,0,0"
-                                       Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource Style.ConfigChip}" Content="{Binding ConfigName}" Command="{Binding ConfigChipCommand}"
-                            ToolTip="{Binding ConfigToolTip}" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Config" />
-                    <Button Style="{StaticResource Style.Chip}" Content="{Binding DeviceName}" Command="{Binding DeviceChipCommand}" ToolTip="Device"
-                            AutomationProperties.Name="Device" />
-                </StackPanel>
-            </DockPanel>
+    <Grid>
+        <Border x:Name="Backdrop" Background="{DynamicResource Fb.Background}" Opacity="{Binding BackgroundOpacity}" />
+        <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
+            <!-- All three sizes stay in the tree (Hidden, not Collapsed) so each can be measured for the size choice. -->
+            <Grid x:Name="Root" ClipToBounds="True">
+                <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | Flutter tools, log (console glyph) -->
+                <DockPanel x:Name="FullPanel" Margin="6,0" LastChildFill="True">
+                    <Ellipse x:Name="DotFull" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Rectangle Style="{StaticResource Style.Separator}" />
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
+                        <Rectangle Style="{StaticResource Style.Separator}" />
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
+                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
+                            <Path Style="{StaticResource Style.FlutterLogo}" />
+                        </Button>
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
+                        <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
+                                AutomationProperties.Name="Project" />
+                        <!-- Collapsed when the project is not a git repo (spec §5.5) -->
+                        <Button Style="{StaticResource Style.Chip}" Command="{Binding BranchChipCommand}" ToolTip="{Binding BranchToolTip}" ContentTemplate="{x:Null}"
+                                AutomationProperties.Name="Branch" Visibility="{Binding BranchVisible, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#x2387;" FontFamily="Segoe UI Symbol" Margin="0,0,4,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Branch}" MaxWidth="140" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock Text="&#xE70D;" FontFamily="{StaticResource Style.IconFont}" FontSize="8" Margin="6,1,0,0"
+                                           Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Style.ConfigChip}" Content="{Binding ConfigName}" Command="{Binding ConfigChipCommand}"
+                                ToolTip="{Binding ConfigToolTip}" ToolTipService.ShowOnDisabled="True" AutomationProperties.Name="Config" />
+                        <Button Style="{StaticResource Style.Chip}" Content="{Binding DeviceName}" Command="{Binding DeviceChipCommand}" ToolTip="Device"
+                                AutomationProperties.Name="Device" />
+                    </StackPanel>
+                </DockPanel>
 
-            <!-- Compact: ● Configuration ▾ | buttons | Flutter tools, log (console glyph); the tooltip lists the current selection -->
-            <DockPanel x:Name="CompactPanel" Margin="6,0" LastChildFill="True" Visibility="Hidden">
-                <Ellipse x:Name="DotCompact" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Rectangle Style="{StaticResource Style.Separator}" />
-                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
-                    <Rectangle Style="{StaticResource Style.Separator}" />
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
-                            Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
-                        <Path Style="{StaticResource Style.FlutterLogo}" />
-                    </Button>
-                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
-                            Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
-                </StackPanel>
-                <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" Content="Configuration"
-                        HorizontalAlignment="Left" ToolTip="{Binding SelectionSummary}" AutomationProperties.Name="Configuration" />
-            </DockPanel>
+                <!-- Compact: ● Configuration ▾ | buttons | Flutter tools, log (console glyph); the tooltip lists the current selection -->
+                <DockPanel x:Name="CompactPanel" Margin="6,0" LastChildFill="True" Visibility="Hidden">
+                    <Ellipse x:Name="DotCompact" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Rectangle Style="{StaticResource Style.Separator}" />
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
+                        <Rectangle Style="{StaticResource Style.Separator}" />
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
+                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
+                            <Path Style="{StaticResource Style.FlutterLogo}" />
+                        </Button>
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
+                    </StackPanel>
+                    <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" Content="Configuration"
+                            HorizontalAlignment="Left" ToolTip="{Binding SelectionSummary}" AutomationProperties.Name="Configuration" />
+                </DockPanel>
 
-            <!-- ButtonsOnly: ● buttons (the dot opens the combined flyout, or the log when red) -->
-            <StackPanel x:Name="ButtonsPanel" Orientation="Horizontal" Margin="4,0" VerticalAlignment="Center" Visibility="Hidden">
-                <Button Style="{StaticResource Style.IconButton}" Command="{Binding StatusDotCommand}" ToolTip="{Binding StatusToolTip}"
-                        AutomationProperties.Name="Status">
-                    <Ellipse x:Name="DotButtons" Style="{StaticResource Style.Dot}" Margin="0" />
-                </Button>
-                <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
-            </StackPanel>
-        </Grid>
-    </Border>
+                <!-- ButtonsOnly: ● buttons (the dot opens the combined flyout, or the log when red) -->
+                <StackPanel x:Name="ButtonsPanel" Orientation="Horizontal" Margin="4,0" VerticalAlignment="Center" Visibility="Hidden">
+                    <Button Style="{StaticResource Style.IconButton}" Command="{Binding StatusDotCommand}" ToolTip="{Binding StatusToolTip}"
+                            AutomationProperties.Name="Status">
+                        <Ellipse x:Name="DotButtons" Style="{StaticResource Style.Dot}" Margin="0" />
+                    </Button>
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </Window>

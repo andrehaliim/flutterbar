@@ -108,6 +108,80 @@ public sealed class WidgetSettings
         set => _offsetFromRight = ManualPlacement.IsValidOffset(value) ? value : null;
     }
 
+    public const int MinBackgroundOpacity = 0;
+    public const int MaxBackgroundOpacity = 100;
+
+    private int _backgroundOpacity = MaxBackgroundOpacity;
+
+    /// <summary>
+    /// Opacity of the widget background in percent (spec §7.6); chips, icons and text stay opaque. Clamped to 0–100 on load
+    /// and on assignment. 0 is drawn with alpha ≈1.5/255 (<c>WidgetViewModel.BackgroundOpacity</c>): a fully transparent
+    /// pixel of the layered window would pass clicks through to the taskbar.
+    /// </summary>
+    [JsonConverter(typeof(LenientPercentConverter))]
+    public int BackgroundOpacity
+    {
+        get => _backgroundOpacity;
+        set => _backgroundOpacity = Math.Clamp(value, MinBackgroundOpacity, MaxBackgroundOpacity);
+    }
+
+    public const string ThemeSystem = "system";
+    public const string ThemeLight = "light";
+    public const string ThemeDark = "dark";
+
+    private string _theme = ThemeSystem;
+
+    /// <summary>
+    /// Colours of every FlutterBar window (spec §7.6): <c>system</c> follows the taskbar theme, <c>light</c> / <c>dark</c>
+    /// override it. Anything else (also a hand-edited non-string) reads as <c>system</c>.
+    /// </summary>
+    [JsonConverter(typeof(LenientThemeConverter))]
+    public string Theme
+    {
+        get => _theme;
+        set => _theme = NormalizeTheme(value);
+    }
+
+    internal static string NormalizeTheme(string? value) => value?.Trim().ToLowerInvariant() switch
+    {
+        ThemeLight => ThemeLight,
+        ThemeDark => ThemeDark,
+        _ => ThemeSystem,
+    };
+}
+
+/// <summary>Hand-edited theme: a string is normalized by <see cref="WidgetSettings.Theme"/>; any other token reads as <c>system</c>.</summary>
+internal sealed class LenientThemeConverter : JsonConverter<string>
+{
+    public override bool HandleNull => true;
+
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            return WidgetSettings.NormalizeTheme(reader.GetString());
+        }
+        if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+        {
+            reader.Skip();
+        }
+        return WidgetSettings.ThemeSystem;
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => writer.WriteStringValue(value);
+}
+
+/// <summary>Hand-edited percent: read like <see cref="LenientOffsetConverter"/>; anything unreadable reads as fully opaque.</summary>
+internal sealed class LenientPercentConverter : JsonConverter<int>
+{
+    private static readonly LenientOffsetConverter Inner = new();
+
+    public override bool HandleNull => true;
+
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        Inner.Read(ref reader, typeof(int?), options) ?? WidgetSettings.MaxBackgroundOpacity;
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) => writer.WriteNumberValue(value);
 }
 
 /// <summary>

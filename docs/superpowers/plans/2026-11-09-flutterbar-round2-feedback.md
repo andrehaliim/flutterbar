@@ -2,14 +2,14 @@
 
 **Goal:** Menerapkan 9 temuan dari uji manual putaran 2: teks progress di samping chip device dihapus, klik tetap
 berfungsi saat Drag widget aktif, tombol loncat ke log terbaru, redesign mode Compact, tombol
-Flutter (clean / pub get / doctor / build_runner) dan Open terminal, mirror layar HP via scrcpy, widget di taskbar
+Flutter (clean / pub get / doctor / build_runner) dan Open terminal, slider opacity background widget (pengganti
+mirror layar HP via scrcpy), widget di taskbar
 monitor kedua, dan sisa teks Indonesia di `SessionControls`.
 
 **Architecture:** Perubahan di atas codebase yang ada (`src/FlutterBar.Core`, `src/FlutterBar.App`). Logika baru
-(perintah flutter, peluncur terminal, peluncur scrcpy) di Core dengan unit test; UI tetap tipis.
+(perintah flutter, peluncur terminal) di Core dengan unit test; UI tetap tipis.
 
-**Tech Stack:** C# / .NET 10 (`net10.0-windows`), WPF, xUnit. Tidak ada package baru. scrcpy = program eksternal
-opsional yang diinstal user sendiri.
+**Tech Stack:** C# / .NET 10 (`net10.0-windows`), WPF, xUnit. Tidak ada package baru.
 
 **Spec:** `docs/superpowers/specs/2026-11-06-flutterbar-design.md` (diperbarui per batch).
 
@@ -20,7 +20,7 @@ opsional yang diinstal user sendiri.
 - Satu batch = satu commit, dilakukan oleh user (agen hanya memberi commit message).
 - Verifikasi per batch: `dotnet format --include <file yang diubah>`, `dotnet build FlutterBar.sln` (Debug dan
   Release) tanpa warning, `dotnet test` hijau, baris baru di `docs/manual-test-checklist.md` (`BELUM DIUJI (user)`).
-- Mockup ditunjukkan dan disetujui user sebelum batch UI baru (batch 2, 4, 5).
+- Mockup ditunjukkan dan disetujui user sebelum batch UI baru (batch 2, 3, 4, 5).
 
 ## Keputusan user (2026-11-09)
 
@@ -29,7 +29,7 @@ opsional yang diinstal user sendiri.
 | 2 | Di mode drag, klik tanpa gerakan tetap jadi klik biasa; drag baru mulai setelah melewati jarak minimum |
 | 3 | Tombol mengambang "↓ Latest" (hanya saat tidak di bawah) + `Ctrl+End` |
 | 4 | Clean, Pub get, Clean + pub get, Doctor, build_runner (hanya bila ada di pubspec); flyout berupa daftar baris (mockup opsi A) |
-| 5 | Tombol HP di samping log, hanya untuk HP Android fisik; scrcpy diinstal user |
+| 5 | Mirror via scrcpy **dibatalkan** (user 2026-11-09); diganti submenu klik kanan **Style**: slider opacity background widget (mockup opsi A), 0–100% (0% digambar opacity 1,5/255 supaya klik tidak tembus), plus Theme System / Light / Dark (`widget.theme`) |
 | 6 | Pindah via menu *Show on ▸*, tanpa duplikat; spike dulu |
 | 7 | Chip jadi tab (daftar di bawahnya, satu popup), label "Configuration", tooltip nilai aktif, juga untuk Buttons only; default ukuran tetap Full (user 2026-11-09, setelah sempat diputuskan Compact) |
 | 8 | Di flyout Flutter dan menu klik kanan; `wt.exe`, fallback PowerShell |
@@ -82,15 +82,18 @@ opsional yang diinstal user sendiri.
 - [ ] Open terminal: `wt.exe -d <root>`, fallback `powershell.exe -NoExit` (working dir = root), PATH segar dari registry.
 - [ ] Tombol logo Flutter (vector `Path` monokrom) di Full dan Compact; cek ulang lebar dan fallback ukuran.
 
-### Batch 5: Mirror layar HP via scrcpy (temuan 5)
+### Batch 5: Slider opacity background widget (pengganti temuan 5)
 
-**Files:** baru `src/FlutterBar.Core/Devices/ScrcpyLauncher.cs` + test; ubah `TaskbarWidget.xaml`, `WidgetViewModel.cs`,
-`AppController*.cs`, spec, checklist.
+**Files:** `src/FlutterBar.Core/Settings/AppSettings.cs` + test, `src/FlutterBar.App/Widget/TaskbarWidget.xaml`,
+`src/FlutterBar.App/Widget/WidgetViewModel.cs`, `src/FlutterBar.App/Menu/MenuStyles.xaml`,
+`src/FlutterBar.App/Menu/WidgetContextMenu.xaml(.cs)`, `src/FlutterBar.App/App.Menu.cs`, `src/FlutterBar.App/App.xaml.cs`,
+spec §7.4/§7.6, checklist.
 
-- [ ] `scrcpy -s <id> --window-title <nama>` dengan env `ADB=<AdbLocator>`, diluncurkan terlepas (bukan job
-  kill-on-close); jendela yang sudah ada difokuskan.
-- [ ] Tombol hanya untuk device `Platform` diawali `android` dan `!IsEmulator`; tanpa scrcpy → toast berisi
-  `winget install Genymobile.scrcpy`.
+- [ ] `widget.backgroundOpacity` (persen, default 100, clamp 10–100, nilai rusak dibaca 100).
+- [ ] Widget jadi layered window (`AllowsTransparency=True`), lapisan `Backdrop` = `Fb.Background` dengan opacity
+  setting; chip/ikon/teks tetap penuh.
+- [ ] Submenu "Style" berisi slider (langkah 5%), diterapkan langsung, disimpan saat menu ditutup.
+- [ ] Style ▸ Theme: System / Light / Dark (`widget.theme`, `TaskbarTheme.Mode`), langsung diterapkan dan disimpan.
 
 ### Batch 6: Widget di monitor kedua (temuan 6)
 

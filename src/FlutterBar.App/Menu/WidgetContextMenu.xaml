@@ -13,6 +13,39 @@
         <MenuItem x:Name="SizeCompact" Header="Compact" Click="OnSizeClick" />
         <MenuItem x:Name="SizeButtons" Header="Buttons only" Click="OnSizeClick" />
     </MenuItem>
+    <!-- Style (spec §7.6): background opacity slider (live while dragging, saved when the menu closes; range =
+         WidgetSettings.MinBackgroundOpacity..MaxBackgroundOpacity) and the theme override (applied and saved at once). -->
+    <MenuItem Header="Style">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE790;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+        <MenuItem Style="{StaticResource Fb.MenuControlItem}">
+            <MenuItem.Header>
+                <StackPanel Width="200">
+                    <DockPanel>
+                        <TextBlock x:Name="OpacityValue" DockPanel.Dock="Right" Text="100%" />
+                        <TextBlock Text="Background" />
+                    </DockPanel>
+                    <Slider x:Name="OpacitySlider" Style="{StaticResource Fb.Slider}" Margin="0,6,0,2" Minimum="0" Maximum="100" Value="100"
+                            SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True"
+                            ValueChanged="OnOpacityChanged" AutomationProperties.Name="Background opacity" />
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="100%" FontSize="11" Foreground="{DynamicResource Fb.Menu.Disabled}" />
+                        <TextBlock Text="0%" FontSize="11" Foreground="{DynamicResource Fb.Menu.Disabled}" />
+                    </DockPanel>
+                </StackPanel>
+            </MenuItem.Header>
+        </MenuItem>
+        <Separator Style="{StaticResource Fb.MenuSeparator}" />
+        <MenuItem Style="{StaticResource Fb.MenuControlItem}" Focusable="False" IsHitTestVisible="False">
+            <MenuItem.Header>
+                <TextBlock Text="Theme" FontSize="11" Foreground="{DynamicResource Fb.Menu.Disabled}" />
+            </MenuItem.Header>
+        </MenuItem>
+        <MenuItem x:Name="ThemeSystem" Header="System" Click="OnThemeClick" />
+        <MenuItem x:Name="ThemeLight" Header="Light" Click="OnThemeClick" />
+        <MenuItem x:Name="ThemeDark" Header="Dark" Click="OnThemeClick" />
+    </MenuItem>
     <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick">
         <MenuItem.Icon>
             <TextBlock Text="&#xE7C2;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />

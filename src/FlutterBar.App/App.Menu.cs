@@ -2,6 +2,7 @@ using FlutterBar.App.Diagnostics;
 using FlutterBar.App.Docking;
 using FlutterBar.App.Menu;
 using FlutterBar.App.Projects;
+using FlutterBar.App.Theme;
 using FlutterBar.App.Widget;
 using FlutterBar.Core.Integration;
 using FlutterBar.Core.Layout;
@@ -13,6 +14,7 @@ namespace FlutterBar.App;
 public partial class App
 {
     private StartupState? _startup; // last Run-key state read (null = unknown)
+    private bool _opacityChanged; // the slider moved since the menu opened: save when it closes
 
     private void WireMenu(TaskbarWidget widget, TaskbarDocking docking)
     {
@@ -22,11 +24,16 @@ public partial class App
         menu.StartupToggled += on => Observe(ToggleStartupAsync(menu, on), "Start with Windows");
         menu.CommandInvoked += command => OnMenuCommand(command, docking);
         menu.Opened += (_, _) => OnMenuOpened(menu);
+        menu.BackgroundOpacityChanged += ApplyBackgroundOpacity;
+        menu.Closed += (_, _) => SaveBackgroundOpacity();
+        menu.ThemeChosen += ChangeTheme;
     }
 
     private void OnMenuOpened(WidgetContextMenu menu)
     {
         menu.SetState(WidgetSizeNames.Parse(_settings.Widget.Size), _controller?.CurrentProject is not null);
+        menu.SetBackgroundOpacity(_settings.Widget.BackgroundOpacity);
+        menu.SetTheme(TaskbarTheme.ParseMode(_settings.Widget.Theme));
         ApplyStartup(menu);
         Observe(RefreshStartupAsync(menu), "Start with Windows"); // cached state first, the registry read follows
     }
@@ -93,6 +100,42 @@ public partial class App
         docking.PreferredSize = size; // re-evaluates the placement
         docking.InvalidateLayout();
         SaveSettings($"size={_settings.Widget.Size}");
+    }
+
+    /// <summary>Background opacity slider (spec §7.6): applied live while dragging, saved once when the menu closes.</summary>
+    private void ApplyBackgroundOpacity(int percent)
+    {
+        _settings.Widget.BackgroundOpacity = percent; // clamped by the setting
+        if (_viewModel is { } vm)
+        {
+            vm.BackgroundOpacity = _settings.Widget.BackgroundOpacity / 100.0;
+        }
+        _opacityChanged = true;
+    }
+
+    /// <summary>Style ▸ Theme (spec §7.6): every FlutterBar window switches at once (DynamicResource brushes), then saved.</summary>
+    private void ChangeTheme(ThemeChoice mode)
+    {
+        var setting = TaskbarTheme.ToSetting(mode);
+        if (setting == _settings.Widget.Theme)
+        {
+            return;
+        }
+        _settings.Widget.Theme = setting;
+        if (_theme is { } theme)
+        {
+            theme.Mode = mode;
+        }
+        SaveSettings($"theme={setting}");
+    }
+
+    private void SaveBackgroundOpacity()
+    {
+        if (_opacityChanged)
+        {
+            _opacityChanged = false;
+            SaveSettings($"backgroundOpacity={_settings.Widget.BackgroundOpacity}");
+        }
     }
 
     /// <summary>"Exit": with an active session the user confirms "Stop the session and exit?" first; then stop and exit.</summary>

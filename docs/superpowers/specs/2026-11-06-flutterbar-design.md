@@ -404,13 +404,14 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **Fullscreen:** kalau jendela foreground menutupi seluruh monitor (atau dari
   `SHQueryUserNotificationState`), widget disembunyikan.
 - **DPI:** per-monitor DPI aware (v2).
-- **Tema:** mengikuti `SystemUsesLightTheme` di registry (tema taskbar), dan berganti otomatis saat
-  tema berubah.
+- **Tema:** default mengikuti `SystemUsesLightTheme` di registry (tema taskbar), dan berganti otomatis saat
+  tema berubah; bisa dikunci ke Light/Dark lewat Style ▸ Theme (§7.6).
 - Versi pertama hanya tampil di taskbar monitor utama.
 - Project referensi boleh dipelajari sebagai rujukan pendekatan, tapi kodenya tidak disalin.
 
 ### 7.4 Menu klik kanan
 - Size: Full / Compact / Buttons only
+- Style: slider opacity background 0–100% (langkah 5%) dan Theme System / Light / Dark, §7.6
 - Drag widget (checkbox) / Reset to auto position
 - Manage projects: Root folders…, Add project…, Hidden projects…, Rescan
 - Import config from IDE…
@@ -435,6 +436,18 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Selesai: toast singkat; gagal: toast dengan tombol "Open log" (log dibuka di separator perintah); Doctor membuka log.
 - Open terminal: `wt.exe -d <root>` bila Windows Terminal terpasang, selain itu `powershell.exe -NoExit` di root, dengan
   PATH yang dibaca ulang dari registry.
+
+### 7.6 Style: opacity background dan tema
+- `widget.backgroundOpacity` (persen, default 100; di-clamp ke 0–100 saat load dan saat diisi; nilai yang tidak terbaca
+  = 100). 0% digambar dengan opacity 1,5/255 (±0,6%, alpha 1–2, tidak terlihat): piksel layered window yang benar-benar transparan
+  meneruskan klik ke taskbar, sehingga area kosong dan tombol ikon berlatar transparan tidak bisa diklik.
+- Widget adalah layered window (`AllowsTransparency=True`, background jendela transparan). Hanya lapisan latar
+  (`Fb.Background`) yang memakai opacity ini; chip, ikon, teks, dan garis tepi drag/taskbar penuh tetap penuh. Toast dan
+  flyout tidak terpengaruh.
+- Slider menerapkan nilai langsung saat digeser; settings disimpan sekali saat menu klik kanan ditutup.
+- `widget.theme`: `system` (default, ikut tema taskbar), `light`, atau `dark`; nilai lain/rusak = `system`. Berlaku untuk
+  semua jendela FlutterBar (widget, flyout, toast, menu, LogWindow, dialog) karena semuanya memakai brush `Fb.*`; warna
+  aksen tetap dari Windows. Dipilih lewat Style ▸ Theme (centang pada pilihan aktif), langsung diterapkan dan disimpan.
 
 ## 8. `LogWindow`
 - Jendela WPF biasa (resize, minimize, muncul di taskbar selama terbuka). Dibuka lewat ikon log, titik

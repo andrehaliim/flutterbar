@@ -139,6 +139,76 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.DoesNotContain("lockedX", text);
     }
 
+    [Fact]
+    public void BackgroundOpacity_DefaultsToOpaque_AndRoundTrips()
+    {
+        Assert.Equal(100, new AppSettings().Widget.BackgroundOpacity);
+        var settings = new AppSettings();
+        settings.Widget.BackgroundOpacity = 60;
+        var store = new AppSettingsStore(SettingsPath);
+
+        store.Save(settings);
+        var loaded = store.Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Contains("\"backgroundOpacity\": 60", File.ReadAllText(SettingsPath));
+        Assert.Equal(60, loaded.Widget.BackgroundOpacity);
+    }
+
+    [Theory]
+    [InlineData("0", 0)]
+    [InlineData("-20", 0)]
+    [InlineData("250", 100)]
+    [InlineData("42.6", 43)]
+    [InlineData("\"55\"", 55)]
+    [InlineData("\"half\"", 100)]
+    [InlineData("null", 100)]
+    [InlineData("{}", 100)]
+    public void Load_HandEditedBackgroundOpacity_IsClampedOrOpaque(string value, int expected)
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"size\":\"compact\",\"backgroundOpacity\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Equal(expected, settings.Widget.BackgroundOpacity);
+        Assert.Equal("compact", settings.Widget.Size); // the rest of the widget block survives
+    }
+
+    [Fact]
+    public void Theme_DefaultsToSystem_AndRoundTrips()
+    {
+        Assert.Equal("system", new AppSettings().Widget.Theme);
+        var settings = new AppSettings();
+        settings.Widget.Theme = "Dark";
+        var store = new AppSettingsStore(SettingsPath);
+
+        store.Save(settings);
+        var loaded = store.Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Contains("\"theme\": \"dark\"", File.ReadAllText(SettingsPath));
+        Assert.Equal("dark", loaded.Widget.Theme);
+    }
+
+    [Theory]
+    [InlineData("\"light\"", "light")]
+    [InlineData("\" LIGHT \"", "light")]
+    [InlineData("\"sepia\"", "system")]
+    [InlineData("1", "system")]
+    [InlineData("null", "system")]
+    [InlineData("[\"dark\"]", "system")]
+    public void Load_HandEditedTheme_IsNormalized(string value, string expected)
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"size\":\"compact\",\"theme\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Equal(expected, settings.Widget.Theme);
+        Assert.Equal("compact", settings.Widget.Size);
+    }
+
     [Theory]
     [InlineData("-5")]
     [InlineData("100000")]

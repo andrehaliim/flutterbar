@@ -55,6 +55,7 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     private string? _notice;
     private bool _preparing;
     private string _flutterToolTip = DefaultFlutterToolTip;
+    private double _backgroundOpacity = 1;
 
     public WidgetViewModel(RunSession session, Dispatcher dispatcher)
     {
@@ -282,6 +283,20 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _flutterToolTip;
         set => Set(ref _flutterToolTip, value);
+    }
+
+    /// <summary>
+    /// Lowest background opacity actually drawn: 1.5/255 (about 0.6%, alpha 1 or 2 however the renderer rounds) looks fully
+    /// transparent, yet Windows still routes clicks on those pixels of the layered window to the widget instead of the
+    /// taskbar below (spec §7.6). Exactly 1/255 could truncate to alpha 0.
+    /// </summary>
+    public const double MinDrawnBackgroundOpacity = 1.5 / 255.0;
+
+    /// <summary>Opacity of the widget background only (spec §7.6): <c>widget.backgroundOpacity</c> / 100, never below <see cref="MinDrawnBackgroundOpacity"/>.</summary>
+    public double BackgroundOpacity
+    {
+        get => _backgroundOpacity;
+        set => Set(ref _backgroundOpacity, Math.Clamp(value, MinDrawnBackgroundOpacity, 1));
     }
 
     public void Dispose() => _session.Changed -= OnSessionChanged;

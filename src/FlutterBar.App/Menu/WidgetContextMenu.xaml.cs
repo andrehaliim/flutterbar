@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using FlutterBar.App.Theme;
 using FlutterBar.Core.Layout;
 
 namespace FlutterBar.App.Menu;
@@ -32,6 +33,9 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         SizeFull.Tag = WidgetSize.Full;
         SizeCompact.Tag = WidgetSize.Compact;
         SizeButtons.Tag = WidgetSize.ButtonsOnly;
+        ThemeSystem.Tag = ThemeChoice.System;
+        ThemeLight.Tag = ThemeChoice.Light;
+        ThemeDark.Tag = ThemeChoice.Dark;
     }
 
     public event Action<MenuCommand>? CommandInvoked;
@@ -41,6 +45,38 @@ internal sealed partial class WidgetContextMenu : ContextMenu
     public event Action<bool>? DragToggled;
 
     public event Action<bool>? StartupToggled;
+
+    /// <summary>The background opacity slider moved (percent), raised live; not raised by <see cref="SetBackgroundOpacity"/>.</summary>
+    public event Action<int>? BackgroundOpacityChanged;
+
+    private bool _settingOpacity;
+
+    /// <summary>Called when the menu opens: the stored <c>widget.backgroundOpacity</c>.</summary>
+    public void SetBackgroundOpacity(int percent)
+    {
+        _settingOpacity = true;
+        try
+        {
+            OpacitySlider.Value = percent;
+            OpacityValue.Text = $"{percent}%";
+        }
+        finally
+        {
+            _settingOpacity = false;
+        }
+    }
+
+    /// <summary>Style ▸ Theme: System, Light or Dark was picked.</summary>
+    public event Action<ThemeChoice>? ThemeChosen;
+
+    /// <summary>Called when the menu opens (and after a pick): check mark on the current theme mode.</summary>
+    public void SetTheme(ThemeChoice mode)
+    {
+        foreach (var item in new[] { ThemeSystem, ThemeLight, ThemeDark })
+        {
+            item.IsChecked = (ThemeChoice)item.Tag == mode;
+        }
+    }
 
     public bool DragChecked
     {
@@ -75,6 +111,30 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         if (sender is MenuItem { Tag: WidgetSize size })
         {
             Dispatcher.BeginInvoke(() => SizeChosen?.Invoke(size));
+        }
+    }
+
+    // Synchronous like the slider: the colours switch at once (the click closes the menu).
+    private void OnThemeClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: ThemeChoice mode })
+        {
+            SetTheme(mode);
+            ThemeChosen?.Invoke(mode);
+        }
+    }
+
+    // Raised during InitializeComponent too (Value coerced by Minimum): the label may not exist yet, nobody listens yet.
+    private void OnOpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        var percent = (int)Math.Round(e.NewValue);
+        if (OpacityValue is not null)
+        {
+            OpacityValue.Text = $"{percent}%";
+        }
+        if (!_settingOpacity)
+        {
+            BackgroundOpacityChanged?.Invoke(percent);
         }
     }
 

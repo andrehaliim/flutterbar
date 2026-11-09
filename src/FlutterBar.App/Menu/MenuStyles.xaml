@@ -38,6 +38,69 @@
         </Setter>
     </Style>
 
+    <!-- Slider for menus (Background opacity): thin track, accent fill left of the thumb, round accent thumb. -->
+    <Style x:Key="Fb.SliderRepeat" TargetType="RepeatButton">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Grid Background="Transparent">
+                        <Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" VerticalAlignment="Center" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Fb.Slider" TargetType="Slider">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid MinHeight="22" Background="Transparent">
+                        <Track x:Name="PART_Track">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource Fb.SliderRepeat}" Command="{x:Static Slider.DecreaseLarge}"
+                                              Background="{DynamicResource Fb.Accent}" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource Fb.SliderRepeat}" Command="{x:Static Slider.IncreaseLarge}"
+                                              Background="{DynamicResource Fb.Menu.Disabled}" />
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Width="14" Height="14">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse Fill="{DynamicResource Fb.Accent}" Stroke="{DynamicResource Fb.Menu.Background}" StrokeThickness="2" />
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Menu item that only hosts a control (the slider): no hover highlight, stays open when clicked. -->
+    <Style x:Key="Fb.MenuControlItem" TargetType="MenuItem">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="StaysOpenOnClick" Value="True" />
+        <Setter Property="Foreground" Value="{DynamicResource Fb.Menu.Foreground}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border Padding="12,6,12,8">
+                        <ContentPresenter ContentSource="Header" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- One template for leaf items and submenu headers (everything in a ContextMenu is SubmenuItem/SubmenuHeader). -->
     <Style TargetType="MenuItem">
         <Setter Property="OverridesDefaultStyle" Value="True" />

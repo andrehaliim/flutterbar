@@ -8,10 +8,19 @@ using Microsoft.Win32;
 
 namespace FlutterBar.App.Theme;
 
+/// <summary>Style ▸ Theme (spec §7.6): follow the taskbar, or force light / dark.</summary>
+internal enum ThemeChoice
+{
+    System,
+    Light,
+    Dark,
+}
+
 /// <summary>
-/// Light/dark brushes following the TASKBAR theme (<c>SystemUsesLightTheme</c>, spec §7.3), switched live through
-/// <see cref="SystemEvents.UserPreferenceChanged"/>. Brushes go into a resource dictionary under the <c>Fb.*</c> keys
-/// (used with DynamicResource). Dispose to unsubscribe the static SystemEvents handler.
+/// Light/dark brushes following the TASKBAR theme (<c>SystemUsesLightTheme</c>, spec §7.3) unless <see cref="Mode"/>
+/// forces one, switched live through <see cref="SystemEvents.UserPreferenceChanged"/>. Brushes go into a resource
+/// dictionary under the <c>Fb.*</c> keys (used with DynamicResource), so every FlutterBar window follows. The accent colour
+/// always comes from Windows. Dispose to unsubscribe the static SystemEvents handler.
 /// </summary>
 internal sealed class TaskbarTheme : IDisposable
 {
@@ -20,17 +29,50 @@ internal sealed class TaskbarTheme : IDisposable
     private readonly ResourceDictionary _resources;
     private readonly Dispatcher _dispatcher;
     private bool _disposed;
+    private ThemeChoice _mode;
 
-    public TaskbarTheme(ResourceDictionary resources, Dispatcher dispatcher)
+    public TaskbarTheme(ResourceDictionary resources, Dispatcher dispatcher, ThemeChoice mode = ThemeChoice.System)
     {
         _resources = resources;
         _dispatcher = dispatcher;
-        IsLight = ReadIsLight();
+        _mode = mode;
+        IsLight = ResolveIsLight();
         Apply();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
     public bool IsLight { get; private set; }
+
+    /// <summary>Changing it re-applies the brushes at once (UI thread).</summary>
+    public ThemeChoice Mode
+    {
+        get => _mode;
+        set
+        {
+            if (value == _mode)
+            {
+                return;
+            }
+            _mode = value;
+            AppLog.Write($"theme mode -> {value}");
+            Refresh();
+        }
+    }
+
+    /// <summary><c>widget.theme</c> (already normalized by the settings) to a mode.</summary>
+    public static ThemeChoice ParseMode(string? setting) => setting switch
+    {
+        "light" => ThemeChoice.Light,
+        "dark" => ThemeChoice.Dark,
+        _ => ThemeChoice.System,
+    };
+
+    public static string ToSetting(ThemeChoice mode) => mode switch
+    {
+        ThemeChoice.Light => "light",
+        ThemeChoice.Dark => "dark",
+        _ => "system",
+    };
 
     public void Dispose()
     {
@@ -57,16 +99,23 @@ internal sealed class TaskbarTheme : IDisposable
         {
             return;
         }
-        var light = ReadIsLight();
+        var light = ResolveIsLight();
         if (light == IsLight)
         {
             Apply(); // accent colour may have changed
             return;
         }
         IsLight = light;
-        AppLog.Write($"theme -> {(light ? "light" : "dark")} (SystemUsesLightTheme)");
+        AppLog.Write($"theme -> {(light ? "light" : "dark")} ({(_mode == ThemeChoice.System ? "SystemUsesLightTheme" : "override")})");
         Apply();
     }
+
+    private bool ResolveIsLight() => _mode switch
+    {
+        ThemeChoice.Light => true,
+        ThemeChoice.Dark => false,
+        _ => ReadIsLight(),
+    };
 
     private static bool ReadIsLight()
     {
