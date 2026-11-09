@@ -1,0 +1,20 @@
+<UserControl x:Class="FlutterBar.App.Flyouts.FlutterFlyout" x:ClassModifier="internal"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Flutter flyout (spec §7.5): project commands as a list (output goes to the log), then Open terminal. While a command
+         runs: spinner, status line with Cancel, every command row disabled. -->
+    <StackPanel>
+        <TextBlock Text="Flutter" Style="{StaticResource Fb.FlyoutHeader}" />
+        <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
+        <Grid x:Name="RunningRow" Visibility="Collapsed" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="RunningText" Style="{StaticResource Fb.MutedText}" VerticalAlignment="Center" Margin="2,0" />
+            <Button x:Name="CancelButton" Grid.Column="1" Content="Cancel" Style="{StaticResource Fb.Button}" Margin="6,0,0,0"
+                    AutomationProperties.Name="Cancel command" />
+        </Grid>
+        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Flutter commands" />
+    </StackPanel>
+</UserControl>

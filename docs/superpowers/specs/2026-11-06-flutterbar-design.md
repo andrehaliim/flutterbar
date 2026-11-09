@@ -347,8 +347,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 ## 7. Widget taskbar
 
 ### 7.1 Layout
-- **Full:** `● [project▾] [⎇ branch▾] [config▾] [device▾] | tombol | 🖥 log`
-- **Compact:** `● Configuration ▾ | tombol | 🖥 log`. Tooltip chip berisi pilihan aktif
+- **Full:** `● [project▾] [⎇ branch▾] [config▾] [device▾] | tombol | Flutter 🖥 log`
+- **Compact:** `● Configuration ▾ | tombol | Flutter 🖥 log`. Tooltip chip berisi pilihan aktif
   (`project · ⎇ branch · config · device`). Klik chip untuk membuka flyout gabungan: baris 4 chip seperti layout Full
   (branch disembunyikan bila bukan repo git); klik salah satu menampilkan flyout bagian itu di bawah baris chip, dalam
   popup yang sama (chip aktif bergaris aksen). Flyout yang terbuka sendiri (mis. ▶ tanpa device) juga tampil di sana.
@@ -416,10 +416,25 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Import config from IDE…
 - Open launch.json, yang membuka file dengan aplikasi default `.json`
 - Open log (membuka `LogWindow`)
+- Flutter tools… (membuka flyout Flutter, §7.5; satu-satunya jalan masuk di ukuran Buttons only) dan Open terminal
 - Add CLI to PATH…, yang menambah folder `flutterbar.exe` ke PATH user (`HKCU\Environment`) setelah
   konfirmasi
 - Start with Windows (`HKCU\...\Run`, toggle)
 - Exit
+
+### 7.5 Flutter tools
+- Tombol logo Flutter (monokrom) di kiri tombol log pada Full dan Compact; di Buttons only lewat menu klik kanan.
+- Flyout berupa daftar: Pub get, Clean, Clean and pub get, Run build_runner (hanya bila `build_runner` ada di
+  `dependencies`/`dev_dependencies` pubspec), Doctor; lalu "Open terminal" di folder project.
+- Perintah dijalankan lewat `FlutterToolLocator` (fvm otomatis; build_runner = `dart run build_runner build
+  --delete-conflicting-outputs`), satu per satu, tanpa job kill-on-close (daemon seperti adb tetap hidup). Output masuk
+  ke log setelah separator (stdout abu-abu, stderr merah); marker reload tidak berubah.
+- Clean dan Clean and pub get nonaktif selama sesi aktif ("Stop the app first"); pub get / build_runner nonaktif saat
+  Starting/Stopping. Satu perintah sekaligus; selama berjalan ada spinner, status, dan Cancel di flyout, tooltip tombol
+  berbunyi "Running …", dan ▶ menolak dengan toast "Wait for … to finish". Menutup flyout tidak menghentikan perintah.
+- Selesai: toast singkat; gagal: toast dengan tombol "Open log" (log dibuka di separator perintah); Doctor membuka log.
+- Open terminal: `wt.exe -d <root>` bila Windows Terminal terpasang, selain itu `powershell.exe -NoExit` di root, dengan
+  PATH yang dibaca ulang dari registry.
 
 ## 8. `LogWindow`
 - Jendela WPF biasa (resize, minimize, muncul di taskbar selama terbuka). Dibuka lewat ikon log, titik

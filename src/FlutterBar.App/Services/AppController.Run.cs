@@ -19,6 +19,11 @@ internal sealed partial class AppController
         {
             return;
         }
+        if (_flutterRunning is { } command)
+        {
+            ShowToast($"Wait for {FlutterCommands.Display(command)} to finish");
+            return;
+        }
         _flyout.Close();
         _vm.Notice = null;
         _vm.Preparing = true;

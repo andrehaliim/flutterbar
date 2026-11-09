@@ -64,6 +64,12 @@ public partial class App
             case MenuCommand.OpenLog:
                 OpenLog();
                 break;
+            case MenuCommand.FlutterTools:
+                controller.OpenFlutterToolsFromMenu();
+                break;
+            case MenuCommand.OpenTerminal:
+                controller.Observe(controller.OpenTerminalAsync(), "Open terminal");
+                break;
             case MenuCommand.AddToPath:
                 if (_system is { } system)
                 {

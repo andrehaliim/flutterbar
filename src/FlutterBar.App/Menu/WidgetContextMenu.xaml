@@ -49,6 +49,16 @@
             <TextBlock Text="&#xE756;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
         </MenuItem.Icon>
     </MenuItem>
+    <MenuItem x:Name="FlutterToolsItem" Header="Flutter tools…" Click="OnFlutterToolsClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE90F;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
+    <MenuItem x:Name="TerminalItem" Header="Open terminal" Click="OnOpenTerminalClick">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE943;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
     <Separator Style="{StaticResource Fb.MenuSeparator}" />
     <MenuItem Header="Add CLI to PATH…" Click="OnAddToPathClick">
         <MenuItem.Icon>

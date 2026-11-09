@@ -258,6 +258,10 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         {
             ShowToast($"Session failed: {snapshot.FailureMessage ?? "flutter stopped"}");
         }
+        if (snapshot.State != _lastState)
+        {
+            RefreshFlutterFlyout(); // what may run (clean, pub get) depends on the session
+        }
         _lastState = snapshot.State;
     });
 

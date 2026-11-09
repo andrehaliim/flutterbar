@@ -39,6 +39,9 @@ public sealed class LogBuffer
 
     public void MarkReload(string label) => AppendCore(LogKind.Separator, Separator(label), isMarker: true);
 
+    /// <summary>Separator before a one-off command's output (e.g. <c>flutter pub get</c>); the reload marker is not moved.</summary>
+    public LogLine MarkCommand(string label) => AppendCore(LogKind.Separator, Separator(label), isMarker: false);
+
     /// <summary>Starts a new session segment; resets the reload marker to this separator.</summary>
     public void MarkSessionStart(string label) => AppendCore(LogKind.Separator, Separator(label), isMarker: true);
 

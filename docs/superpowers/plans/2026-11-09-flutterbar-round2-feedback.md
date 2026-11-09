@@ -28,7 +28,7 @@ opsional yang diinstal user sendiri.
 |---|---|
 | 2 | Di mode drag, klik tanpa gerakan tetap jadi klik biasa; drag baru mulai setelah melewati jarak minimum |
 | 3 | Tombol mengambang "↓ Latest" (hanya saat tidak di bawah) + `Ctrl+End` |
-| 4 | Clean, Pub get, Clean + pub get, Doctor, build_runner (hanya bila ada di pubspec) |
+| 4 | Clean, Pub get, Clean + pub get, Doctor, build_runner (hanya bila ada di pubspec); flyout berupa daftar baris (mockup opsi A) |
 | 5 | Tombol HP di samping log, hanya untuk HP Android fisik; scrcpy diinstal user |
 | 6 | Pindah via menu *Show on ▸*, tanpa duplikat; spike dulu |
 | 7 | Chip jadi tab (daftar di bawahnya, satu popup), label "Configuration", tooltip nilai aktif, juga untuk Buttons only; default ukuran tetap Full (user 2026-11-09, setelah sempat diputuskan Compact) |

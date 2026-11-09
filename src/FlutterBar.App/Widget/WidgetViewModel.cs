@@ -18,6 +18,9 @@ internal enum WidgetChip
 
     /// <summary>Compact name area or ButtonsOnly status dot: the combined flyout.</summary>
     Combined,
+
+    /// <summary>Flutter logo button (or the menu's "Flutter tools"): pub get, clean, doctor, build_runner, terminal.</summary>
+    Flutter,
 }
 
 /// <summary>
@@ -51,6 +54,7 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     private string _deviceName = UiText.PickDevice;
     private string? _notice;
     private bool _preparing;
+    private string _flutterToolTip = DefaultFlutterToolTip;
 
     public WidgetViewModel(RunSession session, Dispatcher dispatcher)
     {
@@ -68,6 +72,7 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         ConfigChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Config));
         DeviceChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Device));
         CombinedChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Combined));
+        FlutterToolsCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Flutter));
         // spec §7.1 ButtonsOnly: the dot opens the combined flyout; a red dot opens the log (at the error, Task 15)
         StatusDotCommand = new RelayCommand(() =>
         {
@@ -267,6 +272,17 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     public ICommand CombinedChipCommand { get; }
 
     public ICommand StatusDotCommand { get; }
+
+    public ICommand FlutterToolsCommand { get; }
+
+    public const string DefaultFlutterToolTip = "Flutter tools";
+
+    /// <summary>"Flutter tools", or the command running in the background (e.g. "Running flutter pub get…").</summary>
+    public string FlutterToolTip
+    {
+        get => _flutterToolTip;
+        set => Set(ref _flutterToolTip, value);
+    }
 
     public void Dispose() => _session.Changed -= OnSessionChanged;
 

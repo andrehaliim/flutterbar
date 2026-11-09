@@ -100,16 +100,20 @@ internal sealed partial class AppController
             case WidgetChip.Combined:
                 OpenCombinedFlyout();
                 break;
+            case WidgetChip.Flutter:
+                OpenFlutterFlyout();
+                break;
         }
     }
 
     /// <summary>
-    /// Full size: <paramref name="content"/> is the popup. Compact / ButtonsOnly (spec §7.1): every section flyout (also one
-    /// opened by ▶ or a fallback) is shown inside the combined flyout, below its tabs, so the chip clicked to open it stays the toggle.
+    /// Full size: <paramref name="content"/> is the popup. Compact / ButtonsOnly (spec §7.1): every section flyout (project,
+    /// branch, config, device; also one opened by ▶ or a fallback) is shown inside the combined flyout, below its tabs, so the
+    /// chip clicked to open it stays the toggle. The Flutter flyout always stands alone.
     /// </summary>
     private CancellationToken ShowFlyout(WidgetChip kind, FrameworkElement content, IInputElement focus)
     {
-        if (kind != WidgetChip.Combined && _vm.EffectiveSize != WidgetSize.Full)
+        if (kind is WidgetChip.Project or WidgetChip.Branch or WidgetChip.Config or WidgetChip.Device && _vm.EffectiveSize != WidgetSize.Full)
         {
             var combined = EnsureCombinedFlyout();
             _flyout.Release(content); // a section can only have one parent: it may still be the popup content from a Full-size open
@@ -118,7 +122,7 @@ internal sealed partial class AppController
             _flyoutKind = WidgetChip.Combined;
             return _flyout.Show(combined, focus, active: content);
         }
-        if (_combinedFlyout is { } open && kind != WidgetChip.Combined && ReferenceEquals(open.CurrentSection, content))
+        if (_combinedFlyout is { } open && ReferenceEquals(open.CurrentSection, content))
         {
             open.ShowSection(null, null); // detach the section before it becomes the popup content on its own
         }

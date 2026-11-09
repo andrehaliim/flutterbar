@@ -115,4 +115,40 @@ public class FlutterToolLocatorTests
         Assert.Null(r.Spec);
         Assert.Contains("flutter", r.Error);
     }
+
+    [Fact]
+    public void Dart_WithFvm_UsesFvmDart()
+    {
+        var locator = new FlutterToolLocator(
+            new FakePaths(new() { ["fvm"] = @"C:\x\fvm.exe", ["dart"] = @"C:\d\dart.exe" }),
+            p => p == Path.Combine(Root, ".fvmrc"));
+
+        var r = locator.ResolveDart(Root, ["run", "build_runner", "build"]);
+
+        Assert.Equal(@"C:\x\fvm.exe", r.Spec!.FileName);
+        Assert.Equal(["dart", "run", "build_runner", "build"], r.Spec.Args);
+    }
+
+    [Fact]
+    public void Dart_FromPath_BatchGoesThroughCmd()
+    {
+        var locator = new FlutterToolLocator(new FakePaths(new() { ["dart"] = @"C:\f\bin\dart.bat" }), _ => false);
+
+        var r = locator.ResolveDart(Root, ["run", "build_runner", "build"]);
+
+        Assert.Equal("cmd.exe", r.Spec!.FileName);
+        Assert.Contains(@"C:\f\bin\dart.bat", r.Spec.Args);
+        Assert.Equal("build", r.Spec.Args[^1]);
+    }
+
+    [Fact]
+    public void NoDart_ErrorNamesDart()
+    {
+        var locator = new FlutterToolLocator(new FakePaths(new() { ["flutter"] = @"C:\f\flutter.exe" }), _ => false);
+
+        var r = locator.ResolveDart(Root, ["run"]);
+
+        Assert.Null(r.Spec);
+        Assert.Equal("dart wasn't found on PATH", r.Error);
+    }
 }

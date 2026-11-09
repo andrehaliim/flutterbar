@@ -2,10 +2,18 @@ namespace FlutterBar.Core.Processes;
 
 public sealed record ToolResolution(ProcessSpec? Spec, string? Error);
 
-/// <summary>Decides how to invoke flutter for a project: <c>fvm flutter</c> when the project uses fvm, else <c>flutter</c> from PATH.</summary>
+/// <summary>
+/// Decides how to invoke flutter (or dart) for a project: <c>fvm flutter</c> / <c>fvm dart</c> when the project uses fvm,
+/// else <c>flutter</c> / <c>dart</c> from PATH.
+/// </summary>
 public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> fileExists)
 {
-    public ToolResolution Resolve(string projectRoot, IReadOnlyList<string> flutterArgs)
+    public ToolResolution Resolve(string projectRoot, IReadOnlyList<string> flutterArgs) => ResolveTool(projectRoot, "flutter", flutterArgs);
+
+    /// <summary>The project's <c>dart</c> (the one of its Flutter SDK under fvm), e.g. for <c>dart run build_runner</c>.</summary>
+    public ToolResolution ResolveDart(string projectRoot, IReadOnlyList<string> dartArgs) => ResolveTool(projectRoot, "dart", dartArgs);
+
+    private ToolResolution ResolveTool(string projectRoot, string tool, IReadOnlyList<string> flutterArgs)
     {
         // No escaping survives both cmd.exe and the Dart argv parser behind flutter.bat's %*, so fail closed.
         foreach (var arg in flutterArgs)
@@ -35,13 +43,13 @@ public sealed class FlutterToolLocator(IPathResolver paths, Func<string, bool> f
             {
                 return new ToolResolution(null, $"Project uses fvm ({fvmMarker}) but fvm wasn't found on PATH");
             }
-            return new ToolResolution(new ProcessSpec(fvm, ["flutter", .. flutterArgs], projectRoot), null);
+            return new ToolResolution(new ProcessSpec(fvm, [tool, .. flutterArgs], projectRoot), null);
         }
 
-        var flutter = paths.Find("flutter");
+        var flutter = paths.Find(tool);
         if (flutter is null)
         {
-            return new ToolResolution(null, "flutter wasn't found on PATH");
+            return new ToolResolution(null, $"{tool} wasn't found on PATH");
         }
 
         if (ProcessLauncher.IsBatchFile(flutter))

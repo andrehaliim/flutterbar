@@ -14,6 +14,8 @@ internal enum MenuCommand
     Import,
     OpenLaunchJson,
     OpenLog,
+    FlutterTools,
+    OpenTerminal,
     AddToPath,
     Exit,
 }
@@ -55,6 +57,8 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         }
         ImportItem.IsEnabled = hasProject;
         LaunchJsonItem.IsEnabled = hasProject;
+        FlutterToolsItem.IsEnabled = hasProject;
+        TerminalItem.IsEnabled = hasProject;
     }
 
     /// <summary>Start with Windows as the registry says: null = unknown (unreadable), <paramref name="toolTip"/> explains odd states.</summary>
@@ -98,6 +102,10 @@ internal sealed partial class WidgetContextMenu : ContextMenu
     private void OnOpenLaunchJsonClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenLaunchJson);
 
     private void OnOpenLogClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenLog);
+
+    private void OnFlutterToolsClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.FlutterTools);
+
+    private void OnOpenTerminalClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenTerminal);
 
     private void OnAddToPathClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.AddToPath);
 
