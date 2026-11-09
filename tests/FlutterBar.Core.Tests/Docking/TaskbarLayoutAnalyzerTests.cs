@@ -151,6 +151,37 @@ public sealed class TaskbarLayoutAnalyzerTests
     }
 
     [Fact]
+    public void Analyze_SecondaryWithClockHidden_UsesTheRightEdge()
+    {
+        // Spike 2026-11-09: a secondary taskbar has no TrayNotifyWnd and only a clock, which can be hidden.
+        var result = TaskbarLayoutAnalyzer.Analyze(Taskbar, [Start, AppButton(829, 873)], trayNotifyLeft: null, trayOptional: true);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(Taskbar.Right, result.TrayLeft);
+        Assert.Equal(2, result.Occupied.Count);
+    }
+
+    [Fact]
+    public void Analyze_SecondaryWithClock_UsesTheClock()
+    {
+        var clock = El("SystemTray.OmniButton", "SystemTrayIcon", 1842, 1912);
+
+        var result = TaskbarLayoutAnalyzer.Analyze(Taskbar, [Start, clock], trayNotifyLeft: null, trayOptional: true);
+
+        Assert.True(result.IsValid);
+        Assert.Equal(1842, result.TrayLeft);
+    }
+
+    [Fact]
+    public void Analyze_SecondaryStillNeedsOccupiedElements()
+    {
+        var result = TaskbarLayoutAnalyzer.Analyze(Taskbar, [], trayNotifyLeft: null, trayOptional: true);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("occupied", result.RejectReason);
+    }
+
+    [Fact]
     public void Analyze_NoOccupied_Rejected()
     {
         var result = TaskbarLayoutAnalyzer.Analyze(Taskbar, [TrayIcon(1674, 1700)], trayNotifyLeft: 1674);

@@ -46,6 +46,12 @@
         <MenuItem x:Name="ThemeLight" Header="Light" Click="OnThemeClick" />
         <MenuItem x:Name="ThemeDark" Header="Dark" Click="OnThemeClick" />
     </MenuItem>
+    <!-- Show on (spec §7.3): one checkable entry per taskbar, filled when the menu opens; disabled with a single taskbar. -->
+    <MenuItem x:Name="ShowOnItem" Header="Show on">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE7F4;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+    </MenuItem>
     <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick">
         <MenuItem.Icon>
             <TextBlock Text="&#xE7C2;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />

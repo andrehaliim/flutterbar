@@ -143,8 +143,11 @@ public static class TaskbarLayoutAnalyzer
     /// <summary>
     /// Applies the v3 sanity check and the v3.1 occupied rule to one UIA snapshot of the taskbar.
     /// <paramref name="trayNotifyLeft"/> is the Win32 <c>TrayNotifyWnd</c> left edge (stable while Start is open), or null.
+    /// <paramref name="trayOptional"/>: a secondary taskbar (<c>Shell_SecondaryTrayWnd</c>) has no notification area and only
+    /// a clock, which can be hidden; without any tray element its right edge counts as the tray's left edge instead of
+    /// rejecting the snapshot (spike 2026-11-09).
     /// </summary>
-    public static TaskbarAnalysis Analyze(Box taskbar, IReadOnlyList<TaskbarElement> elements, double? trayNotifyLeft)
+    public static TaskbarAnalysis Analyze(Box taskbar, IReadOnlyList<TaskbarElement> elements, double? trayNotifyLeft, bool trayOptional = false)
     {
         var anyTray = false;
         var trayLeft = taskbar.Right;
@@ -178,7 +181,7 @@ public static class TaskbarLayoutAnalyzer
         occupied.Sort((a, b) => a.Left.CompareTo(b.Left));
 
         string? reject = null;
-        if (!anyTray)
+        if (!anyTray && !trayOptional)
         {
             reject = "no tray elements";
         }

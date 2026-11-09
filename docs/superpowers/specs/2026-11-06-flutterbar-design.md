@@ -406,12 +406,19 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **DPI:** per-monitor DPI aware (v2).
 - **Tema:** default mengikuti `SystemUsesLightTheme` di registry (tema taskbar), dan berganti otomatis saat
   tema berubah; bisa dikunci ke Light/Dark lewat Style ▸ Theme (§7.6).
-- Versi pertama hanya tampil di taskbar monitor utama.
+- **Monitor (round 2):** satu widget, di taskbar monitor utama (default) atau di taskbar monitor lain yang dipilih lewat
+  Show on ▸ (`widget.monitor` = nama device monitor, mis. `\\.\DISPLAY2`; null = utama). Target dicari ulang di setiap
+  reassert (`Shell_TrayWnd` + `Shell_SecondaryTrayWnd` per monitor, butuh "Show my taskbar on all displays"); bila
+  monitor itu tidak punya taskbar, widget memakai taskbar utama dan setting tetap disimpan (kembali sendiri saat monitor
+  tersedia). Pindah taskbar = layout mulai dari awal dan posisi manual dibuang (kembali `auto`). Taskbar sekunder tidak
+  punya `TrayNotifyWnd`: probe/analyzer sama, jam = tepi tray (tanpa jam: tepi kanan taskbar); sebelum layout UIA pertama
+  widget disembunyikan sampai 3 detik, lalu cadangan di tepi kanan. Owner, auto-hide, dan fullscreen mengikuti taskbar target.
 - Project referensi boleh dipelajari sebagai rujukan pendekatan, tapi kodenya tidak disalin.
 
 ### 7.4 Menu klik kanan
 - Size: Full / Compact / Buttons only
 - Style: slider opacity background 0–100% (langkah 5%) dan Theme System / Light / Dark, §7.6
+- Show on ▸ Monitor N (main) W×H … (urut kiri ke kanan, centang pada taskbar yang dipakai; nonaktif bila hanya satu taskbar)
 - Drag widget (checkbox) / Reset to auto position
 - Manage projects: Root folders…, Add project…, Hidden projects…, Rescan
 - Import config from IDE…

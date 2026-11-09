@@ -192,6 +192,36 @@ public sealed class AppSettingsStoreTests : IDisposable
     }
 
     [Theory]
+    [InlineData("\"\\\\\\\\.\\\\DISPLAY2\"", @"\\.\DISPLAY2")]
+    [InlineData("\"  \"", null)]
+    [InlineData("null", null)]
+    [InlineData("2", null)]
+    [InlineData("{\"a\":1}", null)]
+    public void Load_Monitor_IsKeptOrNull(string value, string? expected)
+    {
+        File.WriteAllText(SettingsPath, "{\"widget\":{\"size\":\"compact\",\"monitor\":" + value + "}}");
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.Equal(expected, settings.Widget.Monitor);
+        Assert.Equal("compact", settings.Widget.Size);
+    }
+
+    [Fact]
+    public void Monitor_DefaultsToMain_AndRoundTrips()
+    {
+        Assert.Null(new AppSettings().Widget.Monitor);
+        var settings = new AppSettings();
+        settings.Widget.Monitor = @" \\.\DISPLAY2 ";
+        var store = new AppSettingsStore(SettingsPath);
+
+        store.Save(settings);
+
+        Assert.Equal(@"\\.\DISPLAY2", store.Load(out _).Widget.Monitor);
+    }
+
+    [Theory]
     [InlineData("\"light\"", "light")]
     [InlineData("\" LIGHT \"", "light")]
     [InlineData("\"sepia\"", "system")]

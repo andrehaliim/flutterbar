@@ -8,7 +8,7 @@ using FlutterBar.Core.Layout;
 namespace FlutterBar.App.Docking;
 
 /// <summary>
-/// One read of the primary taskbar. <paramref name="AppButtons"/> holds every OCCUPIED box left of the tray (Start,
+/// One read of the target taskbar (main or secondary, spec §7.3). <paramref name="AppButtons"/> holds every OCCUPIED box left of the tray (Start,
 /// Search, Widgets, Task View, app buttons ...), sorted left to right; <paramref name="Tray"/> spans from the tray's left
 /// edge to the taskbar's right edge. All rects are physical px. <paramref name="Visible"/> is false while auto-hide has
 /// moved the bar off screen. <paramref name="TrayNotifyLeft"/> is the Win32 TrayNotifyWnd left edge, when found.
@@ -25,7 +25,7 @@ internal sealed record TaskbarInfo(
 /// <summary>
 /// Reads the Windows 11 taskbar through UI Automation (class names / AutomationIds from the findings doc) and applies the
 /// Core rules (<see cref="TaskbarLayoutAnalyzer"/>). Call from a background (MTA) thread only, never the UI thread: UIA
-/// calls are cross-process and can stall. The root element is cached per <c>Shell_TrayWnd</c> handle and the whole subtree
+/// calls are cross-process and can stall. The root element is cached per taskbar handle and the whole subtree
 /// is fetched with ONE cache request per read (five properties, no live element references), instead of one cross-process
 /// call per element and property. Elements of our own process (the owned widget shows up in the tree) are skipped.
 /// </summary>
@@ -58,15 +58,19 @@ internal sealed class TaskbarProbe
         _request.Add(AutomationElement.ProcessIdProperty);
     }
 
-    /// <summary>Null when the taskbar is missing, UIA failed, or the result failed the sanity check (caller keeps the last good layout).</summary>
-    public TaskbarInfo? Read()
+    /// <summary>
+    /// Reads taskbar <paramref name="tray"/> (<c>Shell_TrayWnd</c> or a <c>Shell_SecondaryTrayWnd</c>). <paramref name="secondary"/>:
+    /// no notification area, so a missing clock is fine (<see cref="TaskbarLayoutAnalyzer.Analyze"/>). <paramref name="monitor"/>
+    /// is the rect auto-hide visibility is measured against. Null when the taskbar is gone, UIA failed, or the result failed
+    /// the sanity check (caller keeps the last good layout).
+    /// </summary>
+    public TaskbarInfo? Read(IntPtr tray, bool secondary, Box? monitor)
     {
         lock (_gate)
         {
-            var tray = NativeMethods.FindWindow("Shell_TrayWnd", null);
             if (tray == IntPtr.Zero || NativeMethods.WindowBox(tray) is not { } taskbar)
             {
-                AppLog.Limited("probe-notray", "UIA probe: Shell_TrayWnd not found", 5);
+                AppLog.Limited("probe-notray", "UIA probe: taskbar window gone", 5);
                 return null;
             }
 
@@ -98,7 +102,7 @@ internal sealed class TaskbarProbe
                 return null; // the instance died while UIA was running: no logs, no result
             }
             var trayNotifyLeft = NativeMethods.TrayNotifyLeft(tray, taskbar);
-            var analysis = TaskbarLayoutAnalyzer.Analyze(taskbar, elements, trayNotifyLeft);
+            var analysis = TaskbarLayoutAnalyzer.Analyze(taskbar, elements, trayNotifyLeft, trayOptional: secondary);
             LogNewVerdicts(analysis, pids);
             if (analysis.TrayFromTrayNotifyWnd)
             {
@@ -114,7 +118,7 @@ internal sealed class TaskbarProbe
             }
 
             var autoHide = NativeMethods.IsAutoHide();
-            var visible = !(autoHide && NativeMethods.PrimaryMonitorRect() is { } monitor && AutoHideVisibility.IsHidden(taskbar, monitor));
+            var visible = !(autoHide && monitor is { } m && AutoHideVisibility.IsHidden(taskbar, m));
             return new TaskbarInfo(
                 taskbar,
                 new Box(analysis.TrayLeft, taskbar.Top, taskbar.Right, taskbar.Bottom),

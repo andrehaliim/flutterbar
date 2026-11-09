@@ -8,7 +8,8 @@ using FlutterBar.Core.Layout;
 namespace FlutterBar.App.Docking;
 
 /// <summary>
-/// Docks a borderless WPF window onto the primary taskbar (spec §7.3), porting the technique proven by the docking spike
+/// Docks a borderless WPF window onto a taskbar (spec §7.3): the main one, or the one on the monitor chosen with
+/// <see cref="TargetMonitor"/> (<c>TaskbarDocking.Target.cs</c>), porting the technique proven by the docking spike
 /// v3.2 (findings doc "Notes for Task 13"). Lifecycle, hooks, timer and the reassert loop live here; owner in
 /// <c>TaskbarDocking.Owner.cs</c>, placement/auto-hide/UIA query in
 /// <c>TaskbarDocking.Placement.cs</c>, drag/resize in <c>TaskbarDocking.Drag.cs</c>, popup suspension in
@@ -181,7 +182,7 @@ internal sealed partial class TaskbarDocking
         }
         _autoHide = NativeMethods.IsAutoHide();
         AppLog.Write($"widget window created inst={_id} hwnd=0x{_hwnd:X} autoHide={_autoHide}");
-        var tray = NativeMethods.FindWindow("Shell_TrayWnd", null);
+        var tray = ResolveTray();
         if (tray != IntPtr.Zero)
         {
             EnsureOwner(tray, "startup", timerTick: false); // owner set once, right after the HWND exists
@@ -323,10 +324,10 @@ internal sealed partial class TaskbarDocking
             {
                 AppLog.Limited("reason:" + reason, $"reassert inst={_id}: {reason}");
             }
-            var tray = NativeMethods.FindWindow("Shell_TrayWnd", null);
+            var tray = ResolveTray();
             if (tray == IntPtr.Zero)
             {
-                AppLog.Limited("reassert-notray", $"reassert inst={_id}: Shell_TrayWnd not found", 5);
+                AppLog.Limited("reassert-notray", $"reassert inst={_id}: no taskbar window found", 5);
                 return;
             }
             var timerTick = reason == "timer";

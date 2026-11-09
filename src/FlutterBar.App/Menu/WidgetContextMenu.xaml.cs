@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using FlutterBar.App.Theme;
+using FlutterBar.Core.Docking;
 using FlutterBar.Core.Layout;
 
 namespace FlutterBar.App.Menu;
@@ -66,6 +67,24 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         }
     }
 
+    /// <summary>Show on ▸ a taskbar was picked: its <c>widget.monitor</c> value (null = main taskbar).</summary>
+    public event Action<string?>? MonitorChosen;
+
+    /// <summary>Called when the menu opens: one entry per taskbar (check mark on the current one); disabled with a single taskbar.</summary>
+    public void SetMonitors(IReadOnlyList<TaskbarMenuItem> taskbars)
+    {
+        ShowOnItem.Items.Clear();
+        foreach (var taskbar in taskbars)
+        {
+            var item = new MenuItem { Header = taskbar.Label, IsChecked = taskbar.IsCurrent, Tag = taskbar };
+            item.Click += OnMonitorClick;
+            ShowOnItem.Items.Add(item);
+        }
+        ShowOnItem.IsEnabled = taskbars.Count > 1;
+        ShowOnItem.ToolTip = taskbars.Count > 1 ? null : "Only one taskbar: turn on \"Show my taskbar on all displays\" in Windows";
+        ToolTipService.SetShowOnDisabled(ShowOnItem, true);
+    }
+
     /// <summary>Style ▸ Theme: System, Light or Dark was picked.</summary>
     public event Action<ThemeChoice>? ThemeChosen;
 
@@ -111,6 +130,14 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         if (sender is MenuItem { Tag: WidgetSize size })
         {
             Dispatcher.BeginInvoke(() => SizeChosen?.Invoke(size));
+        }
+    }
+
+    private void OnMonitorClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: TaskbarMenuItem taskbar })
+        {
+            Dispatcher.BeginInvoke(() => MonitorChosen?.Invoke(taskbar.Value)); // after the menu closed, like the commands
         }
     }
 

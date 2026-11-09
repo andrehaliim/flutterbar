@@ -106,9 +106,15 @@ internal sealed partial class TaskbarDocking
             }
             else
             {
-                // no valid UIA layout yet: dock left of TrayNotifyWnd until one arrives
+                // no valid UIA layout yet: dock left of TrayNotifyWnd until one arrives (a secondary taskbar has none: wait
+                // briefly for the first layout, then fall back to its right edge)
                 size = _preferred;
                 x = PlacementPlanner.FallbackX(taskbar, NativeMethods.TrayNotifyLeft(tray, taskbar), widths[size]);
+                if (WaitingForSecondaryLayout())
+                {
+                    mode = "auto (waiting for the secondary taskbar layout)";
+                    wantVisible = false;
+                }
             }
         }
         var w = widths[size];
@@ -205,19 +211,19 @@ internal sealed partial class TaskbarDocking
         }
     }
 
-    /// <summary>v3.2: with auto-hide on, hide while less than 50% of the live taskbar rect is on the primary monitor.</summary>
+    /// <summary>v3.2: with auto-hide on, hide while less than 50% of the live taskbar rect is on its monitor (<see cref="AutoHideMonitor"/>).</summary>
     private void UpdateAutoHide(Box taskbar, string reason)
     {
         var hidden = false;
         if (_autoHide)
         {
-            if (NativeMethods.PrimaryMonitorRect() is { } monitor)
+            if (AutoHideMonitor() is { } monitor)
             {
                 hidden = AutoHideVisibility.IsHidden(taskbar, monitor);
             }
             else
             {
-                AppLog.Limited("ab-monitor", $"GetMonitorInfo(primary) failed, auto-hide tracking skipped, err={Marshal.GetLastWin32Error()}", 10);
+                AppLog.Limited("ab-monitor", $"GetMonitorInfo(taskbar monitor) failed, auto-hide tracking skipped, err={Marshal.GetLastWin32Error()}", 10);
             }
         }
         if (hidden != _autoHidden)
@@ -238,11 +244,14 @@ internal sealed partial class TaskbarDocking
         _lastQuery = DateTime.UtcNow;
         var dispatcher = _window.Dispatcher;
         var generation = _layoutGeneration;
+        var tray = _tray; // read on the UI thread: the target may change while the query runs (then the generation does too)
+        var secondary = _onSecondary;
+        var monitor = AutoHideMonitor();
         Task.Run(() =>
         {
             try
             {
-                var info = _probe.Read();
+                var info = _probe.Read(tray, secondary, monitor);
                 if (info is null || _dead || _autoHidden || generation != _layoutGeneration)
                 {
                     return; // dead instance, hidden bar, or started before TaskbarCreated: drop silently

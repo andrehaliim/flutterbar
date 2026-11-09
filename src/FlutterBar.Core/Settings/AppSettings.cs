@@ -148,6 +148,51 @@ public sealed class WidgetSettings
         ThemeDark => ThemeDark,
         _ => ThemeSystem,
     };
+
+    private string? _monitor;
+
+    /// <summary>
+    /// Monitor whose taskbar the widget docks to (spec §7.3): its device name (e.g. <c>\\.\DISPLAY2</c>), or null for the
+    /// main taskbar. While that monitor has no taskbar the widget uses the main one and keeps this value. Blank or a
+    /// hand-edited non-string reads as null.
+    /// </summary>
+    [JsonConverter(typeof(LenientOptionalStringConverter))]
+    public string? Monitor
+    {
+        get => _monitor;
+        set => _monitor = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+}
+
+/// <summary>Hand-edited optional string: a string is kept (the property trims it), any other token reads as null.</summary>
+internal sealed class LenientOptionalStringConverter : JsonConverter<string?>
+{
+    public override bool HandleNull => true;
+
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            return reader.GetString();
+        }
+        if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+        {
+            reader.Skip();
+        }
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+        }
+        else
+        {
+            writer.WriteStringValue(value);
+        }
+    }
 }
 
 /// <summary>Hand-edited theme: a string is normalized by <see cref="WidgetSettings.Theme"/>; any other token reads as <c>system</c>.</summary>

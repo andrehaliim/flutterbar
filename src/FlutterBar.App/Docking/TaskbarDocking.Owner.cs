@@ -25,7 +25,7 @@ internal sealed partial class TaskbarDocking
     }
 
     /// <summary>
-    /// Owner = Shell_TrayWnd via GWLP_HWNDPARENT, verified with GetWindowLongPtr (NOT GetWindow(GW_OWNER), which is 0
+    /// Owner = the target taskbar (<c>Shell_TrayWnd</c> or a <c>Shell_SecondaryTrayWnd</c>) via GWLP_HWNDPARENT, verified with GetWindowLongPtr (NOT GetWindow(GW_OWNER), which is 0
     /// while Start/Search is open). Never re-set an owner that is already the tray: that CLEARS it (v3.1 bug). Failures
     /// on timer ticks are counted; 3 in a row recreate the window (see <see cref="OnTimer"/>).
     /// </summary>

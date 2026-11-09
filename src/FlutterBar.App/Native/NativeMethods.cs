@@ -55,6 +55,17 @@ internal static class NativeMethods
         public uint dwFlags;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct MONITORINFOEX
+    {
+        public int cbSize;
+        public RECT rcMonitor, rcWork;
+        public uint dwFlags;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct APPBARDATA
     {
@@ -71,7 +82,7 @@ internal static class NativeMethods
     public static extern IntPtr FindWindow(string cls, string? title);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string? title);
+    public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string? cls, string? title);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -116,6 +127,10 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetMonitorInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfoEx(IntPtr monitor, ref MONITORINFOEX info);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -183,6 +198,16 @@ internal static class NativeMethods
     }
 
     public static Box? PrimaryMonitorRect() => MonitorRect(MonitorFromPoint(default, MONITOR_DEFAULTTOPRIMARY));
+
+    /// <summary>Device name (e.g. <c>\\.\DISPLAY2</c>) and full rect of the monitor <paramref name="hwnd"/> is on, or null.</summary>
+    public static (string Device, Box Rect)? MonitorOf(IntPtr hwnd)
+    {
+        var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+        var info = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
+        return monitor != IntPtr.Zero && GetMonitorInfoEx(monitor, ref info) && !string.IsNullOrEmpty(info.szDevice)
+            ? (info.szDevice, info.rcMonitor.ToBox())
+            : null;
+    }
 
     public static Box? WindowBox(IntPtr hwnd) => hwnd != IntPtr.Zero && GetWindowRect(hwnd, out var r) ? r.ToBox() : null;
 

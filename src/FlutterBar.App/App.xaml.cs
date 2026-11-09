@@ -107,6 +107,10 @@ public partial class App : Application
         CreateWidget("startup");
         _ = InitializeControllerAsync(_controller);
         _controller.Observe(RefreshStartupAsync(null), "Start with Windows");
+        if (args.Contains(TaskbarSurvey.Argument))
+        {
+            TaskbarSurvey.Start(); // round 2 batch 6a spike: every taskbar into diag.log, read-only (also in Release)
+        }
 #if DEBUG
         // Debug-only switches for checking the LogWindow while the widget is hidden (e.g. fullscreen).
         if (args.Contains("--fill-log"))
@@ -228,6 +232,7 @@ public partial class App : Application
         {
             PreferredSize = widget.PreferredSize,
             RequiredWidths = widget.RequiredWidths,
+            TargetMonitor = _settings.Widget.Monitor,
         };
 
         WireMenu(widget, docking);

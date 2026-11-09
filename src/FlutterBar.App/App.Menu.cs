@@ -4,6 +4,7 @@ using FlutterBar.App.Menu;
 using FlutterBar.App.Projects;
 using FlutterBar.App.Theme;
 using FlutterBar.App.Widget;
+using FlutterBar.Core.Docking;
 using FlutterBar.Core.Integration;
 using FlutterBar.Core.Layout;
 using FlutterBar.Core.Orchestration;
@@ -27,6 +28,7 @@ public partial class App
         menu.BackgroundOpacityChanged += ApplyBackgroundOpacity;
         menu.Closed += (_, _) => SaveBackgroundOpacity();
         menu.ThemeChosen += ChangeTheme;
+        menu.MonitorChosen += monitor => ChangeMonitor(docking, monitor);
     }
 
     private void OnMenuOpened(WidgetContextMenu menu)
@@ -34,6 +36,7 @@ public partial class App
         menu.SetState(WidgetSizeNames.Parse(_settings.Widget.Size), _controller?.CurrentProject is not null);
         menu.SetBackgroundOpacity(_settings.Widget.BackgroundOpacity);
         menu.SetTheme(TaskbarTheme.ParseMode(_settings.Widget.Theme));
+        menu.SetMonitors(TaskbarTargets.MenuItems([.. TaskbarWindows.All().Select(t => t.Info)], _settings.Widget.Monitor));
         ApplyStartup(menu);
         Observe(RefreshStartupAsync(menu), "Start with Windows"); // cached state first, the registry read follows
     }
@@ -111,6 +114,27 @@ public partial class App
             vm.BackgroundOpacity = _settings.Widget.BackgroundOpacity / 100.0;
         }
         _opacityChanged = true;
+    }
+
+    /// <summary>
+    /// Show on ▸ (spec §7.3): dock to the taskbar of <paramref name="monitor"/> (null = main). A manual position belongs to
+    /// the old taskbar, so the widget goes back to auto placement there.
+    /// </summary>
+    private void ChangeMonitor(TaskbarDocking docking, string? monitor)
+    {
+        if (string.Equals(monitor, _settings.Widget.Monitor, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+        _settings.Widget.Monitor = monitor;
+        if (docking.IsManual || _settings.Widget.OffsetFromRight is not null)
+        {
+            docking.ResetToAuto();
+            _settings.Widget.OffsetFromRight = null;
+            _settings.Widget.Position = "auto";
+        }
+        docking.TargetMonitor = monitor;
+        SaveSettings($"monitor={monitor ?? "main"}");
     }
 
     /// <summary>Style ▸ Theme (spec §7.6): every FlutterBar window switches at once (DynamicResource brushes), then saved.</summary>

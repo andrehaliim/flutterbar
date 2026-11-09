@@ -97,7 +97,12 @@ spec §7.4/§7.6, checklist.
 
 ### Batch 6: Widget di monitor kedua (temuan 6)
 
-- [ ] 6a Spike: log diagnostik `TaskbarProbe` untuk `Shell_SecondaryTrayWnd`, diuji user di dua monitor; catat di
-  `docs/superpowers/spikes/`.
-- [ ] 6b (rencana ulang setelah spike): docking dengan taskbar target, fallback tanpa `TrayNotifyWnd`, setting
-  `widget.monitor`, menu *Show on ▸*, kembali ke monitor utama bila monitor dicabut.
+- [ ] 6a Spike: `TaskbarSurvey` (argumen `--survey-taskbars`, read-only, sekali 5 detik setelah start) menulis rect,
+  monitor, DPI, anak Win32, pohon UIA + verdict `TaskbarLayoutAnalyzer` untuk `Shell_TrayWnd` dan setiap
+  `Shell_SecondaryTrayWnd` ke diag.log; diuji user di dua monitor; hasil di
+  `docs/superpowers/spikes/2026-11-09-secondary-taskbar-survey.md`.
+- [ ] 6b (direncanakan ulang setelah spike, disetujui user 2026-11-09): `TaskbarTargets` (Core, pilih taskbar + label
+  menu), `TaskbarLayoutAnalyzer` `trayOptional` untuk sekunder, `widget.monitor`, `TaskbarWindows` +
+  `TaskbarDocking.Target.cs` (target dicari ulang tiap reassert, layout reset saat pindah, sekunder menunggu layout maks
+  3 detik, auto-hide memakai monitor target), probe membaca handle target, menu *Show on ▸* (pindah = posisi manual
+  dibuang), kembali ke monitor utama selama monitor target tidak punya taskbar.

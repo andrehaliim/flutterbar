@@ -68,15 +68,31 @@ public class FlutterCommandsTests
         Assert.Equal(FlutterCommands.WaitForStop, FlutterCommands.Blocked(FlutterCommand.BuildRunner, SessionState.Stopping));
     }
 
+    /// <summary>
+    /// Emits the output and the exit once the runner started the process: the fake schedules its startup output when it
+    /// starts, so an Exit scheduled before that would complete before the output (a real process drains first).
+    /// </summary>
+    private static async Task OutputThenExitWhenStarted(FakeProcessHandle handle, string[] stdout, string[] stderr, int exitCode)
+    {
+        while (handle.Spec is null)
+        {
+            await Task.Delay(5);
+        }
+        handle.EmitStdout(stdout);
+        handle.EmitStderr(stderr);
+        handle.Exit(exitCode);
+    }
+
     [Fact]
     public async Task Run_StreamsOutputAfterASeparator()
     {
-        var handle = new FakeProcessHandle(["Resolving dependencies...", "Got dependencies!"], ["note: something"]);
-        handle.Exit(0);
+        var handle = new FakeProcessHandle();
         var launcher = new FakeLauncher(handle);
         var log = new LogBuffer();
 
-        var result = await new FlutterCommandRunner(launcher, Locator(), log).RunAsync(Root, FlutterCommand.PubGet, CancellationToken.None);
+        var run = new FlutterCommandRunner(launcher, Locator(), log).RunAsync(Root, FlutterCommand.PubGet, CancellationToken.None);
+        await OutputThenExitWhenStarted(handle, ["Resolving dependencies...", "Got dependencies!"], ["note: something"], 0);
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Equal(FlutterCommandOutcome.Succeeded, result.Outcome);
         Assert.Equal(["pub", "get"], launcher.Starts.Single().Args);
@@ -98,12 +114,14 @@ public class FlutterCommandsTests
         var log = new LogBuffer();
         log.MarkSessionStart("Session");
         log.Append(LogKind.App, "app line");
-        var handle = new FakeProcessHandle(["done"]);
-        handle.Exit(0);
+        var handle = new FakeProcessHandle();
 
-        await new FlutterCommandRunner(new FakeLauncher(handle), Locator(), log).RunAsync(Root, FlutterCommand.Doctor, CancellationToken.None);
+        var run = new FlutterCommandRunner(new FakeLauncher(handle), Locator(), log).RunAsync(Root, FlutterCommand.Doctor, CancellationToken.None);
+        await OutputThenExitWhenStarted(handle, ["done"], [], 0);
+        await run.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.Equal("app line", log.SinceLastReload()[0].Text);
+        Assert.Contains(log.Snapshot(), l => l.Text == "done");
     }
 
     [Fact]
