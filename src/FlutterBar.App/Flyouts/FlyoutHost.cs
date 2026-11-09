@@ -28,6 +28,7 @@ internal sealed class FlyoutHost
     private readonly Popup _popup;
     private readonly Border _frame;
     private CancellationTokenSource? _contentCts;
+    private FrameworkElement? _active;
     private IInputElement? _focus;
     private HwndSource? _source;
     private bool _activated;
@@ -73,15 +74,21 @@ internal sealed class FlyoutHost
 
     public bool IsOpen => _popup.IsOpen;
 
-    public object? Content => _frame.Child;
+    /// <summary>The flyout the current token belongs to: the popup's content, or the section nested in it.</summary>
+    public object? Content => _active;
 
-    /// <summary>Shows <paramref name="content"/> (replacing what is shown) and focuses <paramref name="focus"/>.</summary>
-    public CancellationToken Show(FrameworkElement content, IInputElement? focus)
+    /// <summary>
+    /// Shows <paramref name="content"/> (replacing what is shown) and focuses <paramref name="focus"/>. When the content hosts
+    /// another flyout (the combined flyout's section), <paramref name="active"/> names it: the returned token, <see cref="Content"/>
+    /// and <see cref="Refocus"/> then refer to that flyout.
+    /// </summary>
+    public CancellationToken Show(FrameworkElement content, IInputElement? focus, FrameworkElement? active = null)
     {
         CancelContent();
         _contentCts = new CancellationTokenSource();
         var token = _contentCts.Token;
         _frame.Child = content;
+        _active = active ?? content;
         _focus = focus;
         if (_popup.IsOpen)
         {
@@ -101,6 +108,15 @@ internal sealed class FlyoutHost
         return token;
     }
 
+    /// <summary>Takes <paramref name="content"/> out of the popup frame when it is shown there (it is about to be nested in another flyout).</summary>
+    public void Release(FrameworkElement content)
+    {
+        if (ReferenceEquals(_frame.Child, content))
+        {
+            _frame.Child = null;
+        }
+    }
+
     public void Close()
     {
         if (_popup.IsOpen)
@@ -113,7 +129,7 @@ internal sealed class FlyoutHost
     /// <summary>Moves keyboard focus inside the open <paramref name="content"/> (e.g. after it was filled asynchronously).</summary>
     public void Refocus(FrameworkElement content, IInputElement focus)
     {
-        if (_popup.IsOpen && ReferenceEquals(_frame.Child, content))
+        if (_popup.IsOpen && ReferenceEquals(_active, content))
         {
             _focus = focus;
             FocusContent();

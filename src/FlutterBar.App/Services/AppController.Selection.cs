@@ -6,6 +6,7 @@ using FlutterBar.App.Flyouts;
 using FlutterBar.App.Widget;
 using FlutterBar.Core.Config;
 using FlutterBar.Core.Devices;
+using FlutterBar.Core.Layout;
 using FlutterBar.Core.Orchestration;
 
 namespace FlutterBar.App.Services;
@@ -102,8 +103,25 @@ internal sealed partial class AppController
         }
     }
 
+    /// <summary>
+    /// Full size: <paramref name="content"/> is the popup. Compact / ButtonsOnly (spec §7.1): every section flyout (also one
+    /// opened by ▶ or a fallback) is shown inside the combined flyout, below its tabs, so the chip clicked to open it stays the toggle.
+    /// </summary>
     private CancellationToken ShowFlyout(WidgetChip kind, FrameworkElement content, IInputElement focus)
     {
+        if (kind != WidgetChip.Combined && _vm.EffectiveSize != WidgetSize.Full)
+        {
+            var combined = EnsureCombinedFlyout();
+            _flyout.Release(content); // a section can only have one parent: it may still be the popup content from a Full-size open
+            UpdateCombinedValues(combined);
+            combined.ShowSection(kind, content);
+            _flyoutKind = WidgetChip.Combined;
+            return _flyout.Show(combined, focus, active: content);
+        }
+        if (_combinedFlyout is { } open && kind != WidgetChip.Combined && ReferenceEquals(open.CurrentSection, content))
+        {
+            open.ShowSection(null, null); // detach the section before it becomes the popup content on its own
+        }
         _flyoutKind = kind;
         return _flyout.Show(content, focus);
     }
@@ -115,7 +133,16 @@ internal sealed partial class AppController
         _flyoutKind = null;
     }
 
+    // Opened from the Compact chip or the ButtonsOnly dot: tabs only, until one is picked.
     private void OpenCombinedFlyout()
+    {
+        var flyout = EnsureCombinedFlyout();
+        UpdateCombinedValues(flyout);
+        flyout.ShowSection(null, null);
+        ShowFlyout(WidgetChip.Combined, flyout, flyout.FocusTarget);
+    }
+
+    private CombinedFlyout EnsureCombinedFlyout()
     {
         var flyout = _combinedFlyout;
         if (flyout is null)
@@ -123,9 +150,11 @@ internal sealed partial class AppController
             flyout = _combinedFlyout = new CombinedFlyout();
             flyout.SectionChosen += chip => ShowFlyoutFor(chip, null);
         }
-        flyout.SetValues(_vm.ProjectName, _vm.BranchVisible ? _vm.Branch : null, _vm.ConfigName, _vm.DeviceName);
-        ShowFlyout(WidgetChip.Combined, flyout, flyout.FocusTarget);
+        return flyout;
     }
+
+    private void UpdateCombinedValues(CombinedFlyout flyout) =>
+        flyout.SetValues(_vm.ProjectName, _vm.BranchVisible ? _vm.Branch : null, _vm.ConfigName, _vm.ConfigHasError, _vm.DeviceName);
 
     /// <summary>Re-reads launch.json (always from disk) and updates the config chip; null when it could not be read.</summary>
     private async Task<(LaunchConfigLoadResult Result, ConfigChipState Chip)?> RefreshConfigChipAsync(string root, int generation)

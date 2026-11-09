@@ -1,7 +1,7 @@
 # FlutterBar — Feedback Uji Putaran 2 Implementation Plan
 
 **Goal:** Menerapkan 9 temuan dari uji manual putaran 2: teks progress di samping chip device dihapus, klik tetap
-berfungsi saat Drag widget aktif, tombol loncat ke log terbaru, redesign mode Compact (sekaligus default), tombol
+berfungsi saat Drag widget aktif, tombol loncat ke log terbaru, redesign mode Compact, tombol
 Flutter (clean / pub get / doctor / build_runner) dan Open terminal, mirror layar HP via scrcpy, widget di taskbar
 monitor kedua, dan sisa teks Indonesia di `SessionControls`.
 
@@ -31,7 +31,7 @@ opsional yang diinstal user sendiri.
 | 4 | Clean, Pub get, Clean + pub get, Doctor, build_runner (hanya bila ada di pubspec) |
 | 5 | Tombol HP di samping log, hanya untuk HP Android fisik; scrcpy diinstal user |
 | 6 | Pindah via menu *Show on ▸*, tanpa duplikat; spike dulu |
-| 7 | Chip jadi tab (daftar di bawahnya, satu popup), label "Configuration", tooltip nilai aktif, juga untuk Buttons only; default ukuran Compact |
+| 7 | Chip jadi tab (daftar di bawahnya, satu popup), label "Configuration", tooltip nilai aktif, juga untuk Buttons only; default ukuran tetap Full (user 2026-11-09, setelah sempat diputuskan Compact) |
 | 8 | Di flyout Flutter dan menu klik kanan; `wt.exe`, fallback PowerShell |
 
 ---
@@ -59,16 +59,15 @@ opsional yang diinstal user sendiri.
   (diperbarui di `OnScrollChanged`).
 - [ ] Klik tombol atau `Ctrl+End`: `_atBottom = true; ScrollToEnd()`.
 
-### Batch 3: Redesign Compact dan default Compact (temuan 7)
+### Batch 3: Redesign Compact (temuan 7)
 
 **Files:** `src/FlutterBar.App/Flyouts/CombinedFlyout.xaml(.cs)`, `src/FlutterBar.App/Services/AppController.Selection.cs`,
-`src/FlutterBar.App/Widget/TaskbarWidget.xaml`, `src/FlutterBar.App/Widget/WidgetViewModel.cs`,
-`src/FlutterBar.Core/Settings/AppSettings.cs`, `tests/FlutterBar.Core.Tests/Settings/AppSettingsStoreTests.cs`, spec §7.1, checklist.
+`src/FlutterBar.App/Widget/TaskbarWidget.xaml`, `src/FlutterBar.App/Widget/WidgetViewModel.cs`, spec §7.1, checklist.
 
 - [ ] Flyout gabungan: baris 4 chip (branch disembunyikan bila bukan repo git) + area konten; klik chip memuat
   flyout bagian itu di area konten dalam popup yang sama; chip aktif disorot.
 - [ ] Chip Compact berlabel `Configuration ▾`, tooltip `project · branch · config · device`.
-- [ ] `WidgetSettings.Size` default `"compact"` (hanya berpengaruh bila key `size` belum ada).
+- [ ] Default ukuran tetap Full (rencana awal default Compact dibatalkan user).
 
 ### Batch 4: Tombol Flutter dan Open terminal (temuan 4, 8)
 

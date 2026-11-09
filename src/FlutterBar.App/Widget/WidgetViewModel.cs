@@ -127,20 +127,38 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     public string ProjectName
     {
         get => _projectName;
-        set => Set(ref _projectName, value);
+        set
+        {
+            if (Set(ref _projectName, value))
+            {
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     public string Branch
     {
         get => _branch;
-        set => Set(ref _branch, value);
+        set
+        {
+            if (Set(ref _branch, value))
+            {
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     /// <summary>False when the project is not a git repo (or git is missing): the branch chip is collapsed (spec §5.5).</summary>
     public bool BranchVisible
     {
         get => _branchVisible;
-        set => Set(ref _branchVisible, value);
+        set
+        {
+            if (Set(ref _branchVisible, value))
+            {
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     public string? BranchToolTip
@@ -152,7 +170,13 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     public string ConfigName
     {
         get => _configName;
-        set => Set(ref _configName, value);
+        set
+        {
+            if (Set(ref _configName, value))
+            {
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
 
     /// <summary>launch.json invalid or the selected config is gone: the chip turns red (spec §10).</summary>
@@ -186,8 +210,19 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     public string DeviceName
     {
         get => _deviceName;
-        set => Set(ref _deviceName, value);
+        set
+        {
+            if (Set(ref _deviceName, value))
+            {
+                OnPropertyChanged(nameof(SelectionSummary));
+            }
+        }
     }
+
+    /// <summary>Compact chip tooltip: the current project, branch (git repos only), config and device.</summary>
+    public string SelectionSummary => string.Join(" · ", _branchVisible
+        ? new[] { _projectName, "⎇ " + _branch, _configName, _deviceName }
+        : new[] { _projectName, _configName, _deviceName });
 
     /// <summary>Last problem (also shown as a toast), kept in the status tooltip until the next action.</summary>
     public string? Notice

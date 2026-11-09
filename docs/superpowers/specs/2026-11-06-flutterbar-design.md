@@ -348,8 +348,10 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 
 ### 7.1 Layout
 - **Full:** `● [project▾] [⎇ branch▾] [config▾] [device▾] | tombol | 🖥 log`
-- **Compact:** `● project · config ▾ | tombol | 🖥 log`. Klik bagian nama untuk membuka flyout gabungan
-  yang berisi keempat dropdown.
+- **Compact:** `● Configuration ▾ | tombol | 🖥 log`. Tooltip chip berisi pilihan aktif
+  (`project · ⎇ branch · config · device`). Klik chip untuk membuka flyout gabungan: baris 4 chip seperti layout Full
+  (branch disembunyikan bila bukan repo git); klik salah satu menampilkan flyout bagian itu di bawah baris chip, dalam
+  popup yang sama (chip aktif bergaris aksen). Flyout yang terbuka sendiri (mis. ▶ tanpa device) juga tampil di sana.
 - **Buttons only:** `● tombol`. Klik titik status untuk membuka flyout gabungan. Kalau titiknya merah,
   klik membuka `LogWindow` di posisi error.
 - Hover chip config menampilkan tooltip berisi `program`, `flavor`, dan `mode`.

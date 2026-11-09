@@ -153,7 +153,7 @@
                 </StackPanel>
             </DockPanel>
 
-            <!-- Compact: ● project · config ▾ | buttons | log (console glyph) -->
+            <!-- Compact: ● Configuration ▾ | buttons | log (console glyph); the tooltip lists the current selection -->
             <DockPanel x:Name="CompactPanel" Margin="6,0" LastChildFill="True" Visibility="Hidden">
                 <Ellipse x:Name="DotCompact" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -163,16 +163,8 @@
                     <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
                             Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
                 </StackPanel>
-                <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" ContentTemplate="{x:Null}"
-                        HorizontalAlignment="Left" ToolTip="Project, branch, config, device" AutomationProperties.Name="Options">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding ProjectName}" MaxWidth="110" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        <TextBlock Text=" · " Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding ConfigName}" MaxWidth="70" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                        <TextBlock Text="&#xE70D;" FontFamily="{StaticResource Style.IconFont}" FontSize="8" Margin="6,1,0,0"
-                                   Foreground="{DynamicResource Fb.Muted}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" Content="Configuration"
+                        HorizontalAlignment="Left" ToolTip="{Binding SelectionSummary}" AutomationProperties.Name="Configuration" />
             </DockPanel>
 
             <!-- ButtonsOnly: ● buttons (the dot opens the combined flyout, or the log when red) -->

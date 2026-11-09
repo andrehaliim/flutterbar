@@ -1,9 +1,16 @@
 <UserControl x:Class="FlutterBar.App.Flyouts.CombinedFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Combined flyout for the Compact / ButtonsOnly sizes (spec §7.1): the four dropdowns in one place. -->
+    <!-- Combined flyout for the Compact / ButtonsOnly sizes (spec §7.1): the four dropdowns as a row of chips like the Full
+         layout; the chosen one's flyout is shown below them, in the same popup. The branch tab is collapsed outside git repos. -->
     <StackPanel>
-        <TextBlock Text="FlutterBar" Style="{StaticResource Fb.FlyoutHeader}" />
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Options" />
+        <UniformGrid Rows="1" Margin="-2,0">
+            <ToggleButton x:Name="ProjectTab" Style="{StaticResource Fb.TabChip}" Click="OnTabClick" AutomationProperties.Name="Project" />
+            <ToggleButton x:Name="BranchTab" Style="{StaticResource Fb.TabChip}" Click="OnTabClick" AutomationProperties.Name="Branch" />
+            <ToggleButton x:Name="ConfigTab" Style="{StaticResource Fb.TabChip}" Click="OnTabClick" AutomationProperties.Name="Config" />
+            <ToggleButton x:Name="DeviceTab" Style="{StaticResource Fb.TabChip}" Click="OnTabClick" AutomationProperties.Name="Device" />
+        </UniformGrid>
+        <Rectangle x:Name="SectionSeparator" Height="1" Margin="0,8" Fill="{DynamicResource Fb.Separator}" Visibility="Collapsed" />
+        <ContentControl x:Name="Section" Focusable="False" Visibility="Collapsed" />
     </StackPanel>
 </UserControl>
