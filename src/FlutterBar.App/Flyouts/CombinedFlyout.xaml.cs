@@ -6,8 +6,8 @@ using FlutterBar.App.Widget;
 namespace FlutterBar.App.Flyouts;
 
 /// <summary>
-/// Compact / ButtonsOnly: a row of tabs (project, branch, config, device) like the Full layout's chips. Picking a tab raises
-/// <see cref="SectionChosen"/>; the controller then places that flyout below the tabs with <see cref="ShowSection"/>.
+/// Compact / ButtonsOnly: one row per dropdown (project, branch, config, device) showing its label and whole value. Picking a
+/// row raises <see cref="SectionChosen"/>; the controller then places that flyout below the rows with <see cref="ShowSection"/>.
 /// </summary>
 internal sealed partial class CombinedFlyout : UserControl
 {
@@ -33,19 +33,19 @@ internal sealed partial class CombinedFlyout : UserControl
 
     public void SetValues(string project, string? branch, string config, bool configHasError, string device)
     {
-        SetTab(ProjectTab, project, "Project");
+        SetRow(ProjectTab, ProjectValue, project, "Project");
         BranchTab.Visibility = branch is null ? Visibility.Collapsed : Visibility.Visible;
-        SetTab(BranchTab, branch is null ? string.Empty : "⎇ " + branch, "Branch");
-        SetTab(ConfigTab, config, "Config");
+        SetRow(BranchTab, BranchValue, branch ?? string.Empty, "Branch");
+        SetRow(ConfigTab, ConfigValue, config, "Config");
         if (configHasError)
         {
-            ConfigTab.SetResourceReference(ForegroundProperty, "Fb.Red");
+            ConfigValue.SetResourceReference(TextBlock.ForegroundProperty, "Fb.Red");
         }
         else
         {
-            ConfigTab.ClearValue(ForegroundProperty);
+            ConfigValue.ClearValue(TextBlock.ForegroundProperty);
         }
-        SetTab(DeviceTab, device, "Device");
+        SetRow(DeviceTab, DeviceValue, device, "Device");
     }
 
     /// <summary>
@@ -64,10 +64,10 @@ internal sealed partial class CombinedFlyout : UserControl
         }
     }
 
-    private static void SetTab(ToggleButton tab, string value, string label)
+    private static void SetRow(ToggleButton row, TextBlock valueText, string value, string label)
     {
-        tab.Content = value;
-        tab.ToolTip = $"{label}: {value}";
+        valueText.Text = value;
+        row.ToolTip = $"{label}: {value}";
     }
 
     private void OnTabClick(object sender, RoutedEventArgs e)
