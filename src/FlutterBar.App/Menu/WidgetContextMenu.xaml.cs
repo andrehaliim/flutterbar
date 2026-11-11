@@ -37,6 +37,7 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         ThemeSystem.Tag = ThemeChoice.System;
         ThemeLight.Tag = ThemeChoice.Light;
         ThemeDark.Tag = ThemeChoice.Dark;
+        MenuDismissal.Attach(this); // a click outside (desktop, another app) closes the menu
     }
 
     public event Action<MenuCommand>? CommandInvoked;

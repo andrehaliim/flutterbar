@@ -40,14 +40,27 @@ internal sealed partial class TaskbarDocking
         popup.Closed += (_, _) => s_active?.OnPopupClosed(popup);
     }
 
-    // Suspend already when the menu starts opening, so no reassert slips in before Opened.
+    // Suspend already when the menu starts opening, so no reassert slips in before Opened. The menu is the one of the
+    // nearest element that has one (the log button has its own), else the window's.
     private void OnContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (!_dead && _window.ContextMenu is { } menu)
+        if (_dead)
         {
-            _openPopups.Add(menu);
+            return;
+        }
+        ContextMenu? menu = null;
+        for (var element = e.OriginalSource as DependencyObject; element is not null && menu is null; element = Parent(element))
+        {
+            menu = (element as FrameworkElement)?.ContextMenu;
+        }
+        if ((menu ?? _window.ContextMenu) is { } opening)
+        {
+            _openPopups.Add(opening);
         }
     }
+
+    private static DependencyObject? Parent(DependencyObject element) =>
+        element is Visual ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element);
 
     // The submenu popup lives in the MenuItem template (PART_Popup); it is tracked like a flyout Popup: suspension plus topmost HWND.
     private void OnSubmenuOpened(object sender)

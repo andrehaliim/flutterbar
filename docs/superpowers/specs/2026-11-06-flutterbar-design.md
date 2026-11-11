@@ -433,7 +433,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 ### 7.5 Flutter tools
 - Tombol logo Flutter (monokrom) di kiri tombol log pada Full dan Compact; di Buttons only lewat menu klik kanan.
 - Flyout berupa daftar: Pub get, Clean, Clean and pub get, Run build_runner (hanya bila `build_runner` ada di
-  `dependencies`/`dev_dependencies` pubspec), Doctor; lalu "Open terminal" di folder project.
+  `dependencies`/`dev_dependencies` pubspec), Doctor.
 - Perintah dijalankan lewat `FlutterToolLocator` (fvm otomatis; build_runner = `dart run build_runner build
   --delete-conflicting-outputs`), satu per satu, tanpa job kill-on-close (daemon seperti adb tetap hidup). Output masuk
   ke log setelah separator (stdout abu-abu, stderr merah); marker reload tidak berubah.
@@ -441,6 +441,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   Starting/Stopping. Satu perintah sekaligus; selama berjalan ada spinner, status, dan Cancel di flyout, tooltip tombol
   berbunyi "Running …", dan ▶ menolak dengan toast "Wait for … to finish". Menutup flyout tidak menghentikan perintah.
 - Selesai: toast singkat; gagal: toast dengan tombol "Open log" (log dibuka di separator perintah); Doctor membuka log.
+- Open terminal tidak ada di flyout Flutter: letaknya di menu tombol log (Full/Compact; klik kiri atau kanan pada tombol
+  log menampilkan pilihan Open log dan Open terminal, log tidak langsung terbuka) dan di menu klik kanan widget (§7.4).
 - Open terminal: `wt.exe -d <root>` bila Windows Terminal terpasang, selain itu `powershell.exe -NoExit` di root, dengan
   PATH yang dibaca ulang dari registry.
 

@@ -5,14 +5,11 @@ using FlutterBar.Core.Sessions;
 
 namespace FlutterBar.App.Flyouts;
 
-/// <summary>What the Flutter flyout shows: session state (what may run), the running command, build_runner, the terminal.</summary>
-internal sealed record FlutterFlyoutState(SessionState Session, FlutterCommand? Running, bool UsesBuildRunner, string TerminalName);
+/// <summary>What the Flutter flyout shows: session state (what may run), the running command, build_runner.</summary>
+internal sealed record FlutterFlyoutState(SessionState Session, FlutterCommand? Running, bool UsesBuildRunner);
 
 internal sealed partial class FlutterFlyout : UserControl
 {
-    /// <summary>Row payload of "Open terminal".</summary>
-    private static readonly object TerminalRow = new();
-
     private readonly FlyoutList _list;
 
     public FlutterFlyout()
@@ -25,17 +22,11 @@ internal sealed partial class FlutterFlyout : UserControl
             {
                 CommandChosen?.Invoke(command);
             }
-            else if (ReferenceEquals(item.Value, TerminalRow))
-            {
-                TerminalChosen?.Invoke();
-            }
         };
         CancelButton.Click += (_, _) => CancelRequested?.Invoke();
     }
 
     public event Action<FlutterCommand>? CommandChosen;
-
-    public event Action? TerminalChosen;
 
     public event Action? CancelRequested;
 
@@ -55,10 +46,7 @@ internal sealed partial class FlutterFlyout : UserControl
         }
         items.Add(FlutterCommand.Doctor);
 
-        var rows = items.Select(command => Row(command, state)).ToList();
-        rows.Add(FlyoutItem.Header("Project folder"));
-        rows.Add(new FlyoutItem { Title = "Open terminal", Detail = state.TerminalName, Value = TerminalRow });
-        _list.SetItems(rows);
+        _list.SetItems(items.Select(command => Row(command, state)).ToList());
     }
 
     private static FlyoutItem Row(FlutterCommand command, FlutterFlyoutState state)

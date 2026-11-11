@@ -36,6 +36,7 @@ internal sealed partial class TaskbarWidget : Window
         _blink.Tick += OnBlink;
         Menu = new WidgetContextMenu();
         ContextMenu = Menu;
+        MenuDismissal.Attach((ContextMenu)Resources["LogButtonMenu"]);
         DataContext = vm;
         vm.PropertyChanged += OnViewModelChanged;
         Closed += OnClosed;
@@ -94,6 +95,23 @@ internal sealed partial class TaskbarWidget : Window
             ApplyFrame();
         }, Dispatcher);
     }
+
+    // Left click on the log button opens its menu (Open log / Open terminal), the same one a right click opens.
+    private void OnLogButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { ContextMenu: { } menu } button)
+        {
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        }
+    }
+
+    // Log button menu: dispatched after the menu has closed, like the widget menu's commands.
+    private void OnLogMenuOpenLogClick(object sender, RoutedEventArgs e) =>
+        Dispatcher.BeginInvoke(() => _vm.OpenLogCommand.Execute(null));
+
+    private void OnLogMenuOpenTerminalClick(object sender, RoutedEventArgs e) =>
+        Dispatcher.BeginInvoke(() => _vm.OpenTerminalCommand.Execute(null));
 
     private Dictionary<WidgetSize, double> MeasureLayouts()
     {

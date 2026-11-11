@@ -14,7 +14,8 @@ namespace FlutterBar.App.Services;
 
 /// <summary>
 /// Flutter flyout (spec §7.5): pub get / clean / build_runner / doctor in the current project, one at a time, output in the
-/// log; and "Open terminal" in the project folder. A command keeps running when the flyout closes (Cancel is in the flyout).
+/// log. A command keeps running when the flyout closes (Cancel is in the flyout). "Open terminal" in the project folder
+/// lives in the log button's menu and in the widget's right-click menu.
 /// </summary>
 internal sealed partial class AppController
 {
@@ -22,9 +23,8 @@ internal sealed partial class AppController
     private FlutterCommand? _flutterRunning;
     private CancellationTokenSource? _flutterCts;
     private bool _usesBuildRunner;
-    private string _terminalName = TerminalLauncher.WindowsTerminal;
 
-    /// <summary>"Open terminal" from the right-click menu.</summary>
+    /// <summary>"Open terminal" from the log button's menu or the widget's right-click menu.</summary>
     public async Task OpenTerminalAsync()
     {
         _flyout.Close();
@@ -75,7 +75,6 @@ internal sealed partial class AppController
         {
             flyout = _flutterFlyout = new FlutterFlyout();
             flyout.CommandChosen += command => Fire(RunFlutterCommandAsync(command), FlutterCommands.Title(command));
-            flyout.TerminalChosen += () => Fire(OpenTerminalAsync(), "Open terminal");
             flyout.CancelRequested += CancelFlutterCommand;
         }
         RefreshFlutterFlyout();
@@ -83,7 +82,7 @@ internal sealed partial class AppController
         Fire(LoadFlutterFlyoutAsync(root, token), "Read pubspec.yaml");
     }
 
-    // build_runner only shows when the project depends on it; the terminal label depends on what is installed.
+    // build_runner only shows when the project depends on it.
     private async Task LoadFlutterFlyoutAsync(string root, CancellationToken token)
     {
         var usesBuildRunner = await Task.Run(() =>
@@ -99,7 +98,6 @@ internal sealed partial class AppController
                 return false;
             }
         });
-        _terminalName = await Task.Run(() => TerminalLauncher.Resolve(_paths, root).Name);
         if (!token.IsCancellationRequested && SameProject(root, Settings.CurrentProject))
         {
             _usesBuildRunner = usesBuildRunner;
@@ -109,7 +107,7 @@ internal sealed partial class AppController
 
     /// <summary>Redraws the Flutter flyout when it is open (session state changed, a command started or ended).</summary>
     private void RefreshFlutterFlyout() =>
-        _flutterFlyout?.SetState(new FlutterFlyoutState(_session.Snapshot.State, _flutterRunning, _usesBuildRunner, _terminalName));
+        _flutterFlyout?.SetState(new FlutterFlyoutState(_session.Snapshot.State, _flutterRunning, _usesBuildRunner));
 
     private async Task RunFlutterCommandAsync(FlutterCommand command)
     {

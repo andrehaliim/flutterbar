@@ -102,6 +102,7 @@ public partial class App : Application
         LogWindow.Configure(_log);
         _viewModel.OpenLogRequested += OpenLog;
         _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
+        _viewModel.OpenTerminalRequested += () => _controller?.Observe(_controller.OpenTerminalAsync(), "Open terminal");
         _importFlow = new ImportFlow(_controller);
         _controller.ImportRequested += _importFlow.Open; // "No config yet → Import from IDE"
         _system = new SystemActions(_controller, new WindowsUserRegistry());
