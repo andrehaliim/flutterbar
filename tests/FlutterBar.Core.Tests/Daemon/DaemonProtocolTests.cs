@@ -107,9 +107,26 @@ public class DaemonProtocolTests
     [Fact]
     public void UnknownEvent_ReturnsOtherEvent()
     {
-        var other = Assert.Single(Parse("start-ok").OfType<OtherEvent>(), e => e.Event == "app.debugPort");
+        var other = Assert.Single(Parse("start-ok").OfType<OtherEvent>(), e => e.Event == "app.webLaunchUrl");
 
-        Assert.Equal("app.debugPort", other.Event);
+        Assert.Equal("app.webLaunchUrl", other.Event);
+    }
+
+    [Fact]
+    public void DebugPort_ParsesAppIdAndWsUri()
+    {
+        var debugPort = Assert.Single(Parse("start-ok").OfType<AppDebugPort>());
+
+        Assert.Equal("7c65a290-0448-420b-baeb-2dcde4e0017b", debugPort.AppId);
+        Assert.Equal("ws://127.0.0.1:54178/JC-OxLa-WG8=/ws", debugPort.WsUri);
+    }
+
+    [Fact]
+    public void DebugPort_WithoutWsUri_HasEmptyWsUri()
+    {
+        var message = Assert.Single(DaemonProtocol.ParseLine("""[{"event":"app.debugPort","params":{"appId":"a","port":1}}]"""));
+
+        Assert.Equal(new AppDebugPort("a", string.Empty), message);
     }
 
     [Fact]

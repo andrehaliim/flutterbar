@@ -28,7 +28,13 @@ public sealed record DaemonLog(string Level, string Message) : DaemonMessage;
 /// </summary>
 public sealed record Response(int Id, int? Code, string? Message, string? Error) : DaemonMessage;
 
-/// <summary>Any other event (e.g. <c>daemon.connected</c>, <c>app.debugPort</c>, <c>app.webLaunchUrl</c>).</summary>
+/// <summary>
+/// Event <c>app.debugPort</c>: the Dart VM service of the app is reachable at <c>WsUri</c> (empty when absent). The
+/// URI carries the service's auth token, so it must not be logged.
+/// </summary>
+public sealed record AppDebugPort(string AppId, string WsUri) : DaemonMessage;
+
+/// <summary>Any other event (e.g. <c>daemon.connected</c>, <c>app.webLaunchUrl</c>).</summary>
 public sealed record OtherEvent(string Event) : DaemonMessage;
 
 /// <summary>A line that is not a JSON array of messages (banner, "Launching ...", framework logs, ...).</summary>

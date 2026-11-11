@@ -3,6 +3,7 @@ using FlutterBar.Core.Daemon;
 using FlutterBar.Core.Diagnostics;
 using FlutterBar.Core.Logging;
 using FlutterBar.Core.Processes;
+using FlutterBar.Core.VmService;
 
 namespace FlutterBar.Core.Sessions;
 
@@ -16,15 +17,24 @@ namespace FlutterBar.Core.Sessions;
 /// and closes it in <see cref="DisposeAsync"/> (FlutterBar exit).
 /// </para>
 /// <para>
+/// With a <paramref name="vmLogs"/> connector, <c>dart:developer</c> <c>log()</c> output is read from the app's VM
+/// service (announced by <c>app.debugPort</c>) and appended to the log; flutter does not forward it on stdout. It
+/// arrives on its own connection, so its order relative to stdout lines is not guaranteed.
+/// </para>
+/// <para>
 /// State changes driven by process output happen on the reader threads in stream order; <see cref="Changed"/> is raised
 /// outside the internal lock on whichever thread caused the change. Notifications from different threads may arrive out
 /// of order, so <see cref="Snapshot"/> is the authoritative latest state.
 /// </para>
 /// </summary>
 public sealed class RunSession(
-    IProcessLauncher launcher, LogBuffer log, TimeSpan? stopGrace = null, RetainedJobs? retainedJobs = null) : IAsyncDisposable
+    IProcessLauncher launcher, LogBuffer log, TimeSpan? stopGrace = null, RetainedJobs? retainedJobs = null,
+    IVmLogConnector? vmLogs = null) : IAsyncDisposable
 {
     private const string BusyMessage = "Reload in progress";
+
+    /// <summary><c>dart:developer</c> levels from this value up (<c>Level.SEVERE</c> of package:logging) are errors.</summary>
+    private const int SevereLevel = 1000;
 
     private static readonly SessionSnapshot IdleSnapshot = new(SessionState.Idle, false, 0, null, null, false, false, null);
 
@@ -33,6 +43,7 @@ public sealed class RunSession(
     private readonly TimeSpan _stopGrace = stopGrace ?? TimeSpan.FromSeconds(5);
     private readonly bool _ownsRetainedJobs = retainedJobs is null;
     private readonly RetainedJobs _retainedJobs = retainedJobs ?? new RetainedJobs();
+    private readonly IVmLogConnector? _vmLogs = vmLogs;
     private readonly object _gate = new();
 
     private SessionState _state = SessionState.Idle;
@@ -72,6 +83,7 @@ public sealed class RunSession(
     {
         ArgumentNullException.ThrowIfNull(request);
         Context ctx;
+        Context? previousCtx;
         IProcessHandle? previous;
         SessionSnapshot? changed;
         lock (_gate)
@@ -81,7 +93,8 @@ public sealed class RunSession(
             {
                 throw new InvalidOperationException($"Cannot start a session while {_state}.");
             }
-            previous = _ctx?.Handle;
+            previousCtx = _ctx;
+            previous = previousCtx?.Handle;
             ctx = new Context(request);
             _ctx = ctx;
             _state = SessionState.Starting;
@@ -92,6 +105,10 @@ public sealed class RunSession(
             changed = CommitLocked();
         }
         Raise(changed);
+        if (previousCtx is not null)
+        {
+            CloseVmLogs(previousCtx);
+        }
 
         IProcessHandle handle;
         try
@@ -328,6 +345,7 @@ public sealed class RunSession(
             DiagLog.Write("RunSession: stop failed", ex);
             failure = ex;
         }
+        CloseVmLogs(ctx);
 
         SessionSnapshot? changed;
         lock (_gate)
@@ -449,6 +467,7 @@ public sealed class RunSession(
         var messages = DaemonProtocol.ParseLine(line);
         var appends = new List<(LogKind Kind, string Text)>();
         (PendingReload Pending, ReloadOutcome Outcome)? completion = null;
+        Uri? vmService = null;
         SessionSnapshot? changed;
         lock (_gate)
         {
@@ -514,6 +533,15 @@ public sealed class RunSession(
                             appends.Add((kind, text));
                         }
                         break;
+                    case AppDebugPort debugPort:
+                        if (_vmLogs is not null && !ctx.VmLogsRequested && !ctx.VmLogsClosed
+                            && Uri.TryCreate(debugPort.WsUri, UriKind.Absolute, out var wsUri)
+                            && wsUri.Scheme is "ws" or "wss")
+                        {
+                            ctx.VmLogsRequested = true;
+                            vmService = wsUri;
+                        }
+                        break;
                     case AppStop stop when stop.Error is { } error:
                         _hasError = true;
                         appends.Add((LogKind.Error, error));
@@ -558,6 +586,153 @@ public sealed class RunSession(
             {
                 c.Pending.Completion.TrySetResult(c.Outcome);
             }
+            if (vmService is not null)
+            {
+                OpenVmLogs(ctx, vmService);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ dart:developer log()
+
+    /// <summary>
+    /// Starts reading <c>log()</c> output. Must not throw: it runs on a reader thread, and a failure here only costs
+    /// the log() lines.
+    /// </summary>
+    private void OpenVmLogs(Context ctx, Uri wsUri)
+    {
+        IAsyncDisposable connection;
+        try
+        {
+            connection = _vmLogs!.Connect(wsUri, record => OnVmLog(ctx, record), reason => OnVmLogsUnavailable(ctx, reason));
+        }
+        catch (Exception ex)
+        {
+            // Reported to the user in the log and to diag.log (without the URI: it carries the auth token).
+            DiagLog.Write("RunSession: couldn't start reading log() output", ex);
+            OnVmLogsUnavailable(ctx, ex.Message);
+            return;
+        }
+
+        bool keep;
+        lock (_gate)
+        {
+            keep = !ctx.VmLogsClosed;
+            if (keep)
+            {
+                ctx.VmLogs = connection;
+            }
+        }
+        if (!keep)
+        {
+            // The session ended while connecting.
+            _ = DisposeVmLogsAsync(connection);
+        }
+    }
+
+    /// <summary>Stops reading <c>log()</c> output for <paramref name="ctx"/>; safe to call more than once.</summary>
+    private void CloseVmLogs(Context ctx)
+    {
+        IAsyncDisposable? connection;
+        lock (_gate)
+        {
+            ctx.VmLogsClosed = true;
+            connection = ctx.VmLogs;
+            ctx.VmLogs = null;
+        }
+        if (connection is not null)
+        {
+            _ = DisposeVmLogsAsync(connection);
+        }
+    }
+
+    private static async Task DisposeVmLogsAsync(IAsyncDisposable connection)
+    {
+        try
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Nothing to recover: the connection is gone either way.
+            DiagLog.Write("RunSession: closing the VM service connection failed", ex);
+        }
+    }
+
+    private void OnVmLogsUnavailable(Context ctx, string reason)
+    {
+        try
+        {
+            lock (_gate)
+            {
+                if (_ctx != ctx || ctx.VmLogsClosed)
+                {
+                    return;
+                }
+            }
+            _log.Append(LogKind.Tool, $"log() output from dart:developer won't be shown: {reason}");
+        }
+        catch (Exception ex)
+        {
+            // Runs on the connector's thread, where an escaping exception would be lost or crash the process.
+            DiagLog.Write("RunSession: reporting the missing log() stream failed", ex);
+        }
+    }
+
+    /// <summary>
+    /// One <c>log()</c> call: <c>[name] message</c> (<c>[log]</c> without a name), then the error and the stack trace
+    /// when given. All of it is an error when the level is severe or an error object was passed.
+    /// </summary>
+    private void OnVmLog(Context ctx, VmLogRecord record)
+    {
+        try
+        {
+            var isError = record.Level >= SevereLevel || record.Error is not null;
+            var kind = isError ? LogKind.Error : LogKind.App;
+            SessionSnapshot? changed;
+            lock (_gate)
+            {
+                if (_ctx != ctx || ctx.VmLogsClosed)
+                {
+                    return;
+                }
+                if (isError)
+                {
+                    _hasError = true;
+                }
+                changed = CommitLocked();
+            }
+
+            try
+            {
+                var name = record.LoggerName.Length > 0 ? record.LoggerName : "log";
+                var first = true;
+                foreach (var text in SplitLines(record.Message))
+                {
+                    _log.Append(kind, first ? $"[{name}] {text}" : text);
+                    first = false;
+                }
+                foreach (var extra in new[] { record.Error, record.StackTrace })
+                {
+                    if (string.IsNullOrWhiteSpace(extra))
+                    {
+                        continue;
+                    }
+                    foreach (var text in SplitLines(extra.TrimEnd()))
+                    {
+                        _log.Append(kind, text);
+                    }
+                }
+            }
+            finally
+            {
+                Raise(changed);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Runs on the connector's thread: a throwing log subscriber must not end the log() stream.
+            DiagLog.Write("RunSession: handling a log() record failed", ex);
         }
     }
 
@@ -676,6 +851,7 @@ public sealed class RunSession(
         PendingReload? pending;
         string? failure = null;
         SessionSnapshot? changed;
+        CloseVmLogs(ctx);
         lock (_gate)
         {
             if (_ctx != ctx)
@@ -739,6 +915,7 @@ public sealed class RunSession(
         Raise(changed);
         if (kill)
         {
+            CloseVmLogs(ctx);
             try
             {
                 ctx.Handle?.KillTree();
@@ -828,5 +1005,8 @@ public sealed class RunSession(
         public string? LastStderr;
         public PendingReload? Pending;
         public bool StopRequested;
+        public bool VmLogsRequested;
+        public bool VmLogsClosed;
+        public IAsyncDisposable? VmLogs;
     }
 }

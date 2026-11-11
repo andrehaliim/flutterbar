@@ -18,6 +18,7 @@ using FlutterBar.Core.Orchestration;
 using FlutterBar.Core.Processes;
 using FlutterBar.Core.Sessions;
 using FlutterBar.Core.Settings;
+using FlutterBar.Core.VmService;
 
 namespace FlutterBar.App;
 
@@ -96,7 +97,7 @@ public partial class App : Application
         _settings = LoadSettings(out var warning); // before any window exists, so the synchronous read cannot stall the taskbar
         _saver = new SettingsSaver(_store, _settings);
         _theme = new TaskbarTheme(Resources, Dispatcher, TaskbarTheme.ParseMode(_settings.Widget.Theme));
-        _session = new RunSession(new ProcessLauncher(), _log);
+        _session = new RunSession(new ProcessLauncher(), _log, vmLogs: new VmLogConnector());
         _viewModel = new WidgetViewModel(_session, Dispatcher) { BackgroundOpacity = _settings.Widget.BackgroundOpacity / 100.0 };
         LogWindow.Configure(_log);
         _viewModel.OpenLogRequested += OpenLog;

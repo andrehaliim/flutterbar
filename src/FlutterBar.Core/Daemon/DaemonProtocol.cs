@@ -85,6 +85,7 @@ public static class DaemonProtocol
                 "app.started" => new AppStarted(Str(p, "appId") ?? string.Empty),
                 "app.log" => new AppLog(Str(p, "appId") ?? string.Empty, Str(p, "log") ?? string.Empty, Bool(p, "error")),
                 "app.progress" => new AppProgress(Str(p, "message"), Bool(p, "finished")),
+                "app.debugPort" => new AppDebugPort(Str(p, "appId") ?? string.Empty, Str(p, "wsUri") ?? string.Empty),
                 "app.stop" => new AppStop(Str(p, "appId") ?? string.Empty, Str(p, "error")),
                 "daemon.logMessage" => new DaemonLog(Str(p, "level") ?? string.Empty, Str(p, "message") ?? string.Empty),
                 _ => new OtherEvent(name),
