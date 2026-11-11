@@ -139,9 +139,20 @@ public sealed class DockingRulesTests
     }
 
     [Fact]
-    public void Fullscreen_OtherMonitor_Never()
+    public void Fullscreen_ForegroundOnOtherMonitor_TaskbarMonitorNotCovered_NotFullscreen()
     {
-        Assert.False(FullscreenRule.Evaluate(false, Fg(Monitor, onTaskbarMonitor: false), 3, false));
+        Assert.False(FullscreenRule.Evaluate(false, Fg(Monitor, onTaskbarMonitor: false), 3, true));
+    }
+
+    [Fact]
+    public void Fullscreen_ForegroundOnOtherMonitor_TaskbarMonitorCovered_StaysFullscreen()
+    {
+        // Fullscreen video on the taskbar monitor, then a click on a window / the desktop of another monitor.
+        var window = Fg(new Box(100, 100, 800, 600), onTaskbarMonitor: false) with { TaskbarMonitorCovered = true };
+        var shell = Fg(Monitor, shell: true, onTaskbarMonitor: false) with { TaskbarMonitorCovered = true };
+        Assert.True(FullscreenRule.Evaluate(false, window, QunsAcceptsNotifications, false));
+        Assert.True(FullscreenRule.Evaluate(false, shell, QunsAcceptsNotifications, false));
+        Assert.False(FullscreenRule.Evaluate(true, window, QunsAcceptsNotifications, true)); // auto-hide still wins
     }
 
     [Theory]

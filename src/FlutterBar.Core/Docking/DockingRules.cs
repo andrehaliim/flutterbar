@@ -50,7 +50,12 @@ public static class ManualPlacement
 /// <param name="OnTaskbarMonitor">The foreground window is on the monitor that hosts the taskbar.</param>
 /// <param name="Rect">Foreground window rect (physical px).</param>
 /// <param name="Monitor">That monitor's full rect (<c>rcMonitor</c>).</param>
-public sealed record ForegroundInfo(bool IsNullOrSelf, bool IsShell, bool OnTaskbarMonitor, Box Rect, Box Monitor);
+/// <param name="TaskbarMonitorCovered">
+/// Only read when the foreground window is on another monitor: the topmost application window on the taskbar's
+/// monitor covers that whole monitor (a fullscreen app that merely lost the focus).
+/// </param>
+public sealed record ForegroundInfo(
+    bool IsNullOrSelf, bool IsShell, bool OnTaskbarMonitor, Box Rect, Box Monitor, bool TaskbarMonitorCovered = false);
 
 /// <summary>Fullscreen rule from spike v2 plus <c>SHQueryUserNotificationState</c> (spec §7.3).</summary>
 public static class FullscreenRule
@@ -59,8 +64,10 @@ public static class FullscreenRule
     public const int QunsRunningD3DFullScreen = 3;
 
     /// <summary>
-    /// Only when auto-hide is off; never for shell windows or windows on another monitor. Fullscreen when the
+    /// Only when auto-hide is off; never for shell windows on the taskbar's monitor. Fullscreen when the
     /// foreground window covers the whole monitor, or the notification state is QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN.
+    /// With the foreground on another monitor (shell or not) the focus says nothing about the taskbar's monitor:
+    /// <see cref="ForegroundInfo.TaskbarMonitorCovered"/> decides.
     /// </summary>
     public static bool Evaluate(bool autoHide, ForegroundInfo foreground, int notificationState, bool previous)
     {
@@ -73,7 +80,11 @@ public static class FullscreenRule
         {
             return previous;
         }
-        if (foreground.IsShell || !foreground.OnTaskbarMonitor)
+        if (!foreground.OnTaskbarMonitor)
+        {
+            return foreground.TaskbarMonitorCovered;
+        }
+        if (foreground.IsShell)
         {
             return false;
         }

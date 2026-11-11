@@ -7,7 +7,8 @@ namespace FlutterBar.App.Docking;
 /// <summary>
 /// Win32 glue for <see cref="FullscreenRule"/>: the foreground window (classified as shell by its owning process,
 /// <see cref="ShellWindowRules"/>), its monitor versus the taskbar's monitor, and <c>SHQueryUserNotificationState</c>
-/// (QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN). UI thread only; cheap (no UIA).
+/// (QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN). While the foreground is on another monitor, the topmost application
+/// window on the taskbar's monitor is checked instead (z-order walk). UI thread only; cheap (no UIA).
 /// </summary>
 internal sealed class FullscreenDetector
 {
@@ -43,8 +44,44 @@ internal sealed class FullscreenDetector
         var monitor = NativeMethods.MonitorFromWindow(fg, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var monitorRect = NativeMethods.MonitorRect(monitor);
         // unknown monitor rect -> "not on the taskbar monitor" (never hide on a failed lookup)
-        var onTaskbarMonitor = monitorRect is not null && monitor == NativeMethods.MonitorFromWindow(tray, NativeMethods.MONITOR_DEFAULTTONEAREST);
-        return new ForegroundInfo(false, shell, onTaskbarMonitor, NativeMethods.WindowBox(fg) ?? default, monitorRect ?? default);
+        var trayMonitor = NativeMethods.MonitorFromWindow(tray, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var onTaskbarMonitor = monitorRect is not null && monitor == trayMonitor;
+        // focus on another monitor: a fullscreen app may still cover the taskbar's monitor
+        var covered = !onTaskbarMonitor && TopWindowCoversMonitor(trayMonitor);
+        return new ForegroundInfo(false, shell, onTaskbarMonitor, NativeMethods.WindowBox(fg) ?? default, monitorRect ?? default, covered);
+    }
+
+    /// <summary>
+    /// True when the topmost application window on <paramref name="monitor"/> (z-order; skipping our own windows, shell,
+    /// hidden, minimized, cloaked and tool windows) covers the whole monitor. False on any failed lookup (never hide by mistake).
+    /// </summary>
+    private static bool TopWindowCoversMonitor(IntPtr monitor)
+    {
+        if (NativeMethods.MonitorRect(monitor) is not { } monitorRect)
+        {
+            return false;
+        }
+        var covers = false;
+        NativeMethods.EnumWindows(
+            (hwnd, _) =>
+            {
+                if (!NativeMethods.IsWindowVisible(hwnd) || NativeMethods.IsIconic(hwnd)
+                    || NativeMethods.MonitorFromWindow(hwnd, NativeMethods.MONITOR_DEFAULTTONEAREST) != monitor
+                    || ((long)NativeMethods.GetWindowLongPtr(hwnd, NativeMethods.GWL_EXSTYLE) & NativeMethods.WS_EX_TOOLWINDOW) != 0
+                    || NativeMethods.IsCloaked(hwnd))
+                {
+                    return true;
+                }
+                NativeMethods.GetWindowThreadProcessId(hwnd, out var pid);
+                if (pid == (uint)Environment.ProcessId || ShellWindowRules.IsShell(NativeMethods.ClassOf(hwnd), ProcessNames.OfWindow(hwnd)))
+                {
+                    return true;
+                }
+                covers = NativeMethods.WindowBox(hwnd) is { } rect && FullscreenRule.CoversMonitor(rect, monitorRect);
+                return false; // first application window found: stop
+            },
+            IntPtr.Zero);
+        return covers;
     }
 
     private static int QueryNotificationState()
