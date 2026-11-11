@@ -51,11 +51,16 @@ public static class ManualPlacement
 /// <param name="Rect">Foreground window rect (physical px).</param>
 /// <param name="Monitor">That monitor's full rect (<c>rcMonitor</c>).</param>
 /// <param name="TaskbarMonitorCovered">
-/// Only read when the foreground window is on another monitor: the topmost application window on the taskbar's
-/// monitor covers that whole monitor (a fullscreen app that merely lost the focus).
+/// Only read when the foreground window is on another monitor or is the desktop: the topmost application window on
+/// the taskbar's monitor covers that whole monitor (a fullscreen app that merely lost the focus).
+/// </param>
+/// <param name="IsDesktop">
+/// The foreground window is the desktop (<see cref="ShellWindowRules.IsDesktop"/>). It spans every monitor, so
+/// <paramref name="OnTaskbarMonitor"/> does not say where the click landed.
 /// </param>
 public sealed record ForegroundInfo(
-    bool IsNullOrSelf, bool IsShell, bool OnTaskbarMonitor, Box Rect, Box Monitor, bool TaskbarMonitorCovered = false);
+    bool IsNullOrSelf, bool IsShell, bool OnTaskbarMonitor, Box Rect, Box Monitor, bool TaskbarMonitorCovered = false,
+    bool IsDesktop = false);
 
 /// <summary>Fullscreen rule from spike v2 plus <c>SHQueryUserNotificationState</c> (spec §7.3).</summary>
 public static class FullscreenRule
@@ -66,8 +71,8 @@ public static class FullscreenRule
     /// <summary>
     /// Only when auto-hide is off; never for shell windows on the taskbar's monitor. Fullscreen when the
     /// foreground window covers the whole monitor, or the notification state is QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN.
-    /// With the foreground on another monitor (shell or not) the focus says nothing about the taskbar's monitor:
-    /// <see cref="ForegroundInfo.TaskbarMonitorCovered"/> decides.
+    /// With the foreground on another monitor (shell or not), or on the desktop (one window across all monitors),
+    /// the focus says nothing about the taskbar's monitor: <see cref="ForegroundInfo.TaskbarMonitorCovered"/> decides.
     /// </summary>
     public static bool Evaluate(bool autoHide, ForegroundInfo foreground, int notificationState, bool previous)
     {
@@ -80,7 +85,7 @@ public static class FullscreenRule
         {
             return previous;
         }
-        if (!foreground.OnTaskbarMonitor)
+        if (!foreground.OnTaskbarMonitor || foreground.IsDesktop)
         {
             return foreground.TaskbarMonitorCovered;
         }
@@ -122,4 +127,10 @@ public static class ShellWindowRules
     /// <param name="processName">Owning process name, or null when the lookup failed (treated as shell: never hide by mistake).</param>
     public static bool IsShell(string className, string? processName) =>
         ShellClasses.Contains(className) || processName is null || ShellProcesses.Contains(processName);
+
+    /// <summary>
+    /// The desktop window (<c>Progman</c>, or the <c>WorkerW</c> that hosts the icons). One window across all monitors:
+    /// <c>MonitorFromWindow</c> answers with the monitor of the largest overlap, not the one that was clicked.
+    /// </summary>
+    public static bool IsDesktop(string className) => className is "Progman" or "WorkerW";
 }

@@ -7,8 +7,8 @@ namespace FlutterBar.App.Docking;
 /// <summary>
 /// Win32 glue for <see cref="FullscreenRule"/>: the foreground window (classified as shell by its owning process,
 /// <see cref="ShellWindowRules"/>), its monitor versus the taskbar's monitor, and <c>SHQueryUserNotificationState</c>
-/// (QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN). While the foreground is on another monitor, the topmost application
-/// window on the taskbar's monitor is checked instead (z-order walk). UI thread only; cheap (no UIA).
+/// (QUNS_BUSY / QUNS_RUNNING_D3D_FULL_SCREEN). While the foreground is on another monitor or is the desktop, the topmost
+/// application window on the taskbar's monitor is checked instead (z-order walk). UI thread only; cheap (no UIA).
 /// </summary>
 internal sealed class FullscreenDetector
 {
@@ -46,9 +46,12 @@ internal sealed class FullscreenDetector
         // unknown monitor rect -> "not on the taskbar monitor" (never hide on a failed lookup)
         var trayMonitor = NativeMethods.MonitorFromWindow(tray, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var onTaskbarMonitor = monitorRect is not null && monitor == trayMonitor;
-        // focus on another monitor: a fullscreen app may still cover the taskbar's monitor
-        var covered = !onTaskbarMonitor && TopWindowCoversMonitor(trayMonitor);
-        return new ForegroundInfo(false, shell, onTaskbarMonitor, NativeMethods.WindowBox(fg) ?? default, monitorRect ?? default, covered);
+        // the desktop is one window across all monitors: its monitor is not where the click landed
+        var desktop = ShellWindowRules.IsDesktop(className);
+        // focus on another monitor or on the desktop: a fullscreen app may still cover the taskbar's monitor
+        var covered = (!onTaskbarMonitor || desktop) && TopWindowCoversMonitor(trayMonitor);
+        return new ForegroundInfo(
+            false, shell, onTaskbarMonitor, NativeMethods.WindowBox(fg) ?? default, monitorRect ?? default, covered, desktop);
     }
 
     /// <summary>

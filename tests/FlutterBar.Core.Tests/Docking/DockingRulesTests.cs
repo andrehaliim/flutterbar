@@ -155,6 +155,17 @@ public sealed class DockingRulesTests
         Assert.False(FullscreenRule.Evaluate(true, window, QunsAcceptsNotifications, true)); // auto-hide still wins
     }
 
+    [Fact]
+    public void Fullscreen_DesktopForeground_TaskbarMonitorCoverageDecides()
+    {
+        // The desktop (Progman) spans every monitor and is reported on the primary one wherever the click landed:
+        // fullscreen video on the taskbar monitor, then a click on the desktop of another monitor.
+        var desktop = Fg(new Box(-1080, 0, 1920, 1920), shell: true) with { IsDesktop = true };
+        Assert.True(FullscreenRule.Evaluate(false, desktop with { TaskbarMonitorCovered = true }, QunsAcceptsNotifications, false));
+        Assert.False(FullscreenRule.Evaluate(false, desktop, QunsAcceptsNotifications, true));
+        Assert.False(FullscreenRule.Evaluate(true, desktop with { TaskbarMonitorCovered = true }, QunsAcceptsNotifications, true)); // auto-hide still wins
+    }
+
     [Theory]
     [InlineData(2, true)] // QUNS_BUSY
     [InlineData(3, true)] // QUNS_RUNNING_D3D_FULL_SCREEN
@@ -180,6 +191,17 @@ public sealed class DockingRulesTests
     public void Shell_ClassOrProcess(string cls, string? process, bool expected)
     {
         Assert.Equal(expected, ShellWindowRules.IsShell(cls, process));
+    }
+
+    [Theory]
+    [InlineData("Progman", true)]
+    [InlineData("WorkerW", true)]
+    [InlineData("Shell_TrayWnd", false)]
+    [InlineData("XamlExplorerHostIslandWindow", false)]
+    [InlineData("Chrome_WidgetWin_1", false)]
+    public void Shell_Desktop(string cls, bool expected)
+    {
+        Assert.Equal(expected, ShellWindowRules.IsDesktop(cls));
     }
 
     // ---- preferred size and widths
