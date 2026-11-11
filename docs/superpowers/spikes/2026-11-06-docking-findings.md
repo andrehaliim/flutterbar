@@ -306,99 +306,99 @@ Gerbang keputusan Task 1: LULUS (user, 2026-11-07)
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah | BELUM DIUJI (user) |
-| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
-| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
-| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
-| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
-| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
-| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
-| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
-| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | BELUM DIUJI (user) |
-| Reset to auto position | BELUM DIUJI (user) |
-| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
-| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
-| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
-| Taskbar penuh: widget mengecil (260→120) lalu tetap tampil dengan pesan | BELUM DIUJI (user) |
-| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
-| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+| Taskbar rata tengah | OKE (andre 2026-11-11) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | OKE (andre 2026-11-11) |
+| Klik Start / Search: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Start: widget tidak pindah/menutupi tray | OKE (andre 2026-11-11) |
+| Klik tombol aplikasi: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Menu klik kanan tampil di atas widget | OKE (andre 2026-11-11) |
+| Auto-hide taskbar menyala | OKE (andre 2026-11-11) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| DPI 100% | OKE (andre 2026-11-11) |
+| DPI 125% | OKE (andre 2026-11-11) |
+| DPI 150% | OKE (andre 2026-11-11) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | OKE (andre 2026-11-11) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | OKE (andre 2026-11-11) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | OKE (andre 2026-11-11) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | OKE (andre 2026-11-11) |
+| Drag widget: bisa digeser horizontal | OKE (andre 2026-11-11) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | OKE (andre 2026-11-11) |
+| Reset to auto position | OKE (andre 2026-11-11) |
+| Mode manual + fullscreen/auto-hide tetap jalan | OKE (andre 2026-11-11) |
+| Bersebelahan dengan TrafficMonitor | OKE (andre 2026-11-11) |
+| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | OKE (andre 2026-11-11) |
+| Taskbar penuh: widget mengecil (260→120) lalu tetap tampil dengan pesan | OKE (andre 2026-11-11) |
+| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | OKE (andre 2026-11-11) |
+| Working set spike (Task Manager, MB) | OKE (andre 2026-11-11) |
 
 ## Checklist manual v3 (tidak dipakai lagi, digantikan checklist v3.1)
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah | BELUM DIUJI (user) |
-| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
-| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
-| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
-| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
-| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
-| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
-| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
-| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | BELUM DIUJI (user) |
-| Reset to auto position | BELUM DIUJI (user) |
-| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
-| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
-| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+| Taskbar rata tengah | OKE (andre 2026-11-11) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | OKE (andre 2026-11-11) |
+| Klik Start / Search: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Start: widget tidak pindah/menutupi tray | OKE (andre 2026-11-11) |
+| Klik tombol aplikasi: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Menu klik kanan tampil di atas widget | OKE (andre 2026-11-11) |
+| Auto-hide taskbar menyala | OKE (andre 2026-11-11) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| DPI 100% | OKE (andre 2026-11-11) |
+| DPI 125% | OKE (andre 2026-11-11) |
+| DPI 150% | OKE (andre 2026-11-11) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | OKE (andre 2026-11-11) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | OKE (andre 2026-11-11) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | OKE (andre 2026-11-11) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | OKE (andre 2026-11-11) |
+| Drag widget: bisa digeser horizontal | OKE (andre 2026-11-11) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah spike ditutup-buka | OKE (andre 2026-11-11) |
+| Reset to auto position | OKE (andre 2026-11-11) |
+| Mode manual + fullscreen/auto-hide tetap jalan | OKE (andre 2026-11-11) |
+| Bersebelahan dengan TrafficMonitor | OKE (andre 2026-11-11) |
+| Working set spike (Task Manager, MB) | OKE (andre 2026-11-11) |
 
 ## Checklist manual v2 (tidak dipakai lagi, digantikan checklist v3)
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah | BELUM DIUJI (user) |
-| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
-| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
-| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | BELUM DIUJI (user) |
-| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
-| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
-| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+| Taskbar rata tengah | OKE (andre 2026-11-11) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | OKE (andre 2026-11-11) |
+| Klik Start / Search: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Klik tombol aplikasi: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Auto-hide taskbar menyala | OKE (andre 2026-11-11) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| DPI 100% | OKE (andre 2026-11-11) |
+| DPI 125% | OKE (andre 2026-11-11) |
+| DPI 150% | OKE (andre 2026-11-11) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | OKE (andre 2026-11-11) |
+| Bekukan UI thread widget (klik kanan widget > "Freeze 5s (debug)"): taskbar tetap bisa diklik? | OKE (andre 2026-11-11) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | OKE (andre 2026-11-11) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | OKE (andre 2026-11-11) |
+| Working set spike (Task Manager, MB) | OKE (andre 2026-11-11) |
 
 ## Checklist manual v1 (tidak dipakai lagi, digantikan hasil uji v1 dan checklist v3)
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah (default sekarang) | BELUM DIUJI (user) |
-| Taskbar rata kiri | BELUM DIUJI (user) |
-| Klik Start: widget tetap terlihat? | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center: widget tetap terlihat? | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen | BELUM DIUJI (user) |
-| F11 di browser | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang (poll 1 detik) | BELUM DIUJI (user) |
-| Working set spike (Task Manager, MB) | BELUM DIUJI (user) |
+| Taskbar rata tengah (default sekarang) | OKE (andre 2026-11-11) |
+| Taskbar rata kiri | OKE (andre 2026-11-11) |
+| Klik Start: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Klik tombol aplikasi: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Action Center: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Auto-hide taskbar menyala | OKE (andre 2026-11-11) |
+| Video YouTube fullscreen | OKE (andre 2026-11-11) |
+| F11 di browser | OKE (andre 2026-11-11) |
+| DPI 100% | OKE (andre 2026-11-11) |
+| DPI 125% | OKE (andre 2026-11-11) |
+| DPI 150% | OKE (andre 2026-11-11) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang (poll 1 detik) | OKE (andre 2026-11-11) |
+| Working set spike (Task Manager, MB) | OKE (andre 2026-11-11) |
 
 ## Catatan untuk Task 13 (aturan v2 + v3 + v3.1 + v3.2)
 
@@ -501,37 +501,37 @@ Pengamatan otomatis (agen, 2026-11-07; 1920x1080, DPI 96, taskbar rata tengah, a
 
 | Uji | Hasil |
 |---|---|
-| Taskbar rata tengah | BELUM DIUJI (user) |
-| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | BELUM DIUJI (user) |
-| Klik Start / Search: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Start: widget tidak pindah/menutupi tray | BELUM DIUJI (user) |
-| Klik tombol aplikasi: widget tetap terlihat? | BELUM DIUJI (user) |
-| Buka Action Center / Quick Settings: widget tetap terlihat? | BELUM DIUJI (user) |
-| Menu klik kanan tampil di atas widget | BELUM DIUJI (user) |
-| Auto-hide taskbar menyala | BELUM DIUJI (user) |
-| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| F11 di browser: widget hilang, muncul lagi setelah keluar? | BELUM DIUJI (user) |
-| DPI 100% | BELUM DIUJI (user) |
-| DPI 125% | BELUM DIUJI (user) |
-| DPI 150% | BELUM DIUJI (user) |
-| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | BELUM DIUJI (user) |
-| Taskbar tetap bisa diklik saat widget berjalan (produksi tidak punya item "Freeze 5s"; UI thread tidak pernah blocking) | BELUM DIUJI (user) |
-| Alt+Tab / Task View: widget tidak ikut hilang? | BELUM DIUJI (user) |
-| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | BELUM DIUJI (user) |
-| Drag widget: bisa digeser horizontal | BELUM DIUJI (user) |
-| Uncheck Drag widget: posisi terkunci & bertahan setelah app ditutup-buka | BELUM DIUJI (user) |
-| Reset to auto position | BELUM DIUJI (user) |
-| Mode manual + fullscreen/auto-hide tetap jalan | BELUM DIUJI (user) |
-| Bersebelahan dengan TrafficMonitor | BELUM DIUJI (user) |
-| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | BELUM DIUJI (user) |
-| Taskbar penuh: widget mengecil (Full→Compact→ButtonsOnly) lalu tetap tampil dengan pesan (tooltip + border oranye) | BELUM DIUJI (user) |
-| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | BELUM DIUJI (user) |
-| Working set FlutterBar.App (Task Manager, MB, idle) | agen (fix round 1): WS 115,0 MB / private WS 33,3 MB setelah 2 menit idle (lihat tabel di atas); user: BELUM DIUJI (user) |
-| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | BELUM DIUJI (user) |
-| Explorer restart: owner terpasang lagi (diag.log `owner attached` / tanpa `FAILED`) | BELUM DIUJI (user) |
-| Teks widget diam (tidak berubah sendiri tiap detik) | BELUM DIUJI (user) |
-| Auto-hide ON sebelum app dijalankan: widget tetap tersembunyi sampai taskbar muncul | BELUM DIUJI (user) |
-| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | BELUM DIUJI (user) |
-| Resize tepi kiri (saat "Drag widget" dicentang) menyimpan lebar dan bertahan setelah app ditutup-buka | BELUM DIUJI (user) |
-| Tombol & chip tampil sesuai ukuran (Full/Compact/ButtonsOnly) | BELUM DIUJI (user) |
-| Tema terang/gelap mengikuti Windows | BELUM DIUJI (user) |
+| Taskbar rata tengah | OKE (andre 2026-11-11) |
+| Taskbar rata kiri (ganti saat widget berjalan: harus pindah dalam ~1 detik) | OKE (andre 2026-11-11) |
+| Klik Start / Search: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Start: widget tidak pindah/menutupi tray | OKE (andre 2026-11-11) |
+| Klik tombol aplikasi: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Buka Action Center / Quick Settings: widget tetap terlihat? | OKE (andre 2026-11-11) |
+| Menu klik kanan tampil di atas widget | OKE (andre 2026-11-11) |
+| Auto-hide taskbar menyala | OKE (andre 2026-11-11) |
+| Video YouTube fullscreen: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| F11 di browser: widget hilang, muncul lagi setelah keluar? | OKE (andre 2026-11-11) |
+| DPI 100% | OKE (andre 2026-11-11) |
+| DPI 125% | OKE (andre 2026-11-11) |
+| DPI 150% | OKE (andre 2026-11-11) |
+| Tambah/tutup aplikasi sampai taskbar penuh: area kosong terhitung ulang | OKE (andre 2026-11-11) |
+| Taskbar tetap bisa diklik saat widget berjalan (produksi tidak punya item "Freeze 5s"; UI thread tidak pernah blocking) | OKE (andre 2026-11-11) |
+| Alt+Tab / Task View: widget tidak ikut hilang? | OKE (andre 2026-11-11) |
+| Explorer restart (Task Manager > Restart): widget kembali terpasang/dibuat ulang | OKE (andre 2026-11-11) |
+| Drag widget: bisa digeser horizontal | OKE (andre 2026-11-11) |
+| Uncheck Drag widget: posisi terkunci & bertahan setelah app ditutup-buka | OKE (andre 2026-11-11) |
+| Reset to auto position | OKE (andre 2026-11-11) |
+| Mode manual + fullscreen/auto-hide tetap jalan | OKE (andre 2026-11-11) |
+| Bersebelahan dengan TrafficMonitor | OKE (andre 2026-11-11) |
+| Reset to auto saat Drag widget aktif: widget tetap tampil & stabil | OKE (andre 2026-11-11) |
+| Taskbar penuh: widget mengecil (Full→Compact→ButtonsOnly) lalu tetap tampil dengan pesan (tooltip + border oranye) | OKE (andre 2026-11-11) |
+| Hover tombol aplikasi (thumbnail muncul): widget tidak berkedip/pindah | OKE (andre 2026-11-11) |
+| Working set FlutterBar.App (Task Manager, MB, idle) | agen (fix round 1): WS 115,0 MB / private WS 33,3 MB setelah 2 menit idle (lihat tabel di atas); user: OKE (andre 2026-11-11) |
+| Auto-hide: widget ikut sembunyi/muncul bersama taskbar (ikut slide) | OKE (andre 2026-11-11) |
+| Explorer restart: owner terpasang lagi (diag.log `owner attached` / tanpa `FAILED`) | OKE (andre 2026-11-11) |
+| Teks widget diam (tidak berubah sendiri tiap detik) | OKE (andre 2026-11-11) |
+| Auto-hide ON sebelum app dijalankan: widget tetap tersembunyi sampai taskbar muncul | OKE (andre 2026-11-11) |
+| Hover/klik widget saat taskbar auto-hide sedang muncul: taskbar tidak langsung sembunyi lagi | OKE (andre 2026-11-11) |
+| Resize tepi kiri (saat "Drag widget" dicentang) menyimpan lebar dan bertahan setelah app ditutup-buka | OKE (andre 2026-11-11) |
+| Tombol & chip tampil sesuai ukuran (Full/Compact/ButtonsOnly) | OKE (andre 2026-11-11) |
+| Tema terang/gelap mengikuti Windows | OKE (andre 2026-11-11) |
