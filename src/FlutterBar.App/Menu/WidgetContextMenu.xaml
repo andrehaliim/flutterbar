@@ -54,7 +54,7 @@
     </MenuItem>
     <MenuItem x:Name="DragItem" Header="Drag widget" IsCheckable="True" Click="OnDragClick">
         <MenuItem.Icon>
-            <TextBlock Text="&#xE7C2;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+            <TextBlock Text="&#xE759;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
         </MenuItem.Icon>
     </MenuItem>
     <MenuItem Header="Reset to auto position" Click="OnResetClick">
