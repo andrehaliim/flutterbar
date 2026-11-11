@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using FlutterBar.App.Theme;
 using FlutterBar.Core.Docking;
 using FlutterBar.Core.Layout;
+using FlutterBar.Core.Orchestration;
 
 namespace FlutterBar.App.Menu;
 
@@ -104,13 +105,24 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         set => DragItem.IsChecked = value;
     }
 
-    /// <summary>Called when the menu opens: preferred size check mark, project-dependent items.</summary>
-    public void SetState(WidgetSize preferredSize, bool hasProject)
+    /// <summary>
+    /// Called when the menu opens: preferred size check mark (kept on a size that does not fit: auto mode goes back to it
+    /// once there is room), sizes without room on the taskbar disabled with a note, project-dependent items.
+    /// </summary>
+    public void SetState(WidgetSize preferredSize, IReadOnlySet<WidgetSize> sizesThatFit, bool hasProject)
     {
         foreach (var item in new[] { SizeFull, SizeCompact, SizeButtons })
         {
-            item.IsChecked = (WidgetSize)item.Tag == preferredSize;
+            var size = (WidgetSize)item.Tag;
+            var fits = sizesThatFit.Contains(size);
+            item.IsChecked = size == preferredSize;
+            item.IsEnabled = fits;
+            item.ToolTip = fits ? null : WidgetSizeMenu.NoRoomToolTip;
+            ToolTipService.SetShowOnDisabled(item, true);
         }
+        var note = WidgetSizeMenu.NoRoomNote(sizesThatFit.ToList());
+        SizeNote.Text = note ?? string.Empty;
+        SizeNoteSeparator.Visibility = SizeNoteItem.Visibility = note is null ? Visibility.Collapsed : Visibility.Visible;
         ImportItem.IsEnabled = hasProject;
         LaunchJsonItem.IsEnabled = hasProject;
         FlutterToolsItem.IsEnabled = hasProject;

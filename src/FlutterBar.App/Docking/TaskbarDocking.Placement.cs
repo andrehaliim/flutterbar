@@ -54,6 +54,24 @@ internal sealed partial class TaskbarDocking
         return widths;
     }
 
+    /// <summary>
+    /// Sizes the Size menu may offer: in auto mode with a known layout, those <see cref="PlacementPlanner.Fits"/> the current
+    /// gaps (ButtonsOnly always, the widget is never hidden for lack of space). Manual/drag mode does not avoid the app
+    /// buttons, and before the first layout nothing is known: every size then.
+    /// </summary>
+    public IReadOnlySet<WidgetSize> SizesThatFit()
+    {
+        var all = Enum.GetValues<WidgetSize>().ToHashSet();
+        if (_dragMode || _manualOffset is not null || _layout is not { } layout)
+        {
+            return all;
+        }
+        var widths = PhysicalWidths(Scale());
+        var gaps = TaskbarGeometry.FreeGaps(layout.Taskbar, layout.Tray.Left, layout.AppButtons, PlacementPlanner.Inset);
+        all.RemoveWhere(size => size != WidgetSize.ButtonsOnly && !PlacementPlanner.Fits(gaps, size, widths));
+        return all;
+    }
+
     private void Place(IntPtr tray, Box taskbar, bool wantVisible)
     {
         var scale = Scale();

@@ -24,16 +24,16 @@ public partial class App
         menu.SizeChosen += size => ChangeSize(widget, docking, size);
         menu.StartupToggled += on => Observe(ToggleStartupAsync(menu, on), "Start with Windows");
         menu.CommandInvoked += command => OnMenuCommand(command, docking);
-        menu.Opened += (_, _) => OnMenuOpened(menu);
+        menu.Opened += (_, _) => OnMenuOpened(menu, docking);
         menu.BackgroundOpacityChanged += ApplyBackgroundOpacity;
         menu.Closed += (_, _) => SaveBackgroundOpacity();
         menu.ThemeChosen += ChangeTheme;
         menu.MonitorChosen += monitor => ChangeMonitor(docking, monitor);
     }
 
-    private void OnMenuOpened(WidgetContextMenu menu)
+    private void OnMenuOpened(WidgetContextMenu menu, TaskbarDocking docking)
     {
-        menu.SetState(WidgetSizeNames.Parse(_settings.Widget.Size), _controller?.CurrentProject is not null);
+        menu.SetState(WidgetSizeNames.Parse(_settings.Widget.Size), docking.SizesThatFit(), _controller?.CurrentProject is not null);
         menu.SetBackgroundOpacity(_settings.Widget.BackgroundOpacity);
         menu.SetTheme(TaskbarTheme.ParseMode(_settings.Widget.Theme));
         menu.SetMonitors(TaskbarTargets.MenuItems([.. TaskbarWindows.All().Select(t => t.Info)], _settings.Widget.Monitor));

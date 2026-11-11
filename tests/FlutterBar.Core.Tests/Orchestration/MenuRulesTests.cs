@@ -24,6 +24,19 @@ public sealed class MenuRulesTests
     }
 
     [Fact]
+    public void NoRoomNote_AllFit_Null()
+    {
+        Assert.Null(WidgetSizeMenu.NoRoomNote([WidgetSize.Full, WidgetSize.Compact, WidgetSize.ButtonsOnly]));
+    }
+
+    [Fact]
+    public void NoRoomNote_NamesTheSizesThatDoNotFit()
+    {
+        Assert.Equal("Not enough taskbar space for Full", WidgetSizeMenu.NoRoomNote([WidgetSize.Compact, WidgetSize.ButtonsOnly]));
+        Assert.Equal("Not enough taskbar space for Full and Compact", WidgetSizeMenu.NoRoomNote([WidgetSize.ButtonsOnly]));
+    }
+
+    [Fact]
     public void SameSize_ChangesNothing()
     {
         var widget = new WidgetSettings { Size = "full" };

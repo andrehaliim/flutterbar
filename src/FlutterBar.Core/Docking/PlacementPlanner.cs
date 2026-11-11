@@ -46,6 +46,24 @@ public static class PlacementPlanner
     }
 
     /// <summary>
+    /// True when picking <paramref name="size"/> as the preferred size actually gives that size in auto mode: the gap
+    /// <see cref="Choose"/> would use (rightmost gap where any size fits) holds <paramref name="size"/> itself, not a smaller
+    /// step-down. Used to disable Size menu entries the taskbar has no room for.
+    /// </summary>
+    public static bool Fits(IReadOnlyList<Box> gaps, WidgetSize size, IReadOnlyDictionary<WidgetSize, double> widths)
+    {
+        ArgumentNullException.ThrowIfNull(gaps);
+        for (var i = gaps.Count - 1; i >= 0; i--)
+        {
+            if (WidgetLayoutPolicy.Choose(size, gaps[i].Right - gaps[i].Left, widths) is { } chosen)
+            {
+                return chosen == size;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Auto mode before any valid UIA layout (or nothing fits and no last X): dock left of the Win32 TrayNotifyWnd
     /// (<c>left - 8 - width</c>), or at the taskbar's right edge when it is unknown; clamped to the taskbar.
     /// </summary>

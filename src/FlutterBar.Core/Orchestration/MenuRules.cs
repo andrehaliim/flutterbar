@@ -14,6 +14,17 @@ public static class WidgetSizeMenu
         _ => "Full",
     };
 
+    /// <summary>Tooltip of a Size entry the taskbar has no room for.</summary>
+    public const string NoRoomToolTip = "Not enough free space on the taskbar for this size";
+
+    /// <summary>Note under the Size entries naming the sizes the taskbar has no room for; null when everything fits.</summary>
+    public static string? NoRoomNote(IReadOnlyCollection<WidgetSize> sizesThatFit)
+    {
+        ArgumentNullException.ThrowIfNull(sizesThatFit);
+        var missing = new[] { WidgetSize.Full, WidgetSize.Compact }.Where(s => !sizesThatFit.Contains(s)).Select(Label).ToList();
+        return missing.Count == 0 ? null : $"Not enough taskbar space for {string.Join(" and ", missing)}";
+    }
+
     /// <summary>Writes <c>widget.size</c>. False (nothing changed) for the same size.</summary>
     public static bool Apply(WidgetSettings widget, WidgetSize size)
     {

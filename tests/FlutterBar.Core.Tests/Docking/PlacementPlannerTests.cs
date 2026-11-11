@@ -186,6 +186,44 @@ public sealed class PlacementPlannerTests
     }
 
     [Fact]
+    public void Fits_RoomyGap_AllSizes()
+    {
+        var gaps = new[] { Gap(595, 1502) };
+
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.Full, Widths));
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.Compact, Widths));
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.ButtonsOnly, Widths));
+    }
+
+    [Fact]
+    public void Fits_FullOnlyInLeftGap_FullDoesNotFit()
+    {
+        // Same layout as Choose_RightmostGapWinsOverLargerSizeInLeftGap: picking Full would give Compact near the tray.
+        var gaps = new[] { Gap(100, 450), Gap(1300, 1570) };
+
+        Assert.False(PlacementPlanner.Fits(gaps, WidgetSize.Full, Widths));
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.Compact, Widths));
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.ButtonsOnly, Widths));
+    }
+
+    [Fact]
+    public void Fits_OnlyButtonsOnly()
+    {
+        var gaps = new[] { Gap(1372, 1502) };
+
+        Assert.False(PlacementPlanner.Fits(gaps, WidgetSize.Full, Widths));
+        Assert.False(PlacementPlanner.Fits(gaps, WidgetSize.Compact, Widths));
+        Assert.True(PlacementPlanner.Fits(gaps, WidgetSize.ButtonsOnly, Widths));
+    }
+
+    [Fact]
+    public void Fits_NothingFits_False()
+    {
+        Assert.False(PlacementPlanner.Fits([Gap(1452, 1502)], WidgetSize.ButtonsOnly, Widths));
+        Assert.False(PlacementPlanner.Fits([], WidgetSize.Full, Widths));
+    }
+
+    [Fact]
     public void Fallback_NoLayoutYet_LeftOfTrayNotifyWnd()
     {
         Assert.Equal(1366, PlacementPlanner.FallbackX(Taskbar, trayNotifyLeft: 1674, width: 300));

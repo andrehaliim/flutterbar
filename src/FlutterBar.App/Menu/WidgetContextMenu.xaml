@@ -12,6 +12,13 @@
         <MenuItem x:Name="SizeFull" Header="Full" Click="OnSizeClick" />
         <MenuItem x:Name="SizeCompact" Header="Compact" Click="OnSizeClick" />
         <MenuItem x:Name="SizeButtons" Header="Buttons only" Click="OnSizeClick" />
+        <!-- Shown only when the taskbar has no room for Full and/or Compact (those entries are then disabled). -->
+        <Separator x:Name="SizeNoteSeparator" Style="{StaticResource Fb.MenuSeparator}" Visibility="Collapsed" />
+        <MenuItem x:Name="SizeNoteItem" Style="{StaticResource Fb.MenuControlItem}" Focusable="False" IsHitTestVisible="False" Visibility="Collapsed">
+            <MenuItem.Header>
+                <TextBlock x:Name="SizeNote" MaxWidth="200" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource Fb.Menu.Disabled}" />
+            </MenuItem.Header>
+        </MenuItem>
     </MenuItem>
     <!-- Style (spec §7.6): background opacity slider (live while dragging, saved when the menu closes; range =
          WidgetSettings.MinBackgroundOpacity..MaxBackgroundOpacity) and the theme override (applied and saved at once). -->
