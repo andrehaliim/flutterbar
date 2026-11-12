@@ -1,7 +1,7 @@
 # FlutterBar — Desain
 
 - **Tanggal:** 2026-11-06
-- **Status:** Disetujui di brainstorming, menunggu review spec
+- **Status:** Diimplementasikan (v1 + feedback putaran 1 dan 2); semua uji manual lulus 2026-11-11
 - **Nama:** FlutterBar (nama kerja)
 
 ## 1. Latar belakang & tujuan
@@ -21,15 +21,18 @@ deskband).
    tanpa membuka IDE.
 2. Log app bisa dibaca di jendela log tersendiri.
 3. Claude Code bisa melakukan hot reload/restart dan membaca error lewat CLI `flutterbar`.
-4. Working set FlutterBar saat idle di bawah 100 MB (di luar proses flutter/dart/gradle).
+4. Private working set FlutterBar (kolom "Memory" di Task Manager) saat idle di bawah 100 MB (di luar proses
+   flutter/dart/gradle). Patokan ini diputuskan user 2026-11-12, menggantikan working set: working set ikut menghitung
+   halaman DLL .NET/WPF yang dibagi dengan proses lain, yang tidak bisa diturunkan oleh kode FlutterBar.
 
 ### Di luar cakupan (non-goals)
 - Editor kode, debugger dengan breakpoint, profiler, dan layout inspector. Untuk itu buka IDE.
 - Tombol Debug. Hanya ada Run, dan mode diatur lewat `mode` di config.
 - Lebih dari satu sesi run sekaligus.
-- Operasi git selain melihat dan pindah branch lokal (tidak ada create, pull, push, atau branch remote).
+- Operasi git selain pindah branch lokal, fetch, pull, dan commit-and-push (§5.5): tidak ada membuat branch, force push,
+  atau checkout branch remote.
 - Integrasi DTD/Dart MCP. Ini dicatat sebagai eksperimen terpisah (lihat §12).
-- macOS dan Linux. Hanya Windows 10 dan 11 (v1: hanya Windows 11, lihat §12).
+- macOS dan Linux. Hanya Windows 10 dan 11.
 
 ## 2. Keputusan utama
 
@@ -373,8 +376,9 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Jendela tanpa border, `WS_EX_TOOLWINDOW` (tidak muncul di taskbar atau Alt+Tab), dan topmost.
 - **Posisi `auto`:** tepat di kiri area tray/jam, dengan menghitung area kosong di antara tombol
   aplikasi dan tray:
-  - Windows 11: batas tombol diambil lewat UI Automation dari elemen taskbar.
-  - Windows 10: diambil dari `MSTaskSwWClass` / `TrayNotifyWnd` (belum dibuat di v1, lihat §12).
+  - Windows 10 dan 11: batas tombol diambil lewat UI Automation dari elemen taskbar, dengan tepi kiri `TrayNotifyWnd`
+    sebagai cadangan. Jalur khusus Windows 10 (`MSTaskSwWClass`) tidak dibutuhkan: uji manual 2026-11-11 lulus di
+    Windows 10 dan 11.
 - Mendukung taskbar rata tengah maupun rata kiri.
 - **Posisi `manual`:** deteksi `auto` tidak bisa melihat widget overlay pihak ketiga (mis. TrafficMonitor) yang tidak
   muncul di taskbar UI Automation, sehingga ada mode manual. Run pertama = `auto`. Dengan "Drag widget" dicentang,
@@ -416,7 +420,8 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Project referensi boleh dipelajari sebagai rujukan pendekatan, tapi kodenya tidak disalin.
 
 ### 7.4 Menu klik kanan
-- Size: Full / Compact / Buttons only
+- Size: Full / Compact / Buttons only. Ukuran yang tidak muat di area kosong taskbar dinonaktifkan (tooltip
+  "Not enough free space on the taskbar for this size" dan catatan di bawah daftar); centang tetap di ukuran pilihan.
 - Style: slider opacity background 0–100% (langkah 5%) dan Theme System / Light / Dark, §7.6
 - Show on ▸ Monitor N (main) W×H … (urut kiri ke kanan, centang pada taskbar yang dipakai; nonaktif bila hanya satu taskbar)
 - Drag widget (checkbox) / Reset to auto position
@@ -534,18 +539,17 @@ menulis ke `diag.log`.
   - Parsing output git.
   - Kontrak IPC: serialisasi request dan response, serta exit code.
 - **Integration test (opt-in, kategori `Integration`, butuh Flutter):** sebuah sample app minimal
-  dijalankan di device `windows`, lalu diuji Run, Hot reload, Hot restart, Stop, dan CLI
-  `status`/`reload`/`logs`.
-- **Checklist manual docking:** Windows 11 dengan taskbar rata tengah dan rata kiri, auto-hide,
+  dijalankan (device lewat `FLUTTERBAR_IT_DEVICE`; yang dipakai `chrome`), lalu diuji Run, Hot reload, Hot restart,
+  Stop, dan CLI `status`/`reload`/`logs`.
+- **Checklist manual docking:** Windows 10 dan 11 dengan taskbar rata tengah dan rata kiri, auto-hide,
   aplikasi fullscreen, DPI 100/125/150%, tema gelap/terang, taskbar penuh (menyusut atau sembunyi),
   monitor kedua dicolok dan dicabut.
-- **Pengukuran RAM:** working set `FlutterBar.App` saat idle dan saat `LogWindow` terbuka berisi 20.000
-  baris. Hasilnya dicatat apa adanya.
+- **Pengukuran RAM:** `FlutterBar.App` saat idle dan saat `LogWindow` terbuka berisi 20.000 baris. Yang dicatat:
+  private working set (patokan §1), working set, dan private bytes. Hasilnya dicatat apa adanya.
 
 ## 12. Prasyarat, risiko, dan tindak lanjut
 
-**Prasyarat environment:** saat ini mesin belum punya .NET SDK (hanya runtime 6 dan 9). Untuk build
-dibutuhkan **.NET 10 SDK**. Pemasangannya dilakukan oleh user, atau atas persetujuan user.
+**Prasyarat environment:** build butuh **.NET 10 SDK** (sudah terpasang; saat spec ditulis mesin baru punya runtime 6 dan 9).
 
 **Risiko utama:**
 1. **Docking taskbar Windows 11** (UI Automation, z-order topmost). Ini risiko teknis terbesar, jadi
@@ -556,8 +560,8 @@ dibutuhkan **.NET 10 SDK**. Pemasangannya dilakukan oleh user, atau atas persetu
    khusus.
 
 **Keputusan setelah review akhir (2026-11-07):**
-- **v1 hanya Windows 11.** Docking Windows 10 (`MSTaskSwWClass` / `TrayNotifyWnd`, §7.3) tidak dibuat di v1; README mencatatnya
-  sebagai keterbatasan.
+- ~~**v1 hanya Windows 11.**~~ Tidak berlaku lagi: deteksi UI Automation yang sama ternyata bekerja di Windows 10 (uji manual
+  2026-11-11), sehingga jalur `MSTaskSwWClass` tidak dibuat (§7.3).
 - **`ProcessRunner` (perintah sekali jalan) tidak memakai Job Object.** Daemon yang dinyalakan perintah itu (emulator dari
   `flutter emulators --launch`, adb server, git fsmonitor) harus tetap hidup setelah perintahnya selesai (§5.4). Saat timeout
   atau dibatalkan, hanya pohon proses yang masih hidup yang dimatikan. Job Object kill-on-close (§5.3) hanya untuk sesi
@@ -567,7 +571,7 @@ dibutuhkan **.NET 10 SDK**. Pemasangannya dilakukan oleh user, atau atas persetu
   mematikan semuanya (§5.3).
 
 **Tindak lanjut di luar versi ini:**
-- Docking taskbar Windows 10.
 - Spike integrasi DTD supaya Dart MCP (`hot_reload`, `get_runtime_errors`) bisa menemukan sesi FlutterBar.
 - Update aturan `flutter.md` §9: kalau tidak ada DTD, pakai `flutterbar status/reload/logs`.
-- Widget di semua monitor, dan installer (winget/Inno Setup).
+- Widget di beberapa monitor sekaligus (sekarang: satu widget, dipindah lewat Show on ▸, §7.3).
+- Installer (winget/Inno Setup).

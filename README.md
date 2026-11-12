@@ -4,7 +4,7 @@ FlutterBar is a Windows taskbar widget (C#/.NET 10, WPF) that replaces Android S
 
 ## Build dan test
 
-Butuh .NET SDK 10 dan Windows 11.
+Butuh .NET SDK 10 dan Windows 10 atau 11.
 
 ```
 dotnet build FlutterBar.sln
@@ -38,6 +38,29 @@ mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Exit". Log d
 5. Opsional: klik kanan > "Add CLI to PATH…" agar `flutterbar` bisa dipanggil dari terminal baru, dan "Start with Windows".
 
 Project yang memakai fvm (`.fvmrc` atau `.fvm/fvm_config.json`) selalu dijalankan lewat `fvm flutter`, tanpa fallback ke flutter global.
+
+## Menu widget
+
+Klik kanan widget:
+
+- **Size**: Full (semua chip), Compact (satu chip `Configuration ▾` yang membuka flyout gabungan), atau Buttons only
+  (klik titik status untuk flyout gabungan). Ukuran yang tidak muat di area kosong taskbar dinonaktifkan dengan catatan;
+  kalau taskbar penuh, widget turun ukuran sendiri dan kembali ke ukuran pilihan saat ruang cukup lagi.
+- **Style**: slider opacity latar widget 0–100% (chip, ikon, dan teks tetap penuh) dan Theme System / Light / Dark.
+  System mengikuti tema taskbar Windows; Light/Dark mengunci semua jendela FlutterBar.
+- **Show on**: pindah ke taskbar monitor lain (butuh "Show my taskbar on all displays"). Satu widget saja, tidak
+  diduplikasi. Bila monitor itu dicabut, widget pindah ke taskbar utama dan kembali saat monitor dicolok lagi.
+- **Drag widget** / **Reset to auto position**: geser widget secara horizontal; posisinya disimpan.
+- **Manage projects**, **Import config from IDE…**, **Open launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
+  **Add CLI to PATH…**, **Start with Windows**, **Exit**.
+
+Tombol di widget:
+
+- **Logo Flutter** (Full/Compact; di Buttons only lewat menu > Flutter tools…): Pub get, Clean, Clean and pub get,
+  Run build_runner (hanya bila `build_runner` ada di pubspec), dan Doctor. Satu perintah sekaligus, bisa di-Cancel, output masuk
+  ke log. Clean nonaktif selama app berjalan; ▶ menunggu sampai perintah selesai.
+- **Tombol log** (paling kanan): menu Open log dan Open terminal (Windows Terminal bila ada, selain itu PowerShell,
+  di folder project).
 
 ## Aksi git (flyout branch)
 
@@ -113,24 +136,24 @@ Hasil terakhir (2026-11-07): 2/2 lulus di device `chrome` (build pertama bisa be
 berperilaku seperti hot restart dan menjawab code 0. Android belum tercakup: AVD `Pixel_9` di mesin pengembang gagal install
 (`INSTALL_FAILED_INSUFFICIENT_STORAGE`) dan device `windows` butuh toolchain Visual Studio C++.
 
-Uji yang butuh mouse/taskbar/device nyata ada di `docs\manual-test-checklist.md` (kolom Hasil "BELUM DIUJI (user)" sampai diisi).
+Uji yang butuh mouse/taskbar/device nyata ada di `docs\manual-test-checklist.md`. Semua baris sudah diuji user dan lulus
+(2026-11-11, sebagian di Windows 10 dan sebagian di Windows 11). Baris baru diisi "BELUM DIUJI (user)" sampai diuji.
 
 ## Penggunaan RAM
 
-Diukur 2026-11-07, build **Release**, `FlutterBar.App.exe` 5 menit idle setelah start (tidak ada sesi, LogWindow tertutup),
-1920x1080 DPI 96, Windows 11.
+Build **Release**, `FlutterBar.App.exe` 5 menit idle setelah start (tidak ada sesi, LogWindow tertutup), DPI 96.
 
-| Metrik | Nilai | Arti |
-|---|---|---|
-| Working set | 121,9 MB | Seluruh RAM fisik yang dipetakan ke proses, termasuk halaman DLL .NET/WPF yang dibagi dengan proses lain |
-| Private working set | 35,8 MB | RAM fisik milik proses saja; angka kolom "Memory" di Task Manager |
-| Private bytes | 61,2 MB | Memori commit privat (termasuk yang sedang di pagefile) |
+| Metrik | Windows 11 (2026-11-07, 1920x1080) | Windows 10 22H2 (2026-11-12, 1600x900) | Arti |
+|---|---|---|---|
+| **Private working set** | **35,8 MB** | **30,1 MB** | RAM fisik milik proses saja; angka kolom "Memory" di Task Manager. **Patokan target** |
+| Working set | 121,9 MB | 105,4 MB | Seluruh RAM fisik yang dipetakan ke proses, termasuk halaman DLL .NET/WPF yang dibagi dengan proses lain |
+| Private bytes | 61,2 MB | 39,7 MB | Memori commit privat (termasuk yang sedang di pagefile) |
 
-Target spec §1 (idle di bawah 100 MB) **tidak tercapai** bila diukur dengan working set (121,9 MB); **tercapai** bila diukur dengan
-private working set (35,8 MB) atau private bytes (61,2 MB). Metrik mana yang dipakai sebagai patokan perlu diputuskan user.
+Target spec §1 (private working set idle di bawah 100 MB, patokan diputuskan user 2026-11-12) **tercapai** di Windows 10 dan 11.
+Working set tetap dicatat sebagai pembanding; sebagian besar isinya halaman DLL bersama yang tidak bisa diturunkan oleh kode FlutterBar.
 
-Dengan LogWindow terbuka berisi 20.000 baris pada build Release: belum diukur (butuh menekan ▶ dan membuka LogWindow, yang tidak bisa
-dilakukan otomatis). Rujukan build Debug (Task 15): widget saja sekitar 117 MB, dengan 20.000 baris dan LogWindow sekitar 167-178 MB working set.
+Dengan LogWindow terbuka berisi 20.000 baris pada build Release: diuji user 2026-11-11 (OKE), angkanya tidak dicatat. Rujukan build
+Debug (Task 15): widget saja sekitar 117 MB, dengan 20.000 baris dan LogWindow sekitar 167-178 MB working set.
 
 ## Keterbatasan
 
@@ -138,8 +161,9 @@ dilakukan otomatis). Rujukan build Debug (Task 15): widget saja sekitar 117 MB, 
   Pakai `--dart-define-from-file` untuk nilai kompleks.
 - Penempatan otomatis tidak melihat widget taskbar pihak ketiga (mis. TrafficMonitor); pakai "Drag widget".
 - Widget tersembunyi selama aplikasi fullscreen (game, video) berjalan.
-- Hanya Windows 11 (v1). Docking untuk taskbar Windows 10 (`MSTaskSwWClass` / `TrayNotifyWnd`) belum dibuat; di Windows 10
-  widget tidak akan menempel dengan benar.
+- Windows 10 dan 11 memakai deteksi taskbar yang sama (UI Automation, dengan `TrayNotifyWnd` sebagai cadangan); tidak ada jalur
+  khusus Windows 10 (`MSTaskSwWClass`).
+- Saat taskbar auto-hide, widget ikut sembunyi/muncul sedikit telat dibanding animasi taskbar.
 - Fixture protokol daemon direkam di `chrome`; output khusus Android (Gradle, `app.log`, semantik hot reload) belum direkam.
   Deteksi exception Android (prefix logcat `I/flutter ( 1234): `) diuji dengan baris sintetis, belum dengan rekaman asli.
 - Stop yang bersih (flutter keluar dalam 5 detik setelah `app.stop`) membiarkan daemon yang dinyalakan sesi itu (Gradle, Kotlin,
