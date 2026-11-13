@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="dev" type="FlutterRunConfigurationType" factoryName="Flutter">
-    <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=APP_NAME=&quot;GTS Mobile Dev&quot;" />
+    <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=APP_NAME=&quot;My App Dev&quot;" />
     <option name="buildFlavor" value="dev" />
     <option name="filePath" value="$PROJECT_DIR$/lib/main.dart" />
     <method v="2" />

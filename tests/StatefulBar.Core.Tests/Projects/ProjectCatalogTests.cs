@@ -39,12 +39,12 @@ public class ProjectCatalogTests
     public void Build_DuplicateFolderNames_AppendsParent()
     {
         var result = ProjectCatalog.Build(
-            ["C:\\Work\\GTSmobile\\gts-mobile", "C:\\Work\\other\\gts-mobile", "C:\\Work\\solo"],
+            ["C:\\Work\\clients\\my-app", "C:\\Work\\other\\my-app", "C:\\Work\\solo"],
             new AppSettings(), AllExist);
 
         var names = result.Select(p => p.DisplayName).ToList();
-        Assert.Contains("gts-mobile (GTSmobile)", names);
-        Assert.Contains("gts-mobile (other)", names);
+        Assert.Contains("my-app (clients)", names);
+        Assert.Contains("my-app (other)", names);
         Assert.Contains("solo", names);
     }
 

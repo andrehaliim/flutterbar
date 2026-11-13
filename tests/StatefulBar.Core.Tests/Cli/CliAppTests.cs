@@ -85,24 +85,24 @@ public sealed class CliAppTests
     [Fact]
     public async Task Status_HumanOutput()
     {
-        var data = new StatusInfo("Running", "gts-mobile", null, "beta", "emulator-5554", 0);
+        var data = new StatusInfo("Running", "my-app", null, "beta", "emulator-5554", 0);
 
         var r = await RunAsync(Success("", data), "status");
 
         Assert.Equal(0, r.Code);
-        Assert.Equal("Running · gts-mobile · beta · emulator-5554 · 0 error", r.Out.Trim());
+        Assert.Equal("Running · my-app · beta · emulator-5554 · 0 error", r.Out.Trim());
     }
 
     [Fact]
     public async Task Status_HumanOutput_IncludesBranch_AndIdleExit3()
     {
-        var data = new StatusInfo("Idle", "gts-mobile", "main", "beta", null, 2);
+        var data = new StatusInfo("Idle", "my-app", "main", "beta", null, 2);
         var response = new IpcResponse(false, 3, IpcJson.ToElement(data), "No active session");
 
         var r = await RunAsync(response, "status");
 
         Assert.Equal(3, r.Code);
-        Assert.Equal("Idle · gts-mobile · main · beta · 2 error", r.Out.Trim());
+        Assert.Equal("Idle · my-app · main · beta · 2 error", r.Out.Trim());
     }
 
     [Fact]

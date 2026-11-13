@@ -1,0 +1,138 @@
+# StatefulBar development
+
+How to build, test, and package StatefulBar. For using the app, see the [README](../README.md).
+
+## Contents
+
+- [Requirements](#requirements)
+- [Build and test](#build-and-test)
+- [Release package](#release-package)
+- [Installer](#installer)
+- [Tests](#tests)
+- [RAM usage](#ram-usage)
+- [Technical notes](#technical-notes)
+
+## Requirements
+
+- Windows 10 or 11
+- .NET 10 SDK
+- For the installer: Inno Setup 6 (`winget install --id JRSoftware.InnoSetup --exact --scope user`)
+- For the integration tests: fvm on PATH and Flutter 3.22.3
+
+## Build and test
+
+```
+dotnet build StatefulBar.sln
+dotnet test
+```
+
+Release:
+
+```
+dotnet build StatefulBar.sln -c Release
+```
+
+| Exe | Location (Release) |
+|---|---|
+| Widget | `src\StatefulBar.App\bin\Release\net10.0-windows\StatefulBar.exe` |
+| CLI | `src\StatefulBar.Cli\bin\Release\net10.0-windows\sbar.exe` (a copy is also in the `StatefulBar.App` Release folder) |
+
+For Debug, replace `Release` with `Debug`. Only one StatefulBar instance can run; starting it again just flashes the
+existing widget, so exit the running widget (right-click > "Exit") before starting a fresh build. Diagnostic log:
+`%APPDATA%\StatefulBar\diag.log`.
+
+The version, company, and copyright of every exe come from `Directory.Build.props`.
+
+## Release package
+
+```
+.\tools\publish.ps1
+```
+
+Builds a self-contained win-x64 release (no .NET install needed on the user's PC), English only, with the version from
+`Directory.Build.props`:
+
+| Output | Contents |
+|---|---|
+| `artifacts\publish\StatefulBar\` | `StatefulBar.exe`, `sbar.exe`, the shared .NET runtime, `LICENSE.txt`, `licenses\` (.NET licenses) |
+| `artifacts\StatefulBar-<version>-win-x64.zip` | The folder above, as a single `StatefulBar\` folder inside the zip |
+
+- The widget is published first and the CLI second, into the same folder: the widget project references the CLI, so its
+  publish copies a framework-dependent `sbar.runtimeconfig.json`, which the CLI publish then replaces with the
+  self-contained one.
+- The script fails when the published `sbar.exe` is not self-contained or does not start.
+- The folder inside the zip has no version on purpose, so the "Start with Windows" and PATH entries keep pointing at the
+  same place after an update.
+- `artifacts\` is ignored by git.
+
+## Installer
+
+```
+.\tools\publish.ps1 -Installer
+```
+
+Also compiles `packaging\inno\StatefulBar.iss` into `artifacts\StatefulBar-<version>-win-x64-setup.exe` (needs Inno Setup 6,
+see [Requirements](#requirements)).
+
+- Installs per user to `%LOCALAPPDATA%\Programs\StatefulBar`, no admin rights needed. A Start menu shortcut is always created.
+- Tasks (checked by default): `startup` (Start with Windows), `addtopath` (Add the sbar CLI to PATH), `desktopicon`, plus
+  "Launch StatefulBar" on the last page. The Run value and PATH entry use the same format as the app's menu items, so the
+  menu shows them as on right away.
+- An update (installing a newer version over it) closes the widget running from the install folder through Restart Manager,
+  including its flutter session, and clears the old runtime files first.
+- Uninstall closes that widget; removes the files, shortcuts, the Run value (only when it points at the install folder) and
+  its PATH entry; then asks whether to also remove `%APPDATA%\StatefulBar` (default No; a silent uninstall always keeps it).
+- Never change `AppId` in the `.iss`: it ties updates and the uninstaller to earlier installs.
+- `Setup.exe` is not code-signed yet, so SmartScreen warns on first run.
+
+Unattended install, e.g. for testing: `StatefulBar-<version>-win-x64-setup.exe /VERYSILENT /TASKS="startup,addtopath"`;
+uninstall with `"%LOCALAPPDATA%\Programs\StatefulBar\unins000.exe" /VERYSILENT`.
+
+## Tests
+
+`dotnet test` runs the unit tests only (integration tests are skipped automatically).
+
+The end-to-end integration tests run a real `fvm flutter run --machine` against `tests\sample_app` (Flutter 3.22.3 via `.fvmrc`):
+start until Running, reload, restart, logs, stop, then check that every child process is gone.
+
+```
+$env:STATEFULBAR_IT_DEVICE="chrome"; dotnet test --filter Category=Integration
+```
+
+Last result (2026-11-07): 2/2 passed on the `chrome` device (the first build can take several minutes; 10 minute timeout).
+On the web, hot reload behaves like hot restart and answers code 0. Android isn't covered yet: the `Pixel_9` AVD on the
+development machine failed to install (`INSTALL_FAILED_INSUFFICIENT_STORAGE`) and the `windows` device needs the Visual
+Studio C++ toolchain.
+
+Tests that need a real mouse, taskbar, or device are in [manual-test-checklist.md](manual-test-checklist.md) (in Indonesian,
+like the design spec in [superpowers/specs](superpowers/specs)). New rows are marked "BELUM DIUJI (user)" (not tested yet)
+until tested.
+
+## RAM usage
+
+**Release** build, `StatefulBar.exe` idle for 5 minutes after start (no session, LogWindow closed), 96 DPI.
+
+| Metric | Windows 11 (2026-11-07, 1920x1080) | Windows 10 22H2 (2026-11-12, 1600x900) | Meaning |
+|---|---|---|---|
+| **Private working set** | **35.8 MB** | **30.1 MB** | Physical RAM owned by the process alone; the "Memory" column in Task Manager. **Target metric** |
+| Working set | 121.9 MB | 105.4 MB | All physical RAM mapped into the process, including .NET/WPF DLL pages shared with other processes |
+| Private bytes | 61.2 MB | 39.7 MB | Private committed memory (including what is in the pagefile) |
+
+The spec §1 target (idle private working set under 100 MB) is met on Windows 10 and 11. The working set is still recorded
+for comparison; most of it is shared DLL pages that StatefulBar's code can't reduce.
+
+With the LogWindow open holding 20,000 lines on a Release build: tested on 2026-11-11 (OK), numbers not recorded.
+Debug reference: about 117 MB for the widget alone, about 167-178 MB working set with 20,000 lines and the LogWindow open.
+
+## Technical notes
+
+- Windows 10 and 11 use the same taskbar detection (UI Automation, with `TrayNotifyWnd` as a fallback); there is no
+  Windows 10-specific path (`MSTaskSwWClass`).
+- The daemon protocol fixtures were recorded on `chrome`; Android-specific output (Gradle, `app.log`, hot reload semantics)
+  hasn't been recorded yet. Android exception detection (logcat prefix `I/flutter ( 1234): `) is tested with synthetic lines,
+  not real recordings.
+- A clean stop (flutter exits within 5 seconds of `app.stop`) leaves the daemons that session started (Gradle, Kotlin, adb)
+  running until StatefulBar closes, so the next Run doesn't pay for a cold Gradle. Exiting or crashing StatefulBar still
+  kills all of them (Job Object).
+- The CLI talks to the widget over a named pipe owned by the current user; the widget holds a per-user named mutex, so only
+  one instance runs per user session.

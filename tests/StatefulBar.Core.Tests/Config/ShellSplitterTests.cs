@@ -6,7 +6,7 @@ public sealed class ShellSplitterTests
 {
     [Theory]
     [InlineData("--a=1 --b=2", new[] { "--a=1", "--b=2" })]
-    [InlineData("--dart-define=APP_NAME=\"GTS Mobile Beta\" --x", new[] { "--dart-define=APP_NAME=GTS Mobile Beta", "--x" })]
+    [InlineData("--dart-define=APP_NAME=\"My App Beta\" --x", new[] { "--dart-define=APP_NAME=My App Beta", "--x" })]
     [InlineData("  ", new string[0])]
     [InlineData("", new string[0])]
     [InlineData("'single quoted' b", new[] { "single quoted", "b" })]

@@ -37,7 +37,7 @@ public sealed class IdeConfigImporterTests : IDisposable
         Assert.Equal("lib/main.dart", beta.Config.Program);
         Assert.Equal("beta", beta.Config.Flavor);
         Assert.Equal(RunMode.Debug, beta.Config.Mode);
-        Assert.Contains("--dart-define=APP_NAME=GTS Mobile Beta", beta.Config.Args);
+        Assert.Contains("--dart-define=APP_NAME=My App Beta", beta.Config.Args);
         Assert.Contains("--dart-define=FLAVOR=beta", beta.Config.Args);
         Assert.False(beta.AlreadyExists);
     }
@@ -74,13 +74,13 @@ public sealed class IdeConfigImporterTests : IDisposable
     public void Discover_Vscode_LiftsFlavor()
     {
         PutAll();
-        var dev = Assert.Single(Discover(), c => c.Source == "vscode" && c.Config.Name == "GTS Mobile Dev");
+        var dev = Assert.Single(Discover(), c => c.Source == "vscode" && c.Config.Name == "My App Dev");
         Assert.Equal("dev", dev.Config.Flavor);
         Assert.Equal("lib/main.dart", dev.Config.Program);
         Assert.Equal(RunMode.Debug, dev.Config.Mode);
         Assert.DoesNotContain("--flavor", dev.Config.Args);
         Assert.DoesNotContain("dev", dev.Config.Args);
-        Assert.Contains("--dart-define=APP_NAME=GTS Mobile Dev", dev.Config.Args);
+        Assert.Contains("--dart-define=APP_NAME=My App Dev", dev.Config.Args);
         Assert.Equal(3, dev.Config.Args.Count);
     }
 
@@ -88,7 +88,7 @@ public sealed class IdeConfigImporterTests : IDisposable
     public void Discover_Vscode_FlavorEqualsForm()
     {
         PutAll();
-        var live = Assert.Single(Discover(), c => c.Config.Name == "GTS Mobile Live Profile");
+        var live = Assert.Single(Discover(), c => c.Config.Name == "My App Live Profile");
         Assert.Equal("live", live.Config.Flavor);
         Assert.Equal(RunMode.Profile, live.Config.Mode);
         Assert.Equal("lib/main_live.dart", live.Config.Program);

@@ -5,7 +5,7 @@ namespace StatefulBar.Core.Tests.Processes;
 public class CmdEscaperTests
 {
     [Theory]
-    [InlineData("--dart-define=APP_NAME=GTS Mobile Beta")]
+    [InlineData("--dart-define=APP_NAME=My App Beta")]
     [InlineData("--dart-define=URL=https://x.id/?a=1&b=2")]
     [InlineData("100%")]
     [InlineData("%PATH%")]

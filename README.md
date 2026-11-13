@@ -1,144 +1,144 @@
 # StatefulBar
 
-StatefulBar is a Windows taskbar widget (C#/.NET 10, WPF) that replaces Android Studio's run toolbar for Flutter projects: pick a device, run, hot reload, and stop without opening the IDE.
+Bahasa Indonesia: [docs/README.id.md](docs/README.id.md)
 
-## Build dan test
+StatefulBar is a Windows taskbar widget that replaces Android Studio's run toolbar for Flutter projects: pick a device,
+run, hot reload, and stop without opening the IDE.
 
-Butuh .NET SDK 10 dan Windows 10 atau 11.
+## Contents
 
-```
-dotnet build StatefulBar.sln
-dotnet test
-```
+- [Features](#features)
+- [Requirements](#requirements)
+- [Install](#install)
+- [Getting started](#getting-started)
+- [Widget menu](#widget-menu)
+- [Git actions](#git-actions)
+- [Run configurations](#run-configurations)
+- [CLI](#cli)
+- [Using with AI agents](#using-with-ai-agents)
+- [Uninstall](#uninstall)
+- [Limitations](#limitations)
+- [Building from source](#building-from-source)
+- [License](#license)
+- [Trademarks](#trademarks)
 
-Release:
+## Features
 
-```
-dotnet build StatefulBar.sln -c Release
-```
+- Docks into the Windows 10 and 11 taskbar, on any monitor, in three sizes (Full, Compact, Buttons only), with light and
+  dark themes.
+- Pick the project, git branch, run configuration, and device from chips on the widget, then Run, Hot reload, Hot restart,
+  and Stop.
+- Starts Android emulators from the device list.
+- Imports run configurations from Android Studio and VS Code.
+- Runs projects through fvm when they use it.
+- Flutter tools in one click: pub get, clean, build_runner, doctor.
+- Git from the branch flyout: fetch, pull, switch branch, commit and push.
+- A log window with search, an errors-only filter, and jump to the next error.
+- The `sbar` command line tool lets terminals and AI agents (Claude Code, Codex, Cursor, …) hot reload and read errors.
 
-| Exe | Lokasi (Release) |
-|---|---|
-| Widget | `src\StatefulBar.App\bin\Release\net10.0-windows\StatefulBar.exe` |
-| CLI | `src\StatefulBar.Cli\bin\Release\net10.0-windows\sbar.exe` (salinan juga ada di folder Release `StatefulBar.App`) |
+## Requirements
 
-Untuk Debug, ganti `Release` dengan `Debug`. Hanya satu instance StatefulBar yang boleh jalan; menjalankannya lagi hanya
-mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Exit". Log diagnostik: `%APPDATA%\StatefulBar\diag.log`.
+- Windows 10 or 11, 64-bit (x64). No .NET install needed.
+- The Flutter SDK on PATH, or fvm for projects that use it.
+- Optional: git (branch chip and git actions) and the Android SDK platform-tools (`adb`) for Android devices and emulators.
 
-### Paket rilis
+## Install
 
-```
-.\tools\publish.ps1
-```
+Download from the [Releases](https://github.com/andrehaliim/statefulbar/releases) page:
 
-Menghasilkan build self-contained win-x64 (tidak butuh .NET terpasang di PC pemakai), English only, versi dari
-`Directory.Build.props`:
+- **`StatefulBar-<version>-win-x64-setup.exe`** (recommended). Installs for your account only, no admin rights needed, to
+  `%LOCALAPPDATA%\Programs\StatefulBar`. Options, all checked by default: Start with Windows, Add the sbar CLI to PATH,
+  desktop shortcut, and launch after install.
+- **`StatefulBar-<version>-win-x64.zip`** (portable). Extract it anywhere and run `StatefulBar\StatefulBar.exe`. Use the
+  right-click menu for "Start with Windows" and "Add CLI to PATH…".
 
-| Output | Isi |
-|---|---|
-| `artifacts\publish\StatefulBar\` | `StatefulBar.exe`, `sbar.exe`, runtime .NET bersama, `LICENSE.txt`, `licenses\` (lisensi .NET) |
-| `artifacts\StatefulBar-<versi>-win-x64.zip` | Folder di atas, dengan satu folder `StatefulBar\` di dalam zip |
+The installer isn't code-signed yet, so Windows SmartScreen may show "Windows protected your PC": click **More info** >
+**Run anyway**.
 
-Script gagal bila `sbar.exe` hasil publish tidak self-contained atau tidak bisa start. Nama folder di dalam zip sengaja
-tanpa versi, supaya path "Start with Windows" dan PATH tetap sama setelah update.
+To update, run the newer `Setup.exe`; it closes the running widget first. Your settings are kept.
 
-## Pertama kali dipakai
+## Getting started
 
-1. Jalankan `StatefulBar.exe`; widget menempel di taskbar, di kiri area tray/jam. Kalau posisi otomatis tidak cocok
-   (mis. ada widget taskbar pihak ketiga seperti TrafficMonitor, yang tidak terlihat oleh deteksi otomatis), klik kanan > "Drag widget".
-2. Beri tahu StatefulBar di mana project Flutter Anda: klik kanan > Manage projects > "Root folders…" > tambah folder
-   (mis. `C:\Work`), atau "Add project…" untuk satu folder. Scan sedalam 3 tingkat mencari `pubspec.yaml` Flutter.
-   Folder root juga bisa ditulis langsung di `%APPDATA%\StatefulBar\settings.json`: `"scanRoots": ["C:\\Work"]`.
-3. Pilih project, branch, config, dan device lewat chip di widget, lalu tekan ▶.
-4. Project belum punya `.statefulbar/launch.json`? Di flyout config pilih "Import from IDE" (membaca run configuration Android Studio
-   `.idea/workspace.xml`, `.run/*.xml`, dan `.vscode/launch.json`) atau "Create default".
-5. Opsional: klik kanan > "Add CLI to PATH…" agar `sbar` bisa dipanggil dari terminal baru, dan "Start with Windows".
+1. Run StatefulBar. The widget docks in the taskbar, left of the tray/clock area. If the automatic position doesn't fit
+   (e.g. next to a third-party taskbar widget such as TrafficMonitor, which automatic detection can't see), right-click >
+   "Drag widget".
+2. Tell StatefulBar where your Flutter projects are: right-click > Manage projects > "Root folders…" > add a folder
+   (e.g. `C:\Work`), or "Add project…" for a single folder. The scan looks 3 levels deep for Flutter `pubspec.yaml` files.
+3. Pick the project, branch, config, and device with the widget's chips, then press ▶.
+4. Project has no run configuration yet? In the config flyout choose "Import from IDE" (reads Android Studio run
+   configurations from `.idea/workspace.xml` and `.run/*.xml`, and `.vscode/launch.json`) or "Create default".
+5. Optional: right-click > "Add CLI to PATH…" so `sbar` works in new terminals, and "Start with Windows".
 
-Project yang memakai fvm (`.fvmrc` atau `.fvm/fvm_config.json`) selalu dijalankan lewat `fvm flutter`, tanpa fallback ke flutter global.
+Projects that use fvm (`.fvmrc` or `.fvm/fvm_config.json`) always run through `fvm flutter`, with no fallback to the global flutter.
 
-## Pindah dari FlutterBar
+## Widget menu
 
-StatefulBar dulu bernama FlutterBar (diganti 2026-11-12; pedoman merek Flutter melarang kata "Flutter" di nama produk).
-Saat `StatefulBar.exe` pertama kali jalan:
+Right-click the widget:
 
-- `%APPDATA%\FlutterBar\settings.json` disalin ke `%APPDATA%\StatefulBar\settings.json` (hanya bila yang baru belum ada).
-- Value Run `FlutterBar` (Start with Windows) dihapus dan diganti value `StatefulBar` yang menunjuk exe ini.
-- `.flutterbar/launch.json` di project tetap dibaca selama `.statefulbar/launch.json` belum ada. Import dan "Create default"
-  menulis ke `.statefulbar`. Pindahkan sekali per project supaya rapi:
-
-  ```
-  git mv .flutterbar .statefulbar
-  ```
-
-Yang perlu diganti sendiri:
-- Perintah CLI sekarang `sbar` (dulu `flutterbar`), mis. `sbar reload`. Kalau folder exe ikut berubah (build dari source:
-  `src\FlutterBar.App\...` menjadi `src\StatefulBar.App\...`), jalankan "Add CLI to PATH…" lagi dan hapus folder lama dari
-  PATH user.
-- Folder `%APPDATA%\FlutterBar` lama boleh dihapus setelah semuanya jalan.
-- Variabel integration test sekarang `STATEFULBAR_IT_DEVICE`.
-
-## Menu widget
-
-Klik kanan widget:
-
-- **Size**: Full (semua chip), Compact (satu chip `Configuration ▾` yang membuka flyout gabungan), atau Buttons only
-  (klik titik status untuk flyout gabungan). Ukuran yang tidak muat di area kosong taskbar dinonaktifkan dengan catatan;
-  kalau taskbar penuh, widget turun ukuran sendiri dan kembali ke ukuran pilihan saat ruang cukup lagi.
-- **Style**: slider opacity latar widget 0–100% (chip, ikon, dan teks tetap penuh) dan Theme System / Light / Dark.
-  System mengikuti tema taskbar Windows; Light/Dark mengunci semua jendela StatefulBar.
-- **Show on**: pindah ke taskbar monitor lain (butuh "Show my taskbar on all displays"). Satu widget saja, tidak
-  diduplikasi. Bila monitor itu dicabut, widget pindah ke taskbar utama dan kembali saat monitor dicolok lagi.
-- **Drag widget** / **Reset to auto position**: geser widget secara horizontal; posisinya disimpan.
+- **Size**: Full (all chips), Compact (one `Configuration ▾` chip that opens a combined flyout), or Buttons only
+  (click the status dot for the combined flyout). Sizes that don't fit the free taskbar space are disabled with a note;
+  when the taskbar fills up, the widget steps down a size on its own and returns to the chosen size once there is room again.
+- **Style**: a 0–100% background opacity slider (chips, icons, and text stay fully opaque) and Theme System / Light / Dark.
+  System follows the Windows taskbar theme; Light/Dark lock every StatefulBar window.
+- **Show on**: move to another monitor's taskbar (needs "Show my taskbar on all displays"). There is only one widget, never
+  duplicated. When that monitor is unplugged the widget moves to the main taskbar, and comes back when it is plugged in again.
+- **Drag widget** / **Reset to auto position**: move the widget horizontally; the position is saved.
 - **Manage projects**, **Import config from IDE…**, **Open launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
   **Add CLI to PATH…**, **Start with Windows**, **Exit**.
 
-Tombol di widget:
+Widget buttons:
 
-- **Kunci pas** (Flutter tools; Full/Compact; di Buttons only lewat menu > Flutter tools…): Pub get, Clean, Clean and pub get,
-  Run build_runner (hanya bila `build_runner` ada di pubspec), dan Doctor. Satu perintah sekaligus, bisa di-Cancel, output masuk
-  ke log. Clean nonaktif selama app berjalan; ▶ menunggu sampai perintah selesai.
-- **Tombol log** (paling kanan): menu Open log dan Open terminal (Windows Terminal bila ada, selain itu PowerShell,
-  di folder project).
+- **Wrench** (Flutter tools; Full/Compact; in Buttons only via the menu > Flutter tools…): Pub get, Clean, Clean and pub get,
+  Run build_runner (only when `build_runner` is in the pubspec), and Doctor. One command at a time, cancellable, output goes
+  to the log. Clean is disabled while the app runs; ▶ waits until the command finishes.
+- **Log button** (rightmost): a menu with Open log and Open terminal (Windows Terminal when available, otherwise PowerShell,
+  in the project folder).
 
-## Aksi git (flyout branch)
+## Git actions
 
-Klik chip branch: `Fetch` (`git fetch --prune`), `Pull` (`git pull` biasa), kolom `Commit message` + `Commit and push`, dan daftar branch.
+Click the branch chip: `Fetch` (`git fetch --prune`), `Pull` (plain `git pull`), a `Commit message` box + `Commit and push`,
+and the branch list.
 
-- `Commit and push` menjalankan `git add -A` untuk SELURUH repo (bukan hanya folder project; di monorepo perubahan di luar project ikut ter-commit), `git commit`, lalu `git push` (`push -u origin <branch>` bila belum ada upstream).
-- Pesan kosong dan ada commit yang belum terkirim (`↑N`): tombol menjadi `Push ↑N` dan hanya mengirim commit itu.
-- Tidak pernah `--force`, tidak ada pull otomatis sebelum push; push ditolak = saran "Pull first.". Merge/rebase yang belum selesai dan HEAD detached ditolak.
-- Login remote HTTPS lewat Git Credential Manager (tidak pernah menunggu input terminal; batas 2 menit). Remote SSH yang butuh passphrase atau host baru harus disiapkan dulu dari terminal (ssh-agent / sekali `ssh`).
-- Hasil tampil di dalam flyout selama terbuka (toast hanya bila flyout sudah tertutup); output git panjang dipotong ~6 baris, teks lengkap di `diag.log`.
+- `Commit and push` runs `git add -A` for the WHOLE repo (not just the project folder; in a monorepo, changes outside the
+  project are committed too), `git commit`, then `git push` (`push -u origin <branch>` when there is no upstream yet).
+- Empty message with unpushed commits (`↑N`): the button becomes `Push ↑N` and only sends those commits.
+- Never `--force`, no automatic pull before push; a rejected push suggests "Pull first.". An unfinished merge/rebase and a
+  detached HEAD are refused.
+- HTTPS remotes sign in through Git Credential Manager (never waits for terminal input; 2 minute limit). SSH remotes that need
+  a passphrase or a new host key must be set up from a terminal first (ssh-agent / one `ssh` run).
+- Results show inside the flyout while it is open (a toast only once the flyout is closed); long git output is cut to about
+  6 lines, the full text is in `%APPDATA%\StatefulBar\diag.log`.
 
-## `launch.json`
+## Run configurations
 
-`<project>\.statefulbar\launch.json`, format JSONC (komentar dan trailing comma boleh), dibaca ulang dari disk setiap kali dipakai.
+Each project keeps its run configurations in `<project>\.statefulbar\launch.json`, in JSONC format (comments and trailing
+commas allowed). The file is read again from disk every time it is used, so edits apply on the next ▶.
 
 ```jsonc
 {
   "version": 1,
   "configurations": [
     {
-      "name": "beta",                 // wajib, unik per file
-      "program": "lib/main.dart",     // opsional, default "lib/main.dart", relatif ke root project
-      "flavor": "beta",               // opsional, menjadi --flavor beta
-      "mode": "debug",                // opsional: debug | profile | release, default debug
-      "args": [                       // opsional, satu elemen = satu argumen
+      "name": "beta",                 // required, unique per file
+      "program": "lib/main.dart",     // optional, default "lib/main.dart", relative to the project root
+      "flavor": "beta",               // optional, becomes --flavor beta
+      "mode": "debug",                // optional: debug | profile | release, default debug
+      "args": [                       // optional, one element = one argument
         "--dart-define=mode=debug",
         "--dart-define=API_SERVER=https://beta.api.example.com/",
-        "--dart-define=APP_NAME=GTS Mobile Beta"
+        "--dart-define=APP_NAME=My App Beta"
       ]
     }
   ]
 }
 ```
 
-Perintah yang dijalankan (working directory = root project):
+The command that runs (working directory = project root):
 `<flutter> run --machine -d <deviceId> -t <program> [--flavor <flavor>] --<mode> <args...>`
 
 ## CLI
 
-StatefulBar harus sedang berjalan; CLI bicara lewat named pipe milik user saat ini.
+StatefulBar must be running; the CLI talks to it over a named pipe owned by the current user.
 
 ```
 sbar status
@@ -148,72 +148,70 @@ sbar stop
 sbar logs [--errors] [--tail N] [--since-last-reload]
 ```
 
-Semua perintah mendukung `--json`. `sbar run` sengaja tidak ada: jalankan app lewat tombol ▶.
+Every command supports `--json`. There is no `sbar run` on purpose: start the app with the ▶ button.
 
-| Exit code | Arti |
+| Exit code | Meaning |
 |---|---|
 | 0 | OK |
-| 1 | Gagal (mis. reload gagal compile, "Reload in progress", sesi Failed) |
-| 2 | StatefulBar tidak berjalan |
-| 3 | Tidak ada sesi aktif |
-| 4 | Timeout (reload/restart lebih dari 60 detik) |
-| 64 | Pemakaian salah (perintah/argumen tidak dikenal) |
+| 1 | Failed (e.g. reload failed to compile, "Reload in progress", session Failed) |
+| 2 | StatefulBar is not running |
+| 3 | No active session |
+| 4 | Timeout (reload/restart took longer than 60 seconds) |
+| 64 | Usage error (unknown command or argument) |
 
-## Test
+## Using with AI agents
 
-`dotnet test` menjalankan unit test saja (integration test otomatis di-skip).
+Agents (Claude Code, Codex, Cursor, …) don't know that your app is run by StatefulBar: without a hint they try `flutter run`,
+`flutter attach`, or the Dart MCP `launch_app`, and start a second app. Paste the snippet below once into `CLAUDE.md` or
+`AGENTS.md` at the root of your Flutter project, or into your agent's global instructions file (e.g. `~/.claude/CLAUDE.md`).
+`sbar` must be on PATH (the installer's "Add the sbar CLI to PATH" option, or the "Add CLI to PATH…" menu item).
 
-Integration test end-to-end menjalankan `fvm flutter run --machine` sungguhan terhadap `tests\sample_app` (Flutter 3.22.3 lewat `.fvmrc`):
-start sampai Running, reload, restart, logs, stop, lalu memastikan semua proses turunan mati. Butuh fvm di PATH dan Flutter 3.22.3 terpasang.
+```markdown
+## Running app (StatefulBar)
 
+The Flutter app is started and owned by the StatefulBar taskbar widget, not by a terminal or the IDE.
+Control it with the `sbar` CLI; do not run `flutter run`, `flutter attach`, or Dart MCP `launch_app` for it.
+
+- After editing Dart code: `sbar reload` (use `sbar restart` after changes to `main()`, `initState`,
+  globals, or enums), then `sbar logs --errors --since-last-reload` and fix any errors.
+- `sbar status` shows whether an app is running, and on which project, config, and device.
+- Exit codes: 0 OK, 1 failed (e.g. compile error, message on stderr), 2 StatefulBar not running,
+  3 no running app (ask the user to press Run in the widget), 4 timeout.
+- Add `--json` for machine-readable output.
 ```
-$env:STATEFULBAR_IT_DEVICE="chrome"; dotnet test --filter Category=Integration
-```
 
-Hasil terakhir (2026-11-07): 2/2 lulus di device `chrome` (build pertama bisa beberapa menit; timeout 10 menit). Di web, hot reload
-berperilaku seperti hot restart dan menjawab code 0. Android belum tercakup: AVD `Pixel_9` di mesin pengembang gagal install
-(`INSTALL_FAILED_INSUFFICIENT_STORAGE`) dan device `windows` butuh toolchain Visual Studio C++.
+From then on the agent runs `sbar reload` and reads the errors itself every time it finishes editing Dart code. When no app
+is running it gets exit code 3 and asks you to press ▶.
 
-Uji yang butuh mouse/taskbar/device nyata ada di `docs\manual-test-checklist.md`. Semua baris sudah diuji user dan lulus
-(2026-11-11, sebagian di Windows 10 dan sebagian di Windows 11). Baris baru diisi "BELUM DIUJI (user)" sampai diuji.
+## Uninstall
 
-## Penggunaan RAM
+Settings > Apps > StatefulBar > Uninstall. This closes the widget and removes its files, shortcuts, the Start with Windows
+entry, and the PATH entry. You're then asked whether to also remove your settings and logs (`%APPDATA%\StatefulBar`); the
+default is No, so a reinstall keeps your projects and choices.
 
-Build **Release**, `StatefulBar.exe` 5 menit idle setelah start (tidak ada sesi, LogWindow tertutup), DPI 96.
+For the portable zip: turn off "Start with Windows" in the menu if you used it, right-click > Exit, then delete the folder.
+If you used "Add CLI to PATH…", also remove that folder from your user PATH (Start > "Edit environment variables for your
+account" > Path > Edit).
 
-| Metrik | Windows 11 (2026-11-07, 1920x1080) | Windows 10 22H2 (2026-11-12, 1600x900) | Arti |
-|---|---|---|---|
-| **Private working set** | **35,8 MB** | **30,1 MB** | RAM fisik milik proses saja; angka kolom "Memory" di Task Manager. **Patokan target** |
-| Working set | 121,9 MB | 105,4 MB | Seluruh RAM fisik yang dipetakan ke proses, termasuk halaman DLL .NET/WPF yang dibagi dengan proses lain |
-| Private bytes | 61,2 MB | 39,7 MB | Memori commit privat (termasuk yang sedang di pagefile) |
+## Limitations
 
-Target spec §1 (private working set idle di bawah 100 MB, patokan diputuskan user 2026-11-12) **tercapai** di Windows 10 dan 11.
-Working set tetap dicatat sebagai pembanding; sebagian besar isinya halaman DLL bersama yang tidak bisa diturunkan oleh kode StatefulBar.
+- Arguments in `launch.json` that contain a double quote (`"`) are rejected (there is no escaping that survives both cmd.exe
+  and `flutter.bat`). Use `--dart-define-from-file` for complex values.
+- Automatic placement can't see third-party taskbar widgets (e.g. TrafficMonitor); use "Drag widget".
+- The widget hides while a fullscreen app (game, video) runs.
+- With an auto-hiding taskbar, the widget hides/shows slightly later than the taskbar animation.
+- git and adb are detected only when StatefulBar starts; after installing them, restart StatefulBar.
+- Idle memory use is about 30–40 MB (the "Memory" column in Task Manager).
 
-Dengan LogWindow terbuka berisi 20.000 baris pada build Release: diuji user 2026-11-11 (OKE), angkanya tidak dicatat. Rujukan build
-Debug (Task 15): widget saja sekitar 117 MB, dengan 20.000 baris dan LogWindow sekitar 167-178 MB working set.
+## Building from source
 
-## Keterbatasan
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and packaging StatefulBar.
 
-- Argumen di `launch.json` yang berisi tanda kutip (`"`) ditolak (tidak ada cara escaping yang selamat dari cmd.exe sekaligus `flutter.bat`).
-  Pakai `--dart-define-from-file` untuk nilai kompleks.
-- Penempatan otomatis tidak melihat widget taskbar pihak ketiga (mis. TrafficMonitor); pakai "Drag widget".
-- Widget tersembunyi selama aplikasi fullscreen (game, video) berjalan.
-- Windows 10 dan 11 memakai deteksi taskbar yang sama (UI Automation, dengan `TrayNotifyWnd` sebagai cadangan); tidak ada jalur
-  khusus Windows 10 (`MSTaskSwWClass`).
-- Saat taskbar auto-hide, widget ikut sembunyi/muncul sedikit telat dibanding animasi taskbar.
-- Fixture protokol daemon direkam di `chrome`; output khusus Android (Gradle, `app.log`, semantik hot reload) belum direkam.
-  Deteksi exception Android (prefix logcat `I/flutter ( 1234): `) diuji dengan baris sintetis, belum dengan rekaman asli.
-- Stop yang bersih (flutter keluar dalam 5 detik setelah `app.stop`) membiarkan daemon yang dinyalakan sesi itu (Gradle, Kotlin,
-  adb) tetap hidup sampai StatefulBar ditutup, supaya ▶ berikutnya tidak membayar Gradle dingin. Exit atau crash StatefulBar tetap
-  mematikan semuanya (Job Object).
-- Deteksi git/adb hanya saat StatefulBar start; git yang baru dipasang butuh restart StatefulBar.
+## License
 
-## Lisensi
+MIT, see [LICENSE](LICENSE).
 
-MIT, lihat [LICENSE](LICENSE).
+## Trademarks
 
-## Merek dagang
-
-Flutter dan logo Flutter adalah merek dagang Google LLC. StatefulBar adalah proyek independen dan tidak berafiliasi dengan,
-disponsori, atau didukung oleh Google.
+Flutter and the related logo are trademarks of Google LLC. StatefulBar is an independent project and is not affiliated with,
+sponsored by, or endorsed by Google.

@@ -43,13 +43,13 @@ public sealed class ProjectListEditorTests
     [Fact]
     public void HideAndUnhide()
     {
-        Assert.True(ProjectListEditor.Hide(_settings, @"C:\Work\gts-mobile\"));
-        Assert.False(ProjectListEditor.Hide(_settings, @"c:\work\GTS-MOBILE"));
-        Assert.Equal([@"C:\Work\gts-mobile"], _settings.HiddenProjects);
+        Assert.True(ProjectListEditor.Hide(_settings, @"C:\Work\my-app\"));
+        Assert.False(ProjectListEditor.Hide(_settings, @"c:\work\MY-APP"));
+        Assert.Equal([@"C:\Work\my-app"], _settings.HiddenProjects);
 
-        Assert.True(ProjectListEditor.Unhide(_settings, @"C:\WORK\gts-mobile"));
+        Assert.True(ProjectListEditor.Unhide(_settings, @"C:\WORK\my-app"));
         Assert.Empty(_settings.HiddenProjects);
-        Assert.False(ProjectListEditor.Unhide(_settings, @"C:\Work\gts-mobile"));
+        Assert.False(ProjectListEditor.Unhide(_settings, @"C:\Work\my-app"));
     }
 
     [Fact]

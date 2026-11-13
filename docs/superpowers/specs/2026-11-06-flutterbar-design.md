@@ -138,7 +138,7 @@ diubah dan sejak itu kalah prioritas.
       "args": [                       // opsional, diteruskan apa adanya, satu elemen = satu argumen
         "--dart-define=mode=debug",
         "--dart-define=API_SERVER=https://beta.api.example.com/",
-        "--dart-define=APP_NAME=GTS Mobile Beta"
+        "--dart-define=APP_NAME=My App Beta"
       ]
     }
   ]
@@ -183,9 +183,9 @@ dalam bahasa manusia.
   "manualProjects": [],              // path project di luar folder root
   "hiddenProjects": [],              // path yang disembunyikan dari daftar
   "projects": {                      // state per project, key = path absolut
-    "C:\\Work\\gts-mobile": { "lastUsed": "2026-11-06T10:42:00+07:00", "config": "beta", "deviceId": "chrome" }
+    "C:\\Work\\my-app": { "lastUsed": "2026-11-06T10:42:00+07:00", "config": "beta", "deviceId": "chrome" }
   },
-  "currentProject": "C:\\Work\\gts-mobile",
+  "currentProject": "C:\\Work\\my-app",
   "widget": { "size": "full", "position": "auto", "offsetFromRight": null },
   "startWithWindows": false
 }
@@ -211,7 +211,7 @@ Migrasi dari FlutterBar: saat start, bila `%APPDATA%\StatefulBar\settings.json` 
 - **Project yang hilang** (foldernya sudah tidak ada) ditandai "(unavailable)" sampai scan berikutnya,
   lalu dibuang dari daftar.
 - Nama yang ditampilkan adalah nama folder. Kalau ada dua project dengan nama folder yang sama, ditambah
-  nama parent-nya, misalnya `gts-mobile (GTSmobile)`.
+  nama parent-nya, misalnya `my-app (clients)`.
 
 ### 5.2 `FlutterToolLocator`
 - Kalau project punya `.fvmrc` atau `.fvm/fvm_config.json`, perintahnya `fvm flutter`. `fvm` harus
@@ -539,7 +539,7 @@ menulis ke `diag.log`.
 - **Unit test (`StatefulBar.Core.Tests`, xUnit):**
   - Parse dan validasi `launch.json`, termasuk JSONC dan field yang salah.
   - `IdeConfigImporter`, dengan fixture yang meniru `.idea/workspace.xml` dan `.vscode/launch.json`
-    gts-mobile (termasuk `&quot;` dan argumen berspasi).
+    my-app (termasuk `&quot;` dan argumen berspasi).
   - Penyusunan perintah: fvm atau non-fvm, flavor, mode, program.
   - Escaping `cmd.exe` untuk `.bat`: spasi, kutip, `&`, `%`, `^`.
   - `FlutterDaemonClient`, dengan rekaman output asli `flutter run --machine` dari Flutter 3.22.3.

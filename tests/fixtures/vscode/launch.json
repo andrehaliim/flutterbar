@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GTS Mobile Dev",
+            "name": "My App Dev",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
@@ -14,11 +14,11 @@
                 "dev",
                 "--dart-define=mode=debug",
                 "--dart-define=API_SERVER=https://dev.api.example.com/api/",
-                "--dart-define=APP_NAME=GTS Mobile Dev"
+                "--dart-define=APP_NAME=My App Dev"
             ]
         },
         {
-            "name": "GTS Mobile Beta",
+            "name": "My App Beta",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
@@ -27,11 +27,11 @@
                 "beta",
                 "--dart-define=mode=debug",
                 "--dart-define=API_SERVER=https://beta.api.example.com/",
-                "--dart-define=APP_NAME=GTS Mobile Beta"
+                "--dart-define=APP_NAME=My App Beta"
             ]
         },
         {
-            "name": "GTS Mobile Live",
+            "name": "My App Live",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
@@ -40,7 +40,7 @@
                 "live",
                 "--dart-define=mode=debug",
                 "--dart-define=API_SERVER=https://api.example.com/",
-                "--dart-define=APP_NAME=GTS Mobile"
+                "--dart-define=APP_NAME=My App"
             ]
         },
         {
@@ -50,7 +50,7 @@
             "program": "${workspaceFolder}/tool/helper.js"
         },
         {
-            "name": "GTS Mobile Live Profile",
+            "name": "My App Live Profile",
             "request": "launch",
             "type": "dart",
             "program": "lib/main_live.dart",

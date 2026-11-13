@@ -41,13 +41,13 @@ public class PresentationTests
         var settings = new AppSettings();
         var now = new DateTimeOffset(2026, 11, 7, 10, 0, 0, TimeSpan.Zero);
 
-        ProjectSelection.RecordRun(settings, @"C:\Work\gts-mobile\", "beta", "emulator-5554", now);
+        ProjectSelection.RecordRun(settings, @"C:\Work\my-app\", "beta", "emulator-5554", now);
 
-        Assert.True(settings.TryGetProject(@"c:\work\GTS-MOBILE", out var state));
+        Assert.True(settings.TryGetProject(@"c:\work\MY-APP", out var state));
         Assert.Equal(now, state.LastUsed);
         Assert.Equal("beta", state.Config);
         Assert.Equal("emulator-5554", state.DeviceId);
-        Assert.Equal(@"C:\Work\gts-mobile", settings.CurrentProject);
+        Assert.Equal(@"C:\Work\my-app", settings.CurrentProject);
         Assert.Single(settings.Projects);
     }
 
@@ -76,12 +76,12 @@ public class PresentationTests
     }
 
     [Theory]
-    [InlineData("gts-mobile", "", true)]
-    [InlineData("gts-mobile", null, true)]
-    [InlineData("gts-mobile", "GTS", true)]
-    [InlineData("gts-mobile (GTSmobile)", "mob gts", true)]
+    [InlineData("my-app", "", true)]
+    [InlineData("my-app", null, true)]
+    [InlineData("my-app", "MY", true)]
+    [InlineData("my-app (clients)", "cli my", true)]
     [InlineData("feature/login", "login feat", true)]
-    [InlineData("gts-mobile", "web", false)]
+    [InlineData("my-app", "web", false)]
     public void SearchFilter_AllTokensCaseInsensitive(string text, string? query, bool expected) =>
         Assert.Equal(expected, SearchFilter.Matches(text, query));
 

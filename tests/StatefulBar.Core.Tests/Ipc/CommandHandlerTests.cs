@@ -34,7 +34,7 @@ public sealed class CommandHandlerTests : IDisposable
 
     private sealed class FakeStatus : IStatusProvider
     {
-        public StatusInfo Current() => new("Running", "gts-mobile", "main", "beta", "emulator-5554", 0);
+        public StatusInfo Current() => new("Running", "my-app", "main", "beta", "emulator-5554", 0);
     }
 
     private static RunRequest Request() =>
@@ -112,7 +112,7 @@ public sealed class CommandHandlerTests : IDisposable
         Assert.True(response.Ok);
         var data = response.Data!.Value;
         Assert.Equal("Running", data.GetProperty("state").GetString());
-        Assert.Equal("gts-mobile", data.GetProperty("project").GetString());
+        Assert.Equal("my-app", data.GetProperty("project").GetString());
         Assert.Equal("main", data.GetProperty("branch").GetString());
         Assert.Equal("beta", data.GetProperty("config").GetString());
         Assert.Equal("emulator-5554", data.GetProperty("device").GetString());

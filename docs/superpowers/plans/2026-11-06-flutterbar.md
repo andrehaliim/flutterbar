@@ -28,7 +28,7 @@
 
 ## Review Focus
 
-1. **Argumen berisi spasi, kutip, `&`, atau `%` yang lewat `flutter.bat`** (misalnya `--dart-define=APP_NAME=GTS Mobile Beta`, atau URL dengan `?a=1&b=2`). Argumen harus sampai ke flutter persis seperti aslinya, tanpa command injection. Test-nya ada di Task 5.
+1. **Argumen berisi spasi, kutip, `&`, atau `%` yang lewat `flutter.bat`** (misalnya `--dart-define=APP_NAME=My App Beta`, atau URL dengan `?a=1&b=2`). Argumen harus sampai ke flutter persis seperti aslinya, tanpa command injection. Test-nya ada di Task 5.
 2. **Path project berisi spasi atau karakter non-ASCII** (misalnya `C:\Users\Andre\My Projects\aplikasi-ü`). Scan, git, dan run harus tetap jalan. Test-nya ada di Task 4 dan Task 5.
 3. **Proses flutter keluar sebelum `app.started`** (misalnya Gradle gagal), atau hanya mengeluarkan teks non-JSON. Sesi harus berakhir di state Failed dengan output tetap ada di log, dan tidak boleh macet di Starting. Test-nya ada di Task 9.
 4. **`flutterbar reload` dipanggil saat sesi masih Starting (belum ada `appId`) atau saat reload lain sedang berjalan.** Hasilnya harus langsung exit 3 (tidak ada sesi) atau exit 1 ("Sedang reload"), dan tidak boleh hang. Test-nya ada di Task 9 dan Task 11.
@@ -162,9 +162,9 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
 - [ ] **Step 1: Tulis test yang gagal.** Pakai folder sementara per test (`Directory.CreateTempSubdirectory()`).
   ```csharp
   [Fact] void Load_MissingFile_ReturnsFileExistsFalse()        // FileExists == false, Configs kosong, Errors kosong
-  [Fact] void Load_Jsonc_WithCommentsAndTrailingCommas()       // fixture tests/fixtures/launch/gts-beta.jsonc -> 1 config:
+  [Fact] void Load_Jsonc_WithCommentsAndTrailingCommas()       // fixture tests/fixtures/launch/beta.jsonc -> 1 config:
       // Name "beta", Program "lib/main.dart", Flavor "beta", Mode Debug,
-      // Args[2] == "--dart-define=APP_NAME=GTS Mobile Beta"
+      // Args[2] == "--dart-define=APP_NAME=My App Beta"
   [Fact] void Load_DefaultsProgramAndMode()                    // {"version":1,"configurations":[{"name":"x"}]} -> Program "lib/main.dart", Mode Debug
   [Fact] void Load_InvalidJson_ReportsLine()                   // JSON terpotong di baris 4 -> Errors[0].Line == 4
   [Theory] void Load_ValidationErrors(string json, string field)
@@ -194,7 +194,7 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
 
 **Files:**
 - Create: `src/FlutterBar.Core/Config/ShellSplitter.cs`, `Config/IdeConfigImporter.cs`
-- Create fixtures: `tests/fixtures/idea/workspace.xml` (salin bagian `RunManager` gts-mobile, yaitu config `beta` dan `live` beserta `&quot;`), `tests/fixtures/idea/run/dev.run.xml`, `tests/fixtures/vscode/launch.json` (salin 3 config gts-mobile, termasuk komentar `//`)
+- Create fixtures: `tests/fixtures/idea/workspace.xml` (salin bagian `RunManager` my-app, yaitu config `beta` dan `live` beserta `&quot;`), `tests/fixtures/idea/run/dev.run.xml`, `tests/fixtures/vscode/launch.json` (salin 3 config my-app, termasuk komentar `//`)
 - Test: `tests/FlutterBar.Core.Tests/Config/ShellSplitterTests.cs`, `Config/IdeConfigImporterTests.cs`
 
 **Interfaces:**
@@ -210,16 +210,16 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
   ```csharp
   [Theory]
   [InlineData("--a=1 --b=2", new[]{"--a=1","--b=2"})]
-  [InlineData("--dart-define=APP_NAME=\"GTS Mobile Beta\" --x", new[]{"--dart-define=APP_NAME=GTS Mobile Beta","--x"})]
+  [InlineData("--dart-define=APP_NAME=\"My App Beta\" --x", new[]{"--dart-define=APP_NAME=My App Beta","--x"})]
   [InlineData("  ", new string[0])]
   [InlineData("'single quoted' b", new[]{"single quoted","b"})]
   void Split_Cases(string input, string[] expected)
   ```
   ```csharp
   [Fact] void Discover_Idea_MapsBetaConfig()   // Name "beta", Program "lib/main.dart" ($PROJECT_DIR$/ dibuang),
-      // Flavor "beta", Args berisi "--dart-define=APP_NAME=GTS Mobile Beta", Source "idea"
+      // Flavor "beta", Args berisi "--dart-define=APP_NAME=My App Beta", Source "idea"
   [Fact] void Discover_RunFolder_IsIncluded()  // .run/dev.run.xml ikut ditemukan
-  [Fact] void Discover_Vscode_LiftsFlavor()    // "GTS Mobile Dev": Flavor "dev", Args tidak lagi berisi "--flavor"/"dev"
+  [Fact] void Discover_Vscode_LiftsFlavor()    // "My App Dev": Flavor "dev", Args tidak lagi berisi "--flavor"/"dev"
   [Fact] void Discover_Vscode_FlavorEqualsForm() // "--flavor=live" juga diangkat
   [Fact] void Discover_MarksAlreadyExisting()  // existing berisi "beta" -> candidate beta AlreadyExists == true
   [Fact] void Discover_IgnoresNonDartVscodeConfigs()
@@ -281,7 +281,7 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
   // ProjectCatalog
   [Fact] void Build_MergesManual_RemovesHidden()
   [Fact] void Build_OrdersByLastUsedDescThenName()
-  [Fact] void Build_DuplicateFolderNames_AppendsParent() // "gts-mobile (GTSmobile)"
+  [Fact] void Build_DuplicateFolderNames_AppendsParent() // "my-app (clients)"
   [Fact] void Build_MissingDirectory_MarkedUnavailable()
   ```
 - [ ] **Step 2: Jalankan dan pastikan gagal.**
@@ -322,7 +322,7 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
   ```csharp
   // CmdEscaper + EchoArgs (end-to-end lewat cmd.exe; Review Focus #1)
   [Theory]
-  [InlineData("--dart-define=APP_NAME=GTS Mobile Beta")]
+  [InlineData("--dart-define=APP_NAME=My App Beta")]
   [InlineData("--dart-define=URL=https://x.id/?a=1&b=2")]
   [InlineData("100%")] [InlineData("%PATH%")] [InlineData("a\"b")] [InlineData("^caret|pipe<lt>gt")]
   [InlineData("")] [InlineData("trailing\\")]
@@ -648,7 +648,7 @@ Tujuannya menjawab satu pertanyaan: **apakah jendela WPF bisa menempel dengan st
 - [ ] **Step 3: Implementasi.**
   - Server memakai `NamedPipeServerStream` yang dibuat lewat `NamedPipeServerStreamAcl.Create` dengan `PipeSecurity` yang hanya memberi akses `FullControl` ke SID user saat ini.
   - Protokolnya satu baris JSON untuk request dan satu baris JSON untuk response per koneksi. Request diproses secara serial lewat `SemaphoreSlim(1)`.
-  - CLI tanpa `--json` mencetak teks ringkas, misalnya `Running · gts-mobile · beta · emulator-5554 · 0 error`.
+  - CLI tanpa `--json` mencetak teks ringkas, misalnya `Running · my-app · beta · emulator-5554 · 0 error`.
   - Untuk `reload` dan `restart`, timeout di sisi klien adalah 65 detik, dan handler memakai timeout session 60 detik.
 - [ ] **Step 4: Jalankan test.** Hasil yang diharapkan: PASS.
 - [ ] **Step 5: Checkpoint.** Commit message: `feat: add named-pipe IPC and flutterbar CLI`.
@@ -783,7 +783,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
   - Lalu `FlutterCommandBuilder`, lalu `RunSession.StartAsync`.
   - Simpan `LastUsed`, config, dan device ke settings.
 - [ ] **Step 7: Konfirmasi satu sesi.** Mengganti project, config, atau device saat state bukan Idle atau Failed memunculkan dialog "Stop sesi sekarang dan ganti?". Kalau Ya: Stop, ubah pilihan, dan jangan run otomatis.
-- [ ] **Step 8: Verifikasi manual** dengan gts-mobile:
+- [ ] **Step 8: Verifikasi manual** dengan my-app:
   - Pilih config `beta` setelah import (atau buat `launch.json` secara manual dulu).
   - Pilih device, Run, reload, restart, lalu Stop.
   - Ganti branch dari terminal saat widget terbuka: chip harus berubah dalam waktu kurang dari 2 detik.
@@ -860,7 +860,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
   - Exit: kalau ada sesi aktif, tampilkan konfirmasi, lalu Stop, lalu keluar.
 - [ ] **Step 5: Verifikasi manual.**
   - Jalankan `FlutterBar.App.exe` dua kali: hanya satu widget yang ada.
-  - Import di gts-mobile: muncul 5 kandidat, yaitu `beta` dan `live` dari idea serta Dev, Beta, dan Live dari vscode.
+  - Import di my-app: muncul 5 kandidat, yaitu `beta` dan `live` dari idea serta Dev, Beta, dan Live dari vscode.
   - Tambahkan ke PATH, lalu di terminal baru jalankan `flutterbar status`.
   - Exit saat app sedang jalan: tidak boleh ada proses `dart.exe` atau `java.exe` dari sesi itu yang tersisa (cek di Task Manager).
 - [ ] **Step 6: Checkpoint.** Commit message: `feat(app): add context menu, IDE import and system integration`.
@@ -886,7 +886,7 @@ Prasyarat: gerbang keputusan Task 1 sudah lulus. Gunakan nama kelas dan Automati
     - Setelah itu, tidak ada proses turunan yang tersisa: semua PID yang tercatat oleh Job Object sudah mati.
   - Tambahkan juga test `DisposeWhileRunning_NoOrphans`. Test ini men-dispose `RunSession` dan `ProcessLauncher` saat state Running, lalu memastikan semua PID turunan mati.
 - [ ] **Step 2: Jalankan integration test.** Perintah: `$env:FLUTTERBAR_IT_DEVICE="<id>"; dotnet test --filter Category=Integration`. Hasil yang diharapkan: PASS. Catat device yang dipakai.
-- [ ] **Step 3: Tulis `docs/manual-test-checklist.md`.** Isinya checklist docking (spec §11), alur gts-mobile dari Task 14 Step 8, dan Task 16 Step 5. Jalankan seluruh checklist dan isi hasilnya.
+- [ ] **Step 3: Tulis `docs/manual-test-checklist.md`.** Isinya checklist docking (spec §11), alur my-app dari Task 14 Step 8, dan Task 16 Step 5. Jalankan seluruh checklist dan isi hasilnya.
 - [ ] **Step 4: Ukur RAM.**
   - Working set `FlutterBar.App` saat idle 5 menit setelah start, dan saat `LogWindow` terbuka berisi 20.000 baris.
   - Catat angkanya di README. Targetnya di bawah 100 MB saat idle (spec §1). Kalau target tidak tercapai, laporkan angka sebenarnya ke user. Jangan klaim target tercapai.

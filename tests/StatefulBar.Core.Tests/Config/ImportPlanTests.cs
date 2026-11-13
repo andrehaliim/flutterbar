@@ -86,12 +86,12 @@ public sealed class ImportPlanTests : IDisposable
         Assert.True(names.Count >= 5, string.Join(", ", names));
         Assert.Contains("beta", names);
         Assert.Contains("live", names);
-        Assert.Contains("GTS Mobile Dev", names);
-        Assert.Contains("GTS Mobile Beta", names);
-        Assert.Contains("GTS Mobile Live", names);
-        // Only lib/main.dart exists here: "GTS Mobile Live Profile" (lib/main_live.dart) is offered unchecked.
+        Assert.Contains("My App Dev", names);
+        Assert.Contains("My App Beta", names);
+        Assert.Contains("My App Live", names);
+        // Only lib/main.dart exists here: "My App Live Profile" (lib/main_live.dart) is offered unchecked.
         Assert.All(discovery.Rows.Where(r => r.Candidate.Config.Program == "lib/main.dart"), r => Assert.True(r.IsChecked));
-        var profile = Assert.Single(discovery.Rows, r => r.Title == "GTS Mobile Live Profile");
+        var profile = Assert.Single(discovery.Rows, r => r.Title == "My App Live Profile");
         Assert.False(profile.IsChecked);
         Assert.True(profile.IsEnabled);
         Assert.Equal(ImportPlan.MissingProgramNote, profile.Note);

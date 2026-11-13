@@ -2,13 +2,13 @@
 <project version="4">
   <component name="RunManager" selected="Flutter.beta">
     <configuration name="beta" type="FlutterRunConfigurationType" factoryName="Flutter">
-      <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=API_SERVER=https://beta.api.example.com/ --dart-define=APP_NAME=&quot;GTS Mobile Beta&quot; --dart-define=FLAVOR=beta" />
+      <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=API_SERVER=https://beta.api.example.com/ --dart-define=APP_NAME=&quot;My App Beta&quot; --dart-define=FLAVOR=beta" />
       <option name="buildFlavor" value="beta" />
       <option name="filePath" value="$PROJECT_DIR$/lib/main.dart" />
       <method v="2" />
     </configuration>
     <configuration name="live" type="FlutterRunConfigurationType" factoryName="Flutter">
-      <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=API_SERVER=https://api.example.com/ --dart-define=APP_NAME=&quot;GTS Mobile&quot; --dart-define=FLAVOR=live" />
+      <option name="additionalArgs" value="--dart-define=mode=debug --dart-define=API_SERVER=https://api.example.com/ --dart-define=APP_NAME=&quot;My App&quot; --dart-define=FLAVOR=live" />
       <option name="buildFlavor" value="live" />
       <option name="filePath" value="$PROJECT_DIR$/lib/main.dart" />
       <method v="2" />

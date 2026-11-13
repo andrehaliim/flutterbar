@@ -10,7 +10,7 @@
       "args": [
         "--dart-define=mode=debug",
         "--dart-define=API_SERVER=https://beta.api.example.com/",
-        "--dart-define=APP_NAME=GTS Mobile Beta",
+        "--dart-define=APP_NAME=My App Beta",
         "--dart-define=FLAVOR=beta",
       ],
     },

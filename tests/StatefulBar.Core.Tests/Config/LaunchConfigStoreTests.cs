@@ -93,7 +93,7 @@ public sealed class LaunchConfigStoreTests : IDisposable
     public void Load_Jsonc_WithCommentsAndTrailingCommas()
     {
         MakeProgram();
-        WriteLaunch(File.ReadAllText(TestPaths.Fixture("launch", "gts-beta.jsonc")));
+        WriteLaunch(File.ReadAllText(TestPaths.Fixture("launch", "beta.jsonc")));
 
         var result = LaunchConfigStore.Load(Root);
 
@@ -103,7 +103,7 @@ public sealed class LaunchConfigStoreTests : IDisposable
         Assert.Equal("lib/main.dart", config.Program);
         Assert.Equal("beta", config.Flavor);
         Assert.Equal(RunMode.Debug, config.Mode);
-        Assert.Equal("--dart-define=APP_NAME=GTS Mobile Beta", config.Args[2]);
+        Assert.Equal("--dart-define=APP_NAME=My App Beta", config.Args[2]);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class LaunchConfigStoreTests : IDisposable
         var configs = new[]
         {
             new LaunchConfig("beta", "lib/main.dart", "beta", RunMode.Profile,
-                ["--dart-define=APP_NAME=GTS \"Mobile\" Beta", "-v"]),
+                ["--dart-define=APP_NAME=My \"App\" Beta", "-v"]),
             new LaunchConfig("dev", "lib/main_dev.dart", null, RunMode.Release, []),
         };
 
