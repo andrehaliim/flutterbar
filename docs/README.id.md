@@ -5,9 +5,12 @@ English: [README.md](../README.md)
 StatefulBar adalah widget taskbar Windows yang menggantikan run toolbar Android Studio untuk project Flutter: pilih device,
 run, hot reload, dan stop tanpa membuka IDE.
 
+![Widget StatefulBar di taskbar Windows saat app berjalan](images/01_widget.png)
+
 ## Daftar isi
 
 - [Fitur](#fitur)
+- [Tangkapan layar](#tangkapan-layar)
 - [Kebutuhan sistem](#kebutuhan-sistem)
 - [Instalasi](#instalasi)
 - [Pertama kali dipakai](#pertama-kali-dipakai)
@@ -34,6 +37,20 @@ run, hot reload, dan stop tanpa membuka IDE.
 - Git dari flyout branch: fetch, pull, pindah branch, commit dan push.
 - Jendela log dengan pencarian, filter khusus error, dan lompat ke error berikutnya.
 - Tool command line `sbar` membuat terminal dan AI agent (Claude Code, Codex, Cursor, …) bisa hot reload dan membaca error.
+
+## Tangkapan layar
+
+Klik gambar untuk melihat ukuran penuhnya.
+
+<p align="center">
+  <img src="images/02_cli.png" width="49%" alt="Terminal yang menjalankan sbar status, sbar reload, dan sbar logs">
+  <img src="images/03_log.png" width="49%" alt="Jendela log dengan satu hot reload dan satu blok exception">
+  <img src="images/04_devices.png" width="49%" alt="Flyout device berisi device dan emulator yang belum menyala">
+  <img src="images/05_git.png" width="49%" alt="Flyout branch dengan Fetch, Pull, serta Commit and push">
+  <img src="images/06_tools.png" width="49%" alt="Flyout Flutter tools dengan Pub get, Clean, dan Doctor">
+  <img src="images/07_sizes.png" width="49%" alt="Widget dalam tiga ukuran, tema gelap dan terang">
+  <img src="images/08_menu.png" width="49%" alt="Menu klik kanan dengan submenu Style terbuka">
+</p>
 
 ## Kebutuhan sistem
 

@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  Landscape banner (1920x1080): app icon and name, a two-line tagline and
+  a subtitle on the left, two phones on the right.
+  Placeholders: theme, icon, app_name, crop, tagline_1, tagline_2 (the
+  second line, in --accent), tagline_sub, shot_1 (back phone) and
+  shot_2 (front phone). Both shots are app screens; crop trims the
+  status bar.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+{{theme}}
+
+* { margin: 0; box-sizing: border-box; }
+
+html, body { width: 1920px; height: 1080px; overflow: hidden; }
+
+body {
+  position: relative;
+  font-family: var(--font-body);
+  color: var(--title);
+  background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+}
+
+.bubble { position: absolute; border-radius: 50%; background: var(--blob-1); }
+
+.bubble.soft { background: var(--blob-2); }
+
+.bubble.a { width: 900px; height: 900px; top: -380px; right: -260px; }
+
+.bubble.b { width: 640px; height: 640px; bottom: -340px; left: -220px; }
+
+.bubble.c { width: 120px; height: 120px; top: 120px; left: 860px; }
+
+.bubble.d { width: 70px; height: 70px; bottom: 140px; left: 900px; }
+
+.copy { position: absolute; left: 120px; top: 230px; width: 940px; }
+
+.brand { display: flex; align-items: center; gap: 30px; }
+
+.brand img {
+  width: 128px;
+  height: 128px;
+  border-radius: 32px;
+  box-shadow: 0 0 0 3px var(--icon-ring), 0 16px 40px rgba(15, 42, 54, 0.12);
+}
+
+.brand span {
+  font-family: var(--font-brand);
+  font-style: var(--brand-style);
+  font-weight: var(--brand-weight);
+  font-size: 60px;
+}
+
+h1 {
+  margin-top: 64px;
+  font-size: 84px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -2px;
+}
+
+h1 .key { display: block; color: var(--accent); }
+
+p {
+  margin-top: 40px;
+  width: 800px;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--subtitle);
+}
+
+.phone {
+  position: absolute;
+  width: 440px;
+  padding: 12px;
+  border-radius: 62px;
+  background: var(--device);
+  box-shadow: 0 0 0 3px var(--device-edge), 0 40px 90px rgba(15, 42, 54, 0.25);
+}
+
+.phone.back { left: 1100px; top: 190px; }
+
+.phone.front { left: 1440px; top: 90px; }
+
+.screen { overflow: hidden; border-radius: 50px; }
+
+.screen img { display: block; width: 100%; margin-top: calc(-1 * {{crop}}%); }
+</style>
+</head>
+<body>
+  <div class="bubble a"></div>
+  <div class="bubble soft b"></div>
+  <div class="bubble soft c"></div>
+  <div class="bubble d"></div>
+  <div class="copy">
+    <div class="brand"><img src="{{icon}}"><span>{{app_name}}</span></div>
+    <h1>{{tagline_1}}<span class="key">{{tagline_2}}</span></h1>
+    <p>{{tagline_sub}}</p>
+  </div>
+  <div class="phone back"><div class="screen"><img src="{{shot_1}}"></div></div>
+  <div class="phone front"><div class="screen"><img src="{{shot_2}}"></div></div>
+</body>
+</html>

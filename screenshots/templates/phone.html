@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  Store frame (1080x1920): caption on top, the screenshot in a phone below.
+  Default layout for captions in config.json.
+  Placeholders: theme, shot, title, subtitle, crop.
+  crop is crop_top as a percentage of the screenshot width, so the
+  negative margin below trims the status bar off the top.
+  Colors and fonts come from the CSS variables in config.json "theme".
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+{{theme}}
+
+* { margin: 0; box-sizing: border-box; }
+
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(900px 700px at 85% 8%, var(--glow-1), transparent 60%),
+    radial-gradient(800px 900px at 0% 100%, var(--glow-2), transparent 65%),
+    linear-gradient(165deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
+  color: var(--title);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.caption { padding: 120px 80px 0; text-align: center; }
+
+h1 { font-size: 76px; font-weight: 700; line-height: 1.1; letter-spacing: -1px; }
+
+p { margin-top: 26px; font-size: 36px; font-weight: 500; line-height: 1.35; color: var(--subtitle); }
+
+.phone {
+  margin-top: 90px;
+  width: 760px;
+  padding: 22px;
+  border-radius: 92px;
+  background: var(--device);
+  box-shadow: 0 0 0 3px var(--device-edge), 0 60px 120px rgba(0, 0, 0, 0.45);
+}
+
+.screen { overflow: hidden; border-radius: 72px; }
+
+.screen img { display: block; width: 100%; margin-top: calc(-1 * {{crop}}%); }
+</style>
+</head>
+<body>
+  <div class="caption">
+    <h1>{{title}}</h1>
+    <p>{{subtitle}}</p>
+  </div>
+  <div class="phone">
+    <div class="screen"><img src="{{shot}}"></div>
+  </div>
+</body>
+</html>

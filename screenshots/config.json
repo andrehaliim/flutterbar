@@ -1,0 +1,92 @@
+{
+  "locales": ["en"],
+  "frame_size": [960, 540],
+  "device_scale": 2,
+  "source_width": 960,
+  "crop_top": 0,
+  "vars": {
+    "app_name": "StatefulBar"
+  },
+  "images": {
+    "widget_idle": "raw/en/widget_idle.png",
+    "widget_running": "raw/en/widget_running.png",
+    "widget_error": "raw/en/widget_error.png"
+  },
+  "fonts": [],
+  "theme": {
+    "font-body": "'Segoe UI Variable Display', 'Segoe UI', sans-serif",
+    "font-brand": "'Segoe UI Variable Display', 'Segoe UI', sans-serif",
+    "brand-style": "normal",
+    "brand-weight": "700",
+    "bg-start": "#103A63",
+    "bg-mid": "#0B2A4A",
+    "bg-end": "#071C33",
+    "accent": "#85B7EB",
+    "blob-1": "rgba(255, 255, 255, 0.05)",
+    "blob-2": "rgba(84, 197, 248, 0.10)",
+    "glow-1": "rgba(84, 197, 248, 0.12)",
+    "glow-2": "rgba(1, 87, 155, 0.45)",
+    "banner-glow-1": "rgba(84, 197, 248, 0.25)",
+    "title": "#FFFFFF",
+    "subtitle": "#B5D4F4",
+    "device": "#0B0F14",
+    "device-edge": "#24384F",
+    "icon-ring": "rgba(133, 183, 235, 0.5)",
+    "wallpaper-glow": "rgba(181, 212, 244, 0.9)",
+    "wallpaper-start": "#CFE3F5",
+    "wallpaper-end": "#9CC3E8",
+    "taskbar": "#141C26",
+    "taskbar-edge": "rgba(255, 255, 255, 0.06)",
+    "clock": "#85B7EB"
+  },
+  "captions": {
+    "01_widget": {
+      "layout": "desktop",
+      "kind": "hero",
+      "state": "running",
+      "en": ["Flutter in your taskbar", "Pick a device, run, hot reload and stop. No IDE needed."]
+    },
+    "02_cli": {
+      "layout": "desktop",
+      "kind": "terminal",
+      "state": "error",
+      "en": ["Ready for AI agents", "Claude Code, Codex and Cursor hot reload with sbar."]
+    },
+    "03_log": {
+      "layout": "desktop",
+      "kind": "window",
+      "state": "error",
+      "en": ["Find the error fast", "Search the log, filter errors, jump to the next one."]
+    },
+    "04_devices": {
+      "layout": "desktop",
+      "kind": "popup",
+      "state": "idle",
+      "en": ["Every device, one click", "Connected devices and emulators you can start."]
+    },
+    "05_git": {
+      "layout": "desktop",
+      "kind": "popup",
+      "state": "idle",
+      "en": ["Commit and push in place", "Fetch, pull, switch branch, commit and push."]
+    },
+    "06_tools": {
+      "layout": "desktop",
+      "kind": "popup",
+      "state": "idle",
+      "en": ["Flutter tools, one click", "Pub get, clean and doctor, without a terminal."]
+    },
+    "07_sizes": {
+      "layout": "desktop",
+      "kind": "stack",
+      "state": "running",
+      "en": ["Fits any taskbar", "Three sizes, light and dark."]
+    },
+    "08_menu": {
+      "layout": "desktop",
+      "kind": "popup",
+      "state": "idle",
+      "en": ["Make it yours", "Size, opacity, theme, monitor and position."]
+    }
+  }
+}

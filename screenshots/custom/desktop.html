@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  Desktop frame (960x540 CSS px, rendered at device_scale 2 = 1920x1080) for a Windows taskbar widget:
+  caption on the left, the screenshot on the right above a drawn taskbar that carries the widget.
+  Used by captions with "layout": "desktop" in config.json.
+
+  Placeholders: theme, shot, title, subtitle, and per caption:
+    kind   popup   flyout or menu, standing on the taskbar above the widget's left edge
+           window  a normal window (log); wider than the stage, it runs off the right edge
+           terminal  like window, with padding around the console text
+           stack   a pre-composed picture, centred in the stage
+           hero    no picture in the stage: the widget on the taskbar is the subject
+    state  idle | running | error: which widget capture sits on the taskbar
+  Images (config.json "images"): widget_idle, widget_running, widget_error.
+  The screenshots are shown at their own pixel size (1 px = 1 CSS px); only "max-height" may shrink them.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+{{theme}}
+
+* { margin: 0; box-sizing: border-box; }
+
+html, body { width: 960px; height: 540px; overflow: hidden; }
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(620px 420px at 86% -6%, var(--glow-1), transparent 62%),
+    var(--bg-mid);
+  color: var(--title);
+  display: flex;
+  flex-direction: column;
+}
+
+.stage { flex: 1; min-height: 0; position: relative; }
+
+.caption {
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 330px;
+}
+
+h1 { font-size: 38px; font-weight: 700; line-height: 1.12; letter-spacing: -0.5px; }
+
+p { margin-top: 14px; font-size: 18px; font-weight: 500; line-height: 1.4; color: var(--subtitle); }
+
+.shot { position: absolute; filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.4)); }
+.shot img { display: block; max-height: 468px; }
+
+/* Flyouts and menus open above the widget, left edges aligned (the widget ends 98 px from the right edge). */
+.kind-popup .shot { bottom: 8px; left: var(--widget-left); }
+.kind-popup .shot img { border-radius: 10px; }
+
+.kind-window .shot, .kind-terminal .shot { left: 410px; top: 50%; transform: translateY(-50%); }
+.kind-window .shot img { border-radius: 8px; }
+
+/* A console draws its text right at the window edge: give it the padding a terminal tab has. */
+.kind-terminal .shot { background: #0C0C0C; border-radius: 8px; padding: 14px 0 14px 16px; }
+
+.kind-stack .shot { left: 410px; top: 50%; transform: translateY(-50%); filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35)); }
+
+.kind-hero .shot { display: none; }
+.kind-hero .caption { width: 520px; }
+.kind-hero h1 { font-size: 50px; }
+.kind-hero p { font-size: 21px; }
+
+.taskbar {
+  height: 48px;
+  background: var(--taskbar);
+  border-top: 1px solid var(--taskbar-edge);
+  display: flex;
+  align-items: center;
+  padding: 0 14px 0 18px;
+}
+
+.start { width: 20px; height: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.start i { background: var(--accent); border-radius: 2px; }
+
+.spacer { flex: 1; }
+
+.widget { display: none; height: 40px; }
+.state-idle .w-idle, .state-running .w-running, .state-error .w-error { display: block; }
+
+.clock { width: 72px; text-align: right; font-size: 12px; line-height: 1.35; color: var(--clock); }
+
+/* The widget's left edge, for aligning popups: 960 - 14 (padding) - 72 (clock) - 12 (gap) - widget width. */
+.state-idle { --widget-left: 424px; }
+.state-running, .state-error { --widget-left: 372px; }
+</style>
+</head>
+<body class="kind-{{kind}} state-{{state}}">
+  <div class="stage">
+    <div class="caption">
+      <h1>{{title}}</h1>
+      <p>{{subtitle}}</p>
+    </div>
+    <div class="shot"><img src="{{shot}}"></div>
+  </div>
+  <div class="taskbar">
+    <div class="start"><i></i><i></i><i></i><i></i></div>
+    <div class="spacer"></div>
+    <img class="widget w-idle" src="{{widget_idle}}">
+    <img class="widget w-running" src="{{widget_running}}">
+    <img class="widget w-error" src="{{widget_error}}">
+    <div style="width: 12px"></div>
+    <div class="clock">10:24<br>11/13/2026</div>
+  </div>
+</body>
+</html>

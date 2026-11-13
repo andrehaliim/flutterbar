@@ -5,9 +5,12 @@ Bahasa Indonesia: [docs/README.id.md](docs/README.id.md)
 StatefulBar is a Windows taskbar widget that replaces Android Studio's run toolbar for Flutter projects: pick a device,
 run, hot reload, and stop without opening the IDE.
 
+![The StatefulBar widget in the Windows taskbar while an app runs](docs/images/01_widget.png)
+
 ## Contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Getting started](#getting-started)
@@ -35,6 +38,20 @@ run, hot reload, and stop without opening the IDE.
 - Git from the branch flyout: fetch, pull, switch branch, commit and push.
 - A log window with search, an errors-only filter, and jump to the next error.
 - The `sbar` command line tool lets terminals and AI agents (Claude Code, Codex, Cursor, …) hot reload and read errors.
+
+## Screenshots
+
+Click a picture to see it at full size.
+
+<p align="center">
+  <img src="docs/images/02_cli.png" width="49%" alt="A terminal running sbar status, sbar reload, and sbar logs">
+  <img src="docs/images/03_log.png" width="49%" alt="The log window with a hot reload and an exception block">
+  <img src="docs/images/04_devices.png" width="49%" alt="The device flyout with devices and an offline emulator">
+  <img src="docs/images/05_git.png" width="49%" alt="The branch flyout with Fetch, Pull, and Commit and push">
+  <img src="docs/images/06_tools.png" width="49%" alt="The Flutter tools flyout with Pub get, Clean, and Doctor">
+  <img src="docs/images/07_sizes.png" width="49%" alt="The widget in three sizes, dark and light">
+  <img src="docs/images/08_menu.png" width="49%" alt="The right-click menu with the Style submenu open">
+</p>
 
 ## Requirements
 

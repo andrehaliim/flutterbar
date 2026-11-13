@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  Store frame (1080x1920) for a home screen widget, used by captions with
+  "layout": "widget" and "crop": [top, bottom] in config.json.
+  Take the screenshot on a plain green wallpaper (#00FF00 or close): the
+  green is keyed out so the widgets sit straight on the background, and
+  only rows top..bottom (in source_width pixels) are kept, which drops the
+  status bar and the dock.
+  Placeholders: theme, shot, title, subtitle,
+  crop_top, crop_bottom, source_width, chroma_key.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+{{theme}}
+
+* { margin: 0; box-sizing: border-box; }
+
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(900px 700px at 85% 8%, var(--glow-1), transparent 60%),
+    radial-gradient(800px 900px at 0% 100%, var(--glow-2), transparent 65%),
+    linear-gradient(165deg, var(--bg-start) 0%, var(--bg-mid) 45%, var(--bg-end) 100%);
+  color: var(--title);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.caption { padding: 120px 80px 0; text-align: center; }
+
+h1 { font-size: 76px; font-weight: 700; line-height: 1.1; letter-spacing: -1px; }
+
+p { margin-top: 26px; font-size: 36px; font-weight: 500; line-height: 1.35; color: var(--subtitle); }
+
+.stage {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 50px 80px;
+}
+
+canvas {
+  max-width: 100%;
+  max-height: 100%;
+  filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.35));
+}
+</style>
+</head>
+<body>
+  <div class="caption">
+    <h1>{{title}}</h1>
+    <p>{{subtitle}}</p>
+  </div>
+  <div class="stage"><img class="widget" src="{{shot}}" data-crop="{{crop_top}},{{crop_bottom}}"></div>
+<script>
+{{chroma_key}}
+keyAll('img.widget', {{source_width}});
+</script>
+</body>
+</html>
