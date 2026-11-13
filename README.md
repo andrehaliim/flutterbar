@@ -25,6 +25,23 @@ dotnet build StatefulBar.sln -c Release
 Untuk Debug, ganti `Release` dengan `Debug`. Hanya satu instance StatefulBar yang boleh jalan; menjalankannya lagi hanya
 mengedipkan widget yang sudah ada. Tutup lewat klik kanan widget > "Exit". Log diagnostik: `%APPDATA%\StatefulBar\diag.log`.
 
+### Paket rilis
+
+```
+.\tools\publish.ps1
+```
+
+Menghasilkan build self-contained win-x64 (tidak butuh .NET terpasang di PC pemakai), English only, versi dari
+`Directory.Build.props`:
+
+| Output | Isi |
+|---|---|
+| `artifacts\publish\StatefulBar\` | `StatefulBar.exe`, `sbar.exe`, runtime .NET bersama, `LICENSE.txt`, `licenses\` (lisensi .NET) |
+| `artifacts\StatefulBar-<versi>-win-x64.zip` | Folder di atas, dengan satu folder `StatefulBar\` di dalam zip |
+
+Script gagal bila `sbar.exe` hasil publish tidak self-contained atau tidak bisa start. Nama folder di dalam zip sengaja
+tanpa versi, supaya path "Start with Windows" dan PATH tetap sama setelah update.
+
 ## Pertama kali dipakai
 
 1. Jalankan `StatefulBar.exe`; widget menempel di taskbar, di kiri area tray/jam. Kalau posisi otomatis tidak cocok

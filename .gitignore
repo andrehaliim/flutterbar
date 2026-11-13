@@ -6,3 +6,4 @@ tests/sample_app/build/
 tests/sample_app/.dart_tool/
 .superpowers/
 tests/sample_app/.fvm/
+artifacts/
