@@ -79,8 +79,9 @@ To update, run the newer `Setup.exe`; it closes the running widget first. Your s
 1. Run StatefulBar. The widget docks in the taskbar, left of the tray/clock area. If the automatic position doesn't fit
    (e.g. next to a third-party taskbar widget such as TrafficMonitor, which automatic detection can't see), right-click >
    "Drag widget".
-2. Tell StatefulBar where your Flutter projects are: right-click > Manage projects > "Root folders…" > add a folder
-   (e.g. `C:\Work`), or "Add project…" for a single folder. The scan looks 3 levels deep for Flutter `pubspec.yaml` files.
+2. Tell StatefulBar where your Flutter projects are: in the project flyout, "Add root folder…" adds a folder that holds
+   your projects (e.g. `C:\Work`) and "Add project…" adds a single project. The same lists are under right-click >
+   Manage projects. The scan looks 3 levels deep for Flutter `pubspec.yaml` files.
 3. Pick the project, branch, config, and device with the widget's chips, then press ▶.
 4. Project has no run configuration yet? In the config flyout choose "Import from IDE" (reads Android Studio run
    configurations from `.idea/workspace.xml` and `.run/*.xml`, and `.vscode/launch.json`) or "Create default".

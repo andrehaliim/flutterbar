@@ -25,6 +25,8 @@
         <TextBlock x:Name="Empty" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
             <Button x:Name="AddButton" Style="{StaticResource Fb.Button}" Content="Add project…" Click="OnAddClick" />
+            <Button x:Name="AddRootButton" Style="{StaticResource Fb.Button}" Content="Add root folder…" Click="OnAddRootClick"
+                    ToolTip="Add a folder whose Flutter projects are found by scanning (scanRoots)" />
         </StackPanel>
     </StackPanel>
 </UserControl>

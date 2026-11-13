@@ -26,6 +26,9 @@ internal sealed partial class ProjectFlyout : UserControl
     /// <summary>"Add project…": pick a folder and add it to <c>manualProjects</c>.</summary>
     public event Action? AddRequested;
 
+    /// <summary>"Add root folder…": pick a folder, add it to <c>scanRoots</c> and scan it.</summary>
+    public event Action? AddRootRequested;
+
     public IInputElement FocusTarget => _list.Focus;
 
     public void Reset() => _list.ClearSearch();
@@ -50,9 +53,11 @@ internal sealed partial class ProjectFlyout : UserControl
             IsCurrent = current is not null && string.Equals(p.Path, current, StringComparison.OrdinalIgnoreCase),
             Value = p.Path,
         })]);
-        Empty.Text = scanning ? "Scanning for projects…" : "No projects yet. Add a project or set root folders (scanRoots) in settings.json.";
+        Empty.Text = scanning ? "Scanning for projects…" : "No projects yet. Add a project or a root folder.";
         Empty.Visibility = projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnAddClick(object sender, RoutedEventArgs e) => AddRequested?.Invoke();
+
+    private void OnAddRootClick(object sender, RoutedEventArgs e) => AddRootRequested?.Invoke();
 }

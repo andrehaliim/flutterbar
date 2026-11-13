@@ -225,6 +225,7 @@ internal sealed partial class AppController
             flyout = _projectFlyout = new ProjectFlyout();
             flyout.ProjectChosen += path => Fire(SelectProjectAsync(path), "Select project");
             flyout.AddRequested += () => Fire(AddProjectAsync(), "Add project");
+            flyout.AddRootRequested += () => Fire(AddScanRootAsync(), "Add root folder");
         }
         flyout.Reset();
         flyout.SetNotice(notice);
@@ -285,6 +286,60 @@ internal sealed partial class AppController
         await RebuildCatalogAsync();
         RefreshManageDialog();
         await SelectProjectAsync(folder);
+    }
+
+    /// <summary>
+    /// "Add root folder…": the folder goes to <c>scanRoots</c> and is scanned; the project flyout then opens again
+    /// so one of the projects found can be picked right away.
+    /// </summary>
+    private async Task AddScanRootAsync()
+    {
+        _flyout.Close();
+        var dialog = new OpenFolderDialog { Title = "Select a root folder (containing Flutter projects)" };
+        string folder;
+        using (var owner = new DialogOwnerWindow()) // never the taskbar-owned widget (see DialogOwnerWindow)
+        {
+            if (dialog.ShowDialog(owner.Window) != true)
+            {
+                return;
+            }
+            folder = dialog.FolderName;
+        }
+        bool added;
+        try
+        {
+            added = ProjectListEditor.AddScanRoot(Settings, folder);
+        }
+        catch (ArgumentException ex) // a path that cannot be normalized: say which one
+        {
+            AppLog.Write($"scan root added: rejected \"{folder}\"", ex);
+            ShowToast(ex.Message);
+            return;
+        }
+        if (!added)
+        {
+            ShowToast($"Already a root folder: {folder}");
+            return;
+        }
+        _saver.Save("scan root added");
+        AppLog.Write($"scan root added: {folder}");
+        await ScanFreshAsync();
+        RefreshManageDialog();
+        var found = _catalog.Count(p => IsUnder(p.Path, folder));
+        ShowToast($"{found} {(found == 1 ? "project" : "projects")} found in {folder}");
+        if (WidgetShown())
+        {
+            OpenProjectFlyout();
+        }
+    }
+
+    /// <summary>True when <paramref name="path"/> is <paramref name="folder"/> itself or inside it.</summary>
+    private static bool IsUnder(string path, string folder)
+    {
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        return string.Equals(full, root, StringComparison.OrdinalIgnoreCase)
+            || full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private void OpenBranchFlyout()

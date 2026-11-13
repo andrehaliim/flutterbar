@@ -78,8 +78,9 @@ Untuk update, jalankan `Setup.exe` versi yang lebih baru; widget yang sedang ber
 1. Jalankan StatefulBar. Widget menempel di taskbar, di kiri area tray/jam. Kalau posisi otomatis tidak cocok (mis. di
    sebelah widget taskbar pihak ketiga seperti TrafficMonitor, yang tidak terlihat oleh deteksi otomatis), klik kanan >
    "Drag widget".
-2. Beri tahu StatefulBar di mana project Flutter Anda: klik kanan > Manage projects > "Root folders…" > tambah folder
-   (mis. `C:\Work`), atau "Add project…" untuk satu folder. Scan sedalam 3 tingkat mencari `pubspec.yaml` Flutter.
+2. Beri tahu StatefulBar di mana project Flutter Anda: di flyout project, "Add root folder…" menambah folder yang berisi
+   project-project Anda (mis. `C:\Work`) dan "Add project…" menambah satu project. Daftar yang sama ada di klik kanan >
+   Manage projects. Scan sedalam 3 tingkat mencari `pubspec.yaml` Flutter.
 3. Pilih project, branch, config, dan device lewat chip di widget, lalu tekan ▶.
 4. Project belum punya run configuration? Di flyout config pilih "Import from IDE" (membaca run configuration Android Studio
    dari `.idea/workspace.xml` dan `.run/*.xml`, serta `.vscode/launch.json`) atau "Create default".
