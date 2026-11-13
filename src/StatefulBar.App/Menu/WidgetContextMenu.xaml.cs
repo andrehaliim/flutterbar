@@ -15,7 +15,7 @@ internal enum MenuCommand
     HiddenProjects,
     Rescan,
     Import,
-    OpenLaunchJson,
+    EditLaunchJson,
     OpenLog,
     FlutterTools,
     OpenTerminal,
@@ -199,7 +199,7 @@ internal sealed partial class WidgetContextMenu : ContextMenu
 
     private void OnImportClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.Import);
 
-    private void OnOpenLaunchJsonClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenLaunchJson);
+    private void OnEditLaunchJsonClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.EditLaunchJson);
 
     private void OnOpenLogClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenLog);
 

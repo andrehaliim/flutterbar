@@ -101,7 +101,7 @@ Right-click the widget:
 - **Show on**: move to another monitor's taskbar (needs "Show my taskbar on all displays"). There is only one widget, never
   duplicated. When that monitor is unplugged the widget moves to the main taskbar, and comes back when it is plugged in again.
 - **Drag widget** / **Reset to auto position**: move the widget horizontally; the position is saved.
-- **Manage projects**, **Import config from IDE…**, **Open launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
+- **Manage projects**, **Import config from IDE…**, **Edit launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
   **Add CLI to PATH…**, **Start with Windows**, **Exit**.
 
 Widget buttons:

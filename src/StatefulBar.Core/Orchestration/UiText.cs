@@ -10,7 +10,7 @@ public static class UiText
     public const string ConfigInvalid = "Invalid config";
     public const string ImportFromIde = "Import from IDE";
     public const string CreateDefault = "Create default";
-    public const string OpenFile = "Open file";
+    public const string EditFile = "Edit file";
     public const string Connected = "Connected";
     public const string OfflineEmulators = "Emulator (offline)";
     public const string EmulatorTimeout = "Emulator isn't ready after 2 minutes";

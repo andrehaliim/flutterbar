@@ -68,8 +68,8 @@ public partial class App
             case MenuCommand.Import:
                 _importFlow?.Open(controller.CurrentProject);
                 break;
-            case MenuCommand.OpenLaunchJson:
-                controller.Observe(controller.OpenLaunchJsonFromMenuAsync(), "Open launch.json");
+            case MenuCommand.EditLaunchJson:
+                controller.Observe(controller.EditLaunchJsonFromMenuAsync(), "Edit launch.json");
                 break;
             case MenuCommand.OpenLog:
                 OpenLog();

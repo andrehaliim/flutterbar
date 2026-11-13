@@ -29,7 +29,8 @@ internal sealed partial class ConfigFlyout : UserControl
 
     public event Action? CreateDefaultRequested;
 
-    public event Action? OpenFileRequested;
+    /// <summary>"Edit file": opens launch.json in a text editor.</summary>
+    public event Action? EditFileRequested;
 
     /// <summary>The list when it has rows, else the first action button.</summary>
     public IInputElement FocusTarget => List.HasItems ? List : MissingPanel.Visibility == Visibility.Visible ? DefaultButton : ImportButton;
@@ -47,7 +48,7 @@ internal sealed partial class ConfigFlyout : UserControl
         MissingPanel.Visibility = Visibility.Collapsed;
         ErrorPanel.Visibility = Visibility.Collapsed;
         Errors.ItemsSource = null;
-        OpenButton.Visibility = Visibility.Collapsed;
+        EditButton.Visibility = Visibility.Collapsed;
         ImportButton.Visibility = Visibility.Visible;
         _list.SetItems([]);
         List.Visibility = Visibility.Collapsed;
@@ -63,7 +64,7 @@ internal sealed partial class ConfigFlyout : UserControl
         MissingPanel.Visibility = result.FileExists ? Visibility.Collapsed : Visibility.Visible;
         ErrorPanel.Visibility = chip.ErrorLines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         Errors.ItemsSource = chip.ErrorLines;
-        OpenButton.Visibility = result.FileExists ? Visibility.Visible : Visibility.Collapsed;
+        EditButton.Visibility = result.FileExists ? Visibility.Visible : Visibility.Collapsed;
         ImportButton.Visibility = result.FileExists ? Visibility.Visible : Visibility.Collapsed; // MissingImportButton takes over
         _list.SetItems([.. result.Configs.Select(c => new FlyoutItem
         {
@@ -87,5 +88,5 @@ internal sealed partial class ConfigFlyout : UserControl
 
     private void OnCreateDefaultClick(object sender, RoutedEventArgs e) => CreateDefaultRequested?.Invoke();
 
-    private void OnOpenClick(object sender, RoutedEventArgs e) => OpenFileRequested?.Invoke();
+    private void OnEditClick(object sender, RoutedEventArgs e) => EditFileRequested?.Invoke();
 }

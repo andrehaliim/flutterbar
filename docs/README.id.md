@@ -100,7 +100,7 @@ Klik kanan widget:
 - **Show on**: pindah ke taskbar monitor lain (butuh "Show my taskbar on all displays"). Satu widget saja, tidak
   diduplikasi. Bila monitor itu dicabut, widget pindah ke taskbar utama dan kembali saat monitor dicolok lagi.
 - **Drag widget** / **Reset to auto position**: geser widget secara horizontal; posisinya disimpan.
-- **Manage projects**, **Import config from IDE…**, **Open launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
+- **Manage projects**, **Import config from IDE…**, **Edit launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
   **Add CLI to PATH…**, **Start with Windows**, **Exit**.
 
 Tombol di widget:

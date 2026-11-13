@@ -96,8 +96,8 @@ internal sealed partial class AppController
 
     public void CloseDialogs() => _manageDialog?.Close();
 
-    /// <summary>"Open launch.json": opens it with the default .json app; when it does not exist yet, offers "Create default".</summary>
-    public async Task OpenLaunchJsonFromMenuAsync()
+    /// <summary>"Edit launch.json": opens it in a text editor; when it does not exist yet, offers "Create default".</summary>
+    public async Task EditLaunchJsonFromMenuAsync()
     {
         if (Settings.CurrentProject is not { } root)
         {
@@ -111,14 +111,14 @@ internal sealed partial class AppController
         });
         if (exists)
         {
-            await OpenLaunchJsonAsync();
+            await EditLaunchJsonAsync();
             return;
         }
-        AppLog.Write($"open launch.json: {path} does not exist, offering the default");
+        AppLog.Write($"edit launch.json: {path} does not exist, offering the default");
         ShowToast("No launch.json in this project yet", UiText.CreateDefault, async () =>
         {
             await CreateDefaultConfigAsync();
-            await OpenLaunchJsonAsync();
+            await EditLaunchJsonAsync();
         });
     }
 

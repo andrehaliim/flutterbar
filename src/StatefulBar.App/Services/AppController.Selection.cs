@@ -206,7 +206,7 @@ internal sealed partial class AppController
             flyout = _configFlyout = new ConfigFlyout();
             flyout.ConfigChosen += name => Fire(SelectConfigAsync(name), "Select config");
             flyout.CreateDefaultRequested += () => Fire(CreateDefaultConfigAsync(), "Create default");
-            flyout.OpenFileRequested += () => Fire(OpenLaunchJsonAsync(), "Open file");
+            flyout.EditFileRequested += () => Fire(EditLaunchJsonAsync(), "Edit file");
             flyout.ImportRequested += OnImportRequested;
         }
         flyout.Reset(); // never show the previous project's configs while launch.json is re-read
@@ -286,8 +286,8 @@ internal sealed partial class AppController
         }
     }
 
-    // Opens launch.json with the default .json app (spec §7.4); ShellExecute runs off the UI thread.
-    private async Task OpenLaunchJsonAsync()
+    // Opens launch.json in a text editor (spec §7.4); the shell lookup and start run off the UI thread.
+    private async Task EditLaunchJsonAsync()
     {
         _flyout.Close();
         if (Settings.CurrentProject is not { } root)
@@ -297,13 +297,33 @@ internal sealed partial class AppController
         var path = await Task.Run(() => LaunchConfigStore.ResolvePath(root)); // .statefulbar, else legacy .flutterbar
         try
         {
-            await Task.Run(() => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose());
+            var editor = await Task.Run(() => StartEditor(path));
+            AppLog.Write($"edit launch.json: {path} opened with {editor}");
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             AppLog.Write($"opening {path} failed", ex);
             ShowToast($"Couldn't open {path}: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// The shell's "edit" verb for the file type when it has one (usually a text editor), else Notepad: the default "open"
+    /// app for .json is often a browser or viewer. Returns what was used, for the log.
+    /// </summary>
+    private static string StartEditor(string path)
+    {
+        var shell = new ProcessStartInfo(path) { UseShellExecute = true };
+        if (shell.Verbs.Contains("edit", StringComparer.OrdinalIgnoreCase))
+        {
+            shell.Verb = "edit";
+            Process.Start(shell)?.Dispose();
+            return "the shell edit verb";
+        }
+        var notepad = new ProcessStartInfo("notepad.exe") { UseShellExecute = false };
+        notepad.ArgumentList.Add(path);
+        Process.Start(notepad)?.Dispose();
+        return "Notepad (no edit verb for this file type)";
     }
 
     private void OpenDeviceFlyout(string? notice = null)

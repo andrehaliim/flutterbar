@@ -85,7 +85,7 @@
             <TextBlock Text="&#xE896;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
         </MenuItem.Icon>
     </MenuItem>
-    <MenuItem x:Name="LaunchJsonItem" Header="Open launch.json" Click="OnOpenLaunchJsonClick">
+    <MenuItem x:Name="LaunchJsonItem" Header="Edit launch.json" Click="OnEditLaunchJsonClick">
         <MenuItem.Icon>
             <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
         </MenuItem.Icon>

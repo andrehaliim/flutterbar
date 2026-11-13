@@ -82,7 +82,7 @@ public static class ImportPlan
     }
 
     private static string InvalidLaunchJsonText(LaunchConfigLoadResult result) =>
-        "launch.json is invalid. Fix it first (menu: Open launch.json): " + result.Errors[0].Message;
+        "launch.json is invalid. Fix it first (menu: Edit launch.json): " + result.Errors[0].Message;
 
     private static string Detail(ImportCandidate candidate)
     {
