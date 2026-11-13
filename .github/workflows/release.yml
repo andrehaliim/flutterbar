@@ -1,0 +1,67 @@
+# Pushing a version tag (e.g. v1.0.0) builds the zip and Setup.exe and creates a DRAFT GitHub Release with them.
+# The tag must match <Version> in Directory.Build.props. Review the draft on GitHub, then publish it by hand.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check the tag matches the version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $version = ($props.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          $tag = '${{ github.ref_name }}'
+          if ($tag -ne "v$version") {
+            throw "Tag $tag does not match <Version>$version</Version> in Directory.Build.props. Update the version, commit, and tag v$version."
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test StatefulBar.sln -c Release
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build the zip and the installer
+        shell: pwsh
+        run: ./tools/publish.ps1 -Installer
+
+      - name: Checksums
+        shell: pwsh
+        working-directory: artifacts
+        run: |
+          Get-ChildItem StatefulBar-*-win-x64.zip, StatefulBar-*-win-x64-setup.exe |
+            ForEach-Object { '{0}  {1}' -f (Get-FileHash $_ -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } |
+            Set-Content SHA256SUMS.txt -Encoding ascii
+          Get-Content SHA256SUMS.txt
+
+      - name: Create the draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          gh release create '${{ github.ref_name }}' --draft --generate-notes --title "StatefulBar $version" `
+            "artifacts/StatefulBar-$version-win-x64-setup.exe" `
+            "artifacts/StatefulBar-$version-win-x64.zip" `
+            "artifacts/SHA256SUMS.txt"
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed (exit $LASTEXITCODE)." }

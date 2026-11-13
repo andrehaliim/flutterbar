@@ -8,6 +8,7 @@ How to build, test, and package StatefulBar. For using the app, see the [README]
 - [Build and test](#build-and-test)
 - [Release package](#release-package)
 - [Installer](#installer)
+- [CI and releases](#ci-and-releases)
 - [Tests](#tests)
 - [RAM usage](#ram-usage)
 - [Technical notes](#technical-notes)
@@ -87,6 +88,32 @@ see [Requirements](#requirements)).
 
 Unattended install, e.g. for testing: `StatefulBar-<version>-win-x64-setup.exe /VERYSILENT /TASKS="startup,addtopath"`;
 uninstall with `"%LOCALAPPDATA%\Programs\StatefulBar\unins000.exe" /VERYSILENT`.
+
+## CI and releases
+
+GitHub Actions, in `.github/workflows/`:
+
+- **CI** (`ci.yml`) runs on every push and pull request to `main`, except changes that only touch `*.md`, `docs/`, or
+  `LICENSE`: format check (`dotnet format --verify-no-changes`), Release build, unit tests, then `tools\publish.ps1`. The
+  zip is attached to the run as the `StatefulBar-win-x64` artifact for 7 days.
+- **Release** (`release.yml`) runs when a `v*` tag is pushed. It checks that the tag matches `<Version>` in
+  `Directory.Build.props`, runs the tests, builds the zip and `Setup.exe` (Inno Setup from Chocolatey), writes
+  `SHA256SUMS.txt`, and creates a **draft** GitHub Release with those three files and generated release notes.
+
+To ship a new version:
+
+1. Set `<Version>` in `Directory.Build.props` (e.g. `1.0.1`), commit, and push to `main`. Wait for CI to pass.
+2. Tag that commit and push the tag:
+
+   ```
+   git tag v1.0.1
+   git push origin v1.0.1
+   ```
+
+3. Open the draft on the Releases page, edit the notes, and click **Publish release**.
+
+If the release workflow fails after creating the draft, delete the draft (and the tag, if the fix needs a new commit)
+before pushing the tag again.
 
 ## Tests
 
