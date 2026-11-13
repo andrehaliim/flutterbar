@@ -60,11 +60,11 @@ public partial class App : Application
         _instance = SingleInstanceLock.TryAcquire(SingleInstanceLock.NameForCurrentUser(), out var abandoned);
         if (_instance is null)
         {
-            AppLog.Write($"second instance pid={Environment.ProcessId}: FlutterBar already runs, asking it to show the widget");
+            AppLog.Write($"second instance pid={Environment.ProcessId}: StatefulBar already runs, asking it to show the widget");
             _ = HandOverToFirstInstanceAsync();
             return;
         }
-        AppLog.Write($"FlutterBar.App start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
+        AppLog.Write($"StatefulBar start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
         if (abandoned)
         {
             AppLog.Write("single instance: abandoned mutex taken over (the previous instance ended without releasing it)");
@@ -188,7 +188,7 @@ public partial class App : Application
         catch (Exception ex) // startup continuation: report, the widget itself keeps running
         {
             AppLog.Write("AppController initialization failed", ex);
-            controller.ShowToast($"FlutterBar failed to start: {ex.Message}");
+            controller.ShowToast($"StatefulBar failed to start: {ex.Message}");
         }
     }
 
@@ -324,7 +324,7 @@ public partial class App : Application
         }
         finally
         {
-            AppLog.Write("FlutterBar.App exit");
+            AppLog.Write("StatefulBar exit");
             AppLog.Flush(TimeSpan.FromSeconds(1)); // window is gone (or the exit is forced): nothing left to stall
             _instance?.Dispose(); // on the UI thread, which acquired it
             Shutdown();

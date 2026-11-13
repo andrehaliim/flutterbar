@@ -111,7 +111,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
     public void ShowToast(string message, string? actionLabel = null, Func<Task>? action = null) =>
         _toast.Show(message, actionLabel, action);
 
-    /// <summary>For the CLI (<c>flutterbar status</c>); called on IPC threads, so it reads immutable snapshots only.</summary>
+    /// <summary>For the CLI (<c>sbar status</c>); called on IPC threads, so it reads immutable snapshots only.</summary>
     public StatusInfo Current()
     {
         var snapshot = _session.Snapshot;
@@ -196,7 +196,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
             AppLog.Write("IPC server failed", ex);
             if (!_lifetime.IsCancellationRequested)
             {
-                ShowToast($"flutterbar CLI isn't available: {ex.Message}");
+                ShowToast($"sbar CLI isn't available: {ex.Message}");
             }
         }
     }
@@ -306,6 +306,6 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
 
     private sealed record Tools(GitService? Git, DeviceService Devices, RunCoordinator Run);
 
-    /// <summary>What <c>flutterbar status</c> reports besides the session; null = nothing selected.</summary>
+    /// <summary>What <c>sbar status</c> reports besides the session; null = nothing selected.</summary>
     private sealed record StatusLabels(string? Project, string? Branch, string? Config, string? Device);
 }

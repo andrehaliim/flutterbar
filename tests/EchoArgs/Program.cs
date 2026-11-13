@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
-// Test helper for FlutterBar process tests.
+// Test helper for StatefulBar process tests.
 //   (default)       prints the received args as one JSON array line
 //   --interactive   echoes every stdin line as "echo:<line>" until EOF
 //   --hang          sleeps forever

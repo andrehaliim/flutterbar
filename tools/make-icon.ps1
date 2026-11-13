@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-  Draws the FlutterBar app icon and writes it as a multi-size .ico (and, optionally, PNG previews).
+  Draws the StatefulBar app icon and writes it as a multi-size .ico (and, optionally, PNG previews).
 
   The design lives in this script (there is no SVG master): a rounded tile with three diagonal Flutter-blue ribbons and,
   on top, the widget as a dark pill with the three session buttons in their dark-theme colours (run, hot reload, stop).
   Coordinates are in a 64 x 64 design space. The pill edges are snapped to whole pixels at every size, and sizes up to
   24 px use a larger pill and larger glyphs so the three buttons stay readable.
 
-.PARAMETER Out        Output .ico (default: src/StatefulBar.App/Assets/flutterbar.ico).
-.PARAMETER PreviewDir Optional folder that receives one PNG per size (flutterbar-<size>.png), for a visual check.
+.PARAMETER Out        Output .ico (default: src/StatefulBar.App/Assets/statefulbar.ico).
+.PARAMETER PreviewDir Optional folder that receives one PNG per size (statefulbar-<size>.png), for a visual check.
 .PARAMETER Sizes      Icon sizes in pixels. 256 is stored as PNG, smaller sizes as 32-bit bitmaps.
 
   Uses WPF (PresentationCore) only, nothing to install. Compatible with Windows PowerShell 5.1.
@@ -23,7 +23,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-if ($Out -eq '') { $Out = Join-Path $scriptDir '..\src\FlutterBar.App\Assets\flutterbar.ico' }
+if ($Out -eq '') { $Out = Join-Path $scriptDir '..\src\StatefulBar.App\Assets\statefulbar.ico' }
 $Out = [IO.Path]::GetFullPath($Out)
 
 function New-Brush([string]$hex) {
@@ -146,7 +146,7 @@ foreach ($size in ($Sizes | Sort-Object)) {
     $png = ConvertTo-Png $bitmap
     if ($PreviewDir -ne '') {
         if (-not (Test-Path $PreviewDir)) { New-Item -ItemType Directory -Force $PreviewDir | Out-Null }
-        [IO.File]::WriteAllBytes((Join-Path ([IO.Path]::GetFullPath($PreviewDir)) "flutterbar-$size.png"), $png)
+        [IO.File]::WriteAllBytes((Join-Path ([IO.Path]::GetFullPath($PreviewDir)) "statefulbar-$size.png"), $png)
     }
     if ($size -eq 256) { $data = $png } else { $data = ConvertTo-IconDib $bitmap }
     $images += [pscustomobject]@{ Size = $size; Data = $data }

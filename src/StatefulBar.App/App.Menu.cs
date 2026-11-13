@@ -137,7 +137,7 @@ public partial class App
         SaveSettings($"monitor={monitor ?? "main"}");
     }
 
-    /// <summary>Style ▸ Theme (spec §7.6): every FlutterBar window switches at once (DynamicResource brushes), then saved.</summary>
+    /// <summary>Style ▸ Theme (spec §7.6): every StatefulBar window switches at once (DynamicResource brushes), then saved.</summary>
     private void ChangeTheme(ThemeChoice mode)
     {
         var setting = TaskbarTheme.ToSetting(mode);

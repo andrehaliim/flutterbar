@@ -14,7 +14,7 @@ namespace StatefulBar.Core.Sessions;
 /// any active state --Stop--> Stopping --> Idle.
 /// <para>
 /// <paramref name="retainedJobs"/> keeps the jobs of processes that exited on their own; when null the session owns one
-/// and closes it in <see cref="DisposeAsync"/> (FlutterBar exit).
+/// and closes it in <see cref="DisposeAsync"/> (StatefulBar exit).
 /// </para>
 /// <para>
 /// With a <paramref name="vmLogs"/> connector, <c>dart:developer</c> <c>log()</c> output is read from the app's VM
@@ -270,7 +270,7 @@ public sealed class RunSession(
     /// <summary>
     /// Sends <c>app.stop</c> when an app is running and waits up to the stop grace for the exit, otherwise (or when
     /// still Starting) kills the process tree. A process that exited keeps its job in the <see cref="RetainedJobs"/>
-    /// (warm Gradle/adb daemons until FlutterBar exits). Always disposes the process handle and ends Idle.
+    /// (warm Gradle/adb daemons until StatefulBar exits). Always disposes the process handle and ends Idle.
     /// </summary>
     public Task StopAsync()
     {
@@ -376,7 +376,7 @@ public sealed class RunSession(
     /// <summary>
     /// Spec §6.2: <c>app.stop</c>, then the job is closed only when flutter has not exited within the stop grace. When
     /// it exited (now or earlier), its job is retained instead, so daemons it started (Gradle, adb) stay warm until
-    /// FlutterBar exits.
+    /// StatefulBar exits.
     /// </summary>
     private async Task StopProcessAsync(IProcessHandle handle, string? appId)
     {
@@ -892,7 +892,7 @@ public sealed class RunSession(
     private void HandlerFailed(Context ctx, string source, Exception ex)
     {
         DiagLog.Write($"RunSession: {source} handler failed", ex);
-        var message = $"FlutterBar internal error: {ex.Message}";
+        var message = $"StatefulBar internal error: {ex.Message}";
         PendingReload? pending;
         SessionSnapshot? changed;
         var kill = false;

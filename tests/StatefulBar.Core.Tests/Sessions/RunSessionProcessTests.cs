@@ -55,7 +55,7 @@ public sealed class RunSessionProcessTests : IDisposable
             Assert.Equal(1, retained.Count);
             Assert.False(daemon.WaitForExit(TimeSpan.FromMilliseconds(500)), "a clean stop killed the session's daemon");
 
-            retained.Dispose(); // FlutterBar exit
+            retained.Dispose(); // StatefulBar exit
 
             await daemon.WaitForExitAsync().WaitAsync(Wait);
         }

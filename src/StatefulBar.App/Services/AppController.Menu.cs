@@ -46,7 +46,7 @@ internal sealed partial class AppController
 
     /// <summary>
     /// A process keeps the PATH it started with: re-read machine + user PATH from the registry (read-only) so flutter/fvm
-    /// installed or added to PATH since FlutterBar started are found, and flutter's own child processes inherit it too.
+    /// installed or added to PATH since StatefulBar started are found, and flutter's own child processes inherit it too.
     /// Session-only entries of the current PATH are kept (<see cref="EnvironmentPath.Compose"/>).
     /// </summary>
     private static async Task RefreshProcessPathAsync()

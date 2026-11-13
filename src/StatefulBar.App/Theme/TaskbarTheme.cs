@@ -19,7 +19,7 @@ internal enum ThemeChoice
 /// <summary>
 /// Light/dark brushes following the TASKBAR theme (<c>SystemUsesLightTheme</c>, spec §7.3) unless <see cref="Mode"/>
 /// forces one, switched live through <see cref="SystemEvents.UserPreferenceChanged"/>. Brushes go into a resource
-/// dictionary under the <c>Fb.*</c> keys (used with DynamicResource), so every FlutterBar window follows. The accent colour
+/// dictionary under the <c>Fb.*</c> keys (used with DynamicResource), so every StatefulBar window follows. The accent colour
 /// always comes from Windows. Dispose to unsubscribe the static SystemEvents handler.
 /// </summary>
 internal sealed class TaskbarTheme : IDisposable

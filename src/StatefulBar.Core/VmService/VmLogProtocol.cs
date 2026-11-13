@@ -12,7 +12,7 @@ public sealed record VmValue(bool IsNull, string? Text, bool Truncated, string? 
     public static VmValue Null { get; } = new(true, null, false, null, null);
 }
 
-/// <summary>One parsed VM service message; anything FlutterBar does not use parses to null.</summary>
+/// <summary>One parsed VM service message; anything StatefulBar does not use parses to null.</summary>
 public abstract record VmMessage;
 
 /// <summary>A <c>Logging</c> stream event: one <c>dart:developer</c> <c>log()</c> call.</summary>
@@ -49,7 +49,7 @@ public static class VmLogProtocol
             writer.WriteEndArray();
         });
 
-    /// <summary>Parses one WebSocket text message; null for invalid JSON and for messages FlutterBar does not use.</summary>
+    /// <summary>Parses one WebSocket text message; null for invalid JSON and for messages StatefulBar does not use.</summary>
     public static VmMessage? Parse(string json)
     {
         try
@@ -70,7 +70,7 @@ public static class VmLogProtocol
         }
         catch (JsonException)
         {
-            // By contract an unparseable message is simply not one FlutterBar uses.
+            // By contract an unparseable message is simply not one StatefulBar uses.
             return null;
         }
     }

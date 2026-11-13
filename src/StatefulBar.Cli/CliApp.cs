@@ -32,7 +32,7 @@ public static class CliApp
         var command = rest[0];
         if (command == "run")
         {
-            stderr.WriteLine("The 'run' command isn't supported on purpose: start the app with the ▶ button in FlutterBar.");
+            stderr.WriteLine("The 'run' command isn't supported on purpose: start the app with the ▶ button in StatefulBar.");
             return ExitCodes.Usage;
         }
 
@@ -61,7 +61,7 @@ public static class CliApp
         var response = await client.SendAsync(request, timeout, CancellationToken.None);
         if (response is null)
         {
-            stderr.WriteLine("FlutterBar is not running");
+            stderr.WriteLine("StatefulBar is not running");
             return ExitCodes.NotRunning;
         }
 

@@ -2,9 +2,9 @@ namespace StatefulBar.Core.Integration;
 
 /// <summary>
 /// "Rescan" re-reads PATH: a process keeps the PATH it was started with, so tools installed or added to PATH after
-/// FlutterBar started would stay invisible until a restart. The fresh value is built like Windows does for a new logon
+/// StatefulBar started would stay invisible until a restart. The fresh value is built like Windows does for a new logon
 /// (machine PATH, then user PATH, environment-expanded), and entries that exist only in the current process (e.g. added
-/// by the terminal that started FlutterBar) are kept at the end.
+/// by the terminal that started StatefulBar) are kept at the end.
 /// </summary>
 public static class EnvironmentPath
 {

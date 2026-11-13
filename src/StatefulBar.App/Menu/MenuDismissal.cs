@@ -7,7 +7,7 @@ using StatefulBar.App.Native;
 namespace StatefulBar.App.Menu;
 
 /// <summary>
-/// Closes a context menu on a mouse press anywhere outside FlutterBar (desktop, taskbar, another app). The widget never
+/// Closes a context menu on a mouse press anywhere outside StatefulBar (desktop, taskbar, another app). The widget never
 /// activates (WS_EX_NOACTIVATE), so its menu opens without the foreground and WPF's mouse capture does not see clicks in
 /// other processes. The menu must NOT take the foreground to fix that (a ContextMenu closes itself at once when its
 /// window is activated); instead a low-level mouse hook runs only while the menu is open. The press itself is passed on.

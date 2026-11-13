@@ -18,7 +18,7 @@ internal sealed class DialogOwnerWindow : IDisposable
         var area = SystemParameters.WorkArea;
         _window = new Window
         {
-            Title = "FlutterBar",
+            Title = "StatefulBar",
             WindowStyle = WindowStyle.None,
             ResizeMode = ResizeMode.NoResize,
             ShowInTaskbar = false,

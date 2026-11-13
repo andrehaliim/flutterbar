@@ -18,7 +18,7 @@ public sealed class IpcClient(string pipeName) : IIpcClient
         }
         catch (TimeoutException)
         {
-            // Defined contract: no pipe (or none reachable within the connect window) means FlutterBar is not running.
+            // Defined contract: no pipe (or none reachable within the connect window) means StatefulBar is not running.
             return null;
         }
 
@@ -34,19 +34,19 @@ public sealed class IpcClient(string pipeName) : IIpcClient
             var line = await reader.ReadLineAsync(exchange.Token);
             if (line is null)
             {
-                return new IpcResponse(false, ExitCodes.Failed, null, "FlutterBar closed the connection without a response");
+                return new IpcResponse(false, ExitCodes.Failed, null, "StatefulBar closed the connection without a response");
             }
 
             var response = JsonSerializer.Deserialize<IpcResponse>(line, IpcJson.Options);
-            return response ?? new IpcResponse(false, ExitCodes.Failed, null, "Empty response from FlutterBar");
+            return response ?? new IpcResponse(false, ExitCodes.Failed, null, "Empty response from StatefulBar");
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return new IpcResponse(false, ExitCodes.Timeout, null, "Timed out waiting for FlutterBar");
+            return new IpcResponse(false, ExitCodes.Timeout, null, "Timed out waiting for StatefulBar");
         }
         catch (JsonException ex)
         {
-            return new IpcResponse(false, ExitCodes.Failed, null, "Invalid response from FlutterBar: " + ex.Message);
+            return new IpcResponse(false, ExitCodes.Failed, null, "Invalid response from StatefulBar: " + ex.Message);
         }
     }
 }

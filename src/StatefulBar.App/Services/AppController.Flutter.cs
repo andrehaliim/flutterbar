@@ -33,7 +33,7 @@ internal sealed partial class AppController
             ShowToast(UiText.NeedProject);
             return;
         }
-        await RefreshProcessPathAsync(); // the terminal inherits FlutterBar's PATH: make it the current one
+        await RefreshProcessPathAsync(); // the terminal inherits StatefulBar's PATH: make it the current one
         _paths.ClearCache();
         var choice = await Task.Run(() => TerminalLauncher.Resolve(_paths, root));
         try
@@ -49,7 +49,7 @@ internal sealed partial class AppController
                 {
                     psi.ArgumentList.Add(arg);
                 }
-                Process.Start(psi)?.Dispose(); // detached: the terminal outlives FlutterBar
+                Process.Start(psi)?.Dispose(); // detached: the terminal outlives StatefulBar
             });
             AppLog.Write($"terminal opened ({choice.Name}) in {root}");
         }

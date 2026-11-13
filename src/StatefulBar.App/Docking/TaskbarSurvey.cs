@@ -9,7 +9,7 @@ namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Spike for the widget on a second monitor (round 2 plan, batch 6a). Started with <c>--survey-taskbars</c>: a few seconds
-/// after start, writes what FlutterBar can see of EVERY taskbar (<c>Shell_TrayWnd</c> and each <c>Shell_SecondaryTrayWnd</c>)
+/// after start, writes what StatefulBar can see of EVERY taskbar (<c>Shell_TrayWnd</c> and each <c>Shell_SecondaryTrayWnd</c>)
 /// to diag.log as <c>survey:</c> lines: the Win32 window (rect, monitor, DPI, direct children) and its UI Automation subtree
 /// with the verdicts of <see cref="TaskbarLayoutAnalyzer"/>. Read-only and one-shot: the docking is not affected.
 /// </summary>

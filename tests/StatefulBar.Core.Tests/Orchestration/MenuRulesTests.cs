@@ -68,7 +68,7 @@ public sealed class MenuRulesTests
     public void ExitAndErrorCopy()
     {
         Assert.Equal("Stop the session and exit?", UiText.ConfirmExit);
-        Assert.Equal("FlutterBar hit an error. Details are in diag.log", UiText.UnexpectedError);
+        Assert.Equal("StatefulBar hit an error. Details are in diag.log", UiText.UnexpectedError);
         Assert.Equal("Open a new terminal to pick up the PATH change", UiText.PathAdded);
     }
 }

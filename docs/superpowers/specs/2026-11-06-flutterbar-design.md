@@ -1,8 +1,8 @@
-# FlutterBar — Desain
+# StatefulBar — Desain
 
 - **Tanggal:** 2026-11-06
 - **Status:** Diimplementasikan (v1 + feedback putaran 1 dan 2); semua uji manual lulus 2026-11-11
-- **Nama:** FlutterBar (nama kerja)
+- **Nama:** StatefulBar (sebelumnya FlutterBar; diganti 2026-11-12 karena pedoman merek Flutter melarang kata "Flutter" di nama produk. Nama file spec ini tetap. Data lama dimigrasi otomatis, lihat §4.1, §4.3, §7.4)
 
 ## 1. Latar belakang & tujuan
 
@@ -10,7 +10,7 @@ Developer Flutter yang banyak menulis kode lewat Claude Code membuka Android Stu
 **run toolbar** (pilih project, branch, entry file, device, run configuration, lalu Run, Hot reload,
 Hot restart, Stop). Android Studio memakan RAM 2–4 GB untuk itu.
 
-FlutterBar adalah widget kecil yang **menempel di taskbar Windows** dan menggantikan run toolbar
+StatefulBar adalah widget kecil yang **menempel di taskbar Windows** dan menggantikan run toolbar
 tersebut, sehingga IDE tidak perlu dibuka untuk siklus run → reload → stop sehari-hari. Bentuknya
 meniru konsep [now-playing-taskbar-widget](https://github.com/mechanicwb2-hub/now-playing-taskbar-widget):
 jendela tanpa border yang selalu terlihat dan menempel di area kosong taskbar (bukan tray icon, bukan
@@ -20,10 +20,10 @@ deskband).
 1. Bisa memilih project, branch, config, dan device, lalu Run, Hot reload, Hot restart, dan Stop
    tanpa membuka IDE.
 2. Log app bisa dibaca di jendela log tersendiri.
-3. Claude Code bisa melakukan hot reload/restart dan membaca error lewat CLI `flutterbar`.
-4. Private working set FlutterBar (kolom "Memory" di Task Manager) saat idle di bawah 100 MB (di luar proses
+3. Claude Code bisa melakukan hot reload/restart dan membaca error lewat CLI `sbar`.
+4. Private working set StatefulBar (kolom "Memory" di Task Manager) saat idle di bawah 100 MB (di luar proses
    flutter/dart/gradle). Patokan ini diputuskan user 2026-11-12, menggantikan working set: working set ikut menghitung
-   halaman DLL .NET/WPF yang dibagi dengan proses lain, yang tidak bisa diturunkan oleh kode FlutterBar.
+   halaman DLL .NET/WPF yang dibagi dengan proses lain, yang tidak bisa diturunkan oleh kode StatefulBar.
 
 ### Di luar cakupan (non-goals)
 - Editor kode, debugger dengan breakpoint, profiler, dan layout inspector. Untuk itu buka IDE.
@@ -43,29 +43,29 @@ deskband).
 | Bahasa teks | **Semua teks UI dan CLI berbahasa Inggris** (keputusan user 2026-11-08, menggantikan aturan awal teks UI Bahasa Indonesia): sentence case, singkat, tanpa "please", "successfully", atau tanda seru. Dokumen ini tetap berbahasa Indonesia, hanya teks yang dikutip dalam tanda kutip yang mengikuti copy di app |
 | Tombol | Idle: ▶ Run. Running: ⚡ Hot reload, 🔄 Hot restart, ⏹ Stop |
 | Log | `LogWindow` terpisah yang dibuka dari widget |
-| Run config | Milik FlutterBar sendiri, di `<project>/.flutterbar/launch.json` dengan format mirip `launch.json` VS Code. Bisa import sekali dari `.idea` dan `.vscode` |
+| Run config | Milik StatefulBar sendiri, di `<project>/.statefulbar/launch.json` dengan format mirip `launch.json` VS Code. Bisa import sekali dari `.idea` dan `.vscode` |
 | Daftar project | Scan otomatis dari folder root, ditambah add/hide manual, diurutkan dari yang terakhir dipakai |
 | Ganti branch | `git switch` biasa, dan error dari git ditampilkan apa adanya. Hanya branch lokal |
 | Device | Device terhubung ditambah emulator offline yang bisa dinyalakan dari dropdown |
 | Jumlah sesi | Satu sesi aktif |
-| Integrasi Claude Code | CLI `flutterbar` (reload, restart, stop, status, logs) lewat named pipe |
+| Integrasi Claude Code | CLI `sbar` (reload, restart, stop, status, logs) lewat named pipe |
 | Stack | C# + WPF, **.NET 10 (LTS)** |
 
 > **Catatan versi .NET:** project referensi memakai .NET 8, tapi dukungan .NET 8 dan .NET 9 berakhir
-> pada 10 November 2026. Karena itu FlutterBar memakai .NET 10 LTS, yang didukung sampai November 2028.
+> pada 10 November 2026. Karena itu StatefulBar memakai .NET 10 LTS, yang didukung sampai November 2028.
 
 ## 3. Arsitektur
 
 ### 3.1 Struktur solution
 
 ```
-FlutterBar.sln
+StatefulBar.sln
 src/
-  FlutterBar.Core/        class library, tanpa UI: semua logika, bisa di-unit-test
-  FlutterBar.App/         WPF (WinExe): widget, flyout, LogWindow, menu
-  FlutterBar.Cli/         console exe, nama assembly `flutterbar`
+  StatefulBar.Core/       class library, tanpa UI: semua logika, bisa di-unit-test
+  StatefulBar.App/        WPF (WinExe): widget, flyout, LogWindow, menu
+  StatefulBar.Cli/        console exe, nama assembly `sbar`
 tests/
-  FlutterBar.Core.Tests/  xUnit
+  StatefulBar.Core.Tests/ xUnit
   fixtures/               contoh launch.json, workspace.xml, rekaman output `flutter run --machine`
 docs/
 ```
@@ -73,16 +73,19 @@ docs/
 > **Revisi dari diskusi:** awalnya direncanakan "satu exe untuk widget dan CLI". Ini diubah menjadi
 > **dua exe**, karena exe WPF (subsystem GUI) tidak bisa menulis ke console terminal dengan andal, dan
 > shell juga tidak menunggu exe GUI selesai. Akibatnya exit code dan output CLI tidak bisa dipakai oleh
-> Claude Code. Jadi `FlutterBar.App.exe` adalah widget, dan `flutterbar.exe` adalah CLI. Keduanya
-> berbagi kontrak IPC dari `FlutterBar.Core`.
+> Claude Code. Jadi `StatefulBar.exe` adalah widget, dan `sbar.exe` adalah CLI. Keduanya
+> berbagi kontrak IPC dari `StatefulBar.Core`.
+>
+> CLI tidak dinamai `statefulbar.exe` karena Windows tidak membedakan huruf besar-kecil: nama itu sama dengan
+> `StatefulBar.exe` di folder yang sama (diputuskan user 2026-11-13).
 
-### 3.2 Komponen `FlutterBar.Core`
+### 3.2 Komponen `StatefulBar.Core`
 
 | Komponen | Tanggung jawab | Bergantung pada |
 |---|---|---|
-| `AppSettingsStore` | Baca/tulis `%APPDATA%\FlutterBar\settings.json` | — |
+| `AppSettingsStore` | Baca/tulis `%APPDATA%\StatefulBar\settings.json` | — |
 | `ProjectCatalog` | Scan folder root, add/hide manual, urutan terakhir dipakai | `AppSettingsStore` |
-| `LaunchConfigStore` | Baca, validasi, dan tulis `<project>/.flutterbar/launch.json` | — |
+| `LaunchConfigStore` | Baca, validasi, dan tulis `<project>/.statefulbar/launch.json` | — |
 | `IdeConfigImporter` | Konversi `.idea/workspace.xml`, `.run/*.xml`, dan `.vscode/launch.json` ke `LaunchConfig` | — |
 | `FlutterToolLocator` | Menentukan perintah flutter per project (`fvm flutter` atau `flutter`) | — |
 | `ProcessRunner` | Menjalankan proses (termasuk `.bat`/`.cmd`) dengan argumen aman, plus Job Object | — |
@@ -93,7 +96,7 @@ docs/
 | `LogBuffer` | Ring buffer 20.000 baris dengan penanda reload | — |
 | `IpcServer` / `IpcClient` | Named pipe dan kontrak pesan CLI | `RunSession` (server) |
 
-### 3.3 Komponen `FlutterBar.App`
+### 3.3 Komponen `StatefulBar.App`
 - `TaskbarWidget`: jendela utama, docking, layout adaptif, dan menu klik kanan.
 - `TaskbarDocking`: menghitung area kosong taskbar, topmost, auto-hide, fullscreen, dan DPI (Win32 interop).
 - `Flyouts`: Project, Branch, Config, Device, dan flyout gabungan untuk mode ringkas/tombol.
@@ -109,15 +112,19 @@ Widget/Flyout ──pilih──► AppSettingsStore (project, config, device ter
                                                                  │
                       Widget (tombol, titik status) ◄────────────┤
                       LogWindow ◄────────────────────────────────┤
-                      IpcServer ◄── flutterbar.exe (CLI) ────────┘
+                      IpcServer ◄── sbar.exe (CLI) ──────────────┘
 ⚡/🔄/⏹ (widget maupun CLI) ──► RunSession ──► request JSON ke stdin flutter
 ```
 
 ## 4. Konfigurasi
 
-### 4.1 `<project>/.flutterbar/launch.json`
+### 4.1 `<project>/.statefulbar/launch.json`
 
 Format JSONC: komentar dan trailing comma diperbolehkan, sama seperti VS Code.
+
+Migrasi dari FlutterBar: selama `.statefulbar/launch.json` belum ada, `.flutterbar/launch.json` lama tetap dibaca dan
+dibuka oleh "Open launch.json". Penulisan (Import, Create default) selalu ke `.statefulbar/launch.json`; file lama tidak
+diubah dan sejak itu kalah prioritas.
 
 ```jsonc
 {
@@ -167,7 +174,7 @@ dalam bahasa manusia.
   misalnya `beta (vscode)`.
 - File IDE tidak pernah ditulis.
 
-### 4.3 `%APPDATA%\FlutterBar\settings.json`
+### 4.3 `%APPDATA%\StatefulBar\settings.json`
 
 ```jsonc
 {
@@ -185,7 +192,10 @@ dalam bahasa manusia.
 ```
 
 Penulisan bersifat atomik: tulis ke file sementara, lalu rename. Kalau file rusak, file lama
-di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, dan memberi toast.
+di-rename menjadi `settings.json.bak-<timestamp>`, StatefulBar memakai default, dan memberi toast.
+
+Migrasi dari FlutterBar: saat start, bila `%APPDATA%\StatefulBar\settings.json` belum ada tetapi
+`%APPDATA%\FlutterBar\settings.json` ada, file lama disalin sekali (dicatat di `diag.log`). File lama tidak diubah.
 
 ## 5. Project, branch, device
 
@@ -194,7 +204,7 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
   `node_modules`, `android`, `ios`, `windows`, `linux`, `macos`, `web`, dan folder yang diawali `.`
   dilewati. Sebuah folder dianggap project kalau punya `pubspec.yaml` yang mencantumkan dependency
   `flutter: sdk: flutter`.
-- **Kapan scan berjalan:** saat FlutterBar start, saat menu "Rescan" dipilih, dan saat flyout project
+- **Kapan scan berjalan:** saat StatefulBar start, saat menu "Rescan" dipilih, dan saat flyout project
   dibuka kalau scan terakhir sudah lebih dari 10 menit lalu (hasil cache tampil dulu).
 - **Daftar akhir:** (hasil scan + `manualProjects`) − `hiddenProjects`, diurutkan menurut `lastUsed`
   terbaru lalu nama.
@@ -207,7 +217,7 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
 - Kalau project punya `.fvmrc` atau `.fvm/fvm_config.json`, perintahnya `fvm flutter`. `fvm` harus
   ditemukan di PATH. Kalau tidak ditemukan, muncul error dan tidak ada fallback ke `flutter` global.
 - Kalau tidak, perintahnya `flutter` dari PATH.
-- Hasil lookup PATH di-cache per sesi FlutterBar, dan cache dibersihkan setiap kali menu "Rescan" dipilih.
+- Hasil lookup PATH di-cache per sesi StatefulBar, dan cache dibersihkan setiap kali menu "Rescan" dipilih.
 
 ### 5.3 `ProcessRunner`
 - Argumen selalu diberikan sebagai list, bukan string yang dirangkai.
@@ -215,7 +225,7 @@ di-rename menjadi `settings.json.bak-<timestamp>`, FlutterBar memakai default, d
   `cmd.exe /d /s /c` dengan escaping khusus cmd (`"`, `^`, `&`, `|`, `<`, `>`, `%`). Escaping ini
   **wajib** punya unit test dengan argumen yang berisi spasi, kutip, `&`, dan `%`.
 - Setiap proses sesi run dimasukkan ke Job Object dengan `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`. Jadi
-  kalau FlutterBar ditutup atau crash, seluruh pohon proses (cmd, dart, gradle, adb yang di-spawn) ikut
+  kalau StatefulBar ditutup atau crash, seluruh pohon proses (cmd, dart, gradle, adb yang di-spawn) ikut
   mati.
 - Proses daemon adb global yang sudah jalan sebelumnya tidak ikut dimatikan karena memang bukan anak
   Job Object.
@@ -338,7 +348,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - **Satu sesi:** mengganti project, config, atau device saat sesi berjalan memunculkan konfirmasi
   "Stop the current session and switch?". Kalau Stop, sesi dihentikan dan pilihan berubah, tapi app tidak
   otomatis di-run.
-- **Menutup FlutterBar (Exit):** kalau ada sesi berjalan, muncul konfirmasi, lalu Stop, lalu keluar.
+- **Menutup StatefulBar (Exit):** kalau ada sesi berjalan, muncul konfirmasi, lalu Stop, lalu keluar.
 
 ### 6.3 `LogBuffer`
 - Ring buffer 20.000 baris. Setiap baris berisi `{seq, timestamp, kind, text}`, dengan `kind` salah satu
@@ -387,7 +397,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   perubahan tombol aplikasi/rata taskbar; di-clamp ke taskbar bila resolusi berubah). Mode manual TIDAK menghindari
   tombol aplikasi; owner, topmost, fullscreen, dan auto-hide tetap berlaku. "Reset to auto position" kembali ke `auto`.
 - **Stabilitas (v3.1):** elemen UIA dihitung terisi bila: (a) rect-nya di dalam rect taskbar (toleransi 2 px), (b) tinggi >= 50% tinggi taskbar, (c) lebar >= 8 px,
-  (d) bukan milik proses sendiri atau proses widget lain milik kita (`DockingSpike`, `FlutterBar.App`), dan (e) bukan transien (ControlType `ToolTip`,
+  (d) bukan milik proses sendiri atau proses widget lain milik kita (`DockingSpike`, `StatefulBar`), dan (e) bukan transien (ControlType `ToolTip`,
   kelas popup/`TaskListThumbnailWnd`). Thumbnail/flyout digambar DI ATAS taskbar sehingga (a) sudah mengecualikannya. Catatan: TrafficMonitor tidak ada
   di pohon UIA `Shell_TrayWnd`, jadi tidak pernah terhitung (itu sebabnya ada mode manual). Penempatan baru (pindah/ubah ukuran) baru diterapkan bila hasil
   (ukuran, x) yang sama (toleransi x 3 px) keluar dari 2 query UIA berturut-turut (sekitar 1-2 detik); kandidat berbeda yang
@@ -430,9 +440,10 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Open launch.json, yang membuka file dengan aplikasi default `.json`
 - Open log (membuka `LogWindow`)
 - Flutter tools… (membuka flyout Flutter, §7.5; satu-satunya jalan masuk di ukuran Buttons only) dan Open terminal
-- Add CLI to PATH…, yang menambah folder `flutterbar.exe` ke PATH user (`HKCU\Environment`) setelah
+- Add CLI to PATH…, yang menambah folder `sbar.exe` ke PATH user (`HKCU\Environment`) setelah
   konfirmasi
-- Start with Windows (`HKCU\...\Run`, toggle)
+- Start with Windows (`HKCU\...\Run\StatefulBar`, toggle). Value lama `FlutterBar` (sebelum rename) dihapus saat start
+  dan, bila `StatefulBar` belum ada, diganti value `StatefulBar` yang menunjuk exe ini
 - Exit
 
 ### 7.5 Flutter tools
@@ -460,7 +471,7 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   flyout tidak terpengaruh.
 - Slider menerapkan nilai langsung saat digeser; settings disimpan sekali saat menu klik kanan ditutup.
 - `widget.theme`: `system` (default, ikut tema taskbar), `light`, atau `dark`; nilai lain/rusak = `system`. Berlaku untuk
-  semua jendela FlutterBar (widget, flyout, toast, menu, LogWindow, dialog) karena semuanya memakai brush `Fb.*`; warna
+  semua jendela StatefulBar (widget, flyout, toast, menu, LogWindow, dialog) karena semuanya memakai brush `Fb.*`; warna
   aksen tetap dari Windows. Dipilih lewat Style ▸ Theme (centang pada pilihan aktif), langsung diterapkan dan disimpan.
 
 ## 8. `LogWindow`
@@ -476,26 +487,26 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   Selama tidak mengikuti bagian bawah (dan ada yang bisa di-scroll), tombol bulat "Jump to latest" muncul di pojok kanan
   bawah daftar; klik atau `Ctrl+End` loncat ke baris terbaru dan auto-scroll aktif lagi.
 
-## 9. CLI `flutterbar`
+## 9. CLI `sbar`
 
 ### 9.1 Perintah
 
 | Perintah | Fungsi | Exit code |
 |---|---|---|
-| `flutterbar status` | State, project, branch, config, device, dan jumlah error | 0 ada sesi aktif, 3 tidak ada sesi |
-| `flutterbar reload` | Hot reload, menunggu hasilnya (timeout 60 detik), dan mencetak error kalau gagal | 0 berhasil, 1 gagal, 3 tidak ada sesi, 4 timeout |
-| `flutterbar restart` | Hot restart, sama seperti reload | sama dengan reload |
-| `flutterbar stop` | Menghentikan sesi | 0, atau 3 kalau tidak ada sesi |
-| `flutterbar logs [--errors] [--tail N] [--since-last-reload]` | Mencetak log dari buffer | 0 |
+| `sbar status` | State, project, branch, config, device, dan jumlah error | 0 ada sesi aktif, 3 tidak ada sesi |
+| `sbar reload` | Hot reload, menunggu hasilnya (timeout 60 detik), dan mencetak error kalau gagal | 0 berhasil, 1 gagal, 3 tidak ada sesi, 4 timeout |
+| `sbar restart` | Hot restart, sama seperti reload | sama dengan reload |
+| `sbar stop` | Menghentikan sesi | 0, atau 3 kalau tidak ada sesi |
+| `sbar logs [--errors] [--tail N] [--since-last-reload]` | Mencetak log dari buffer | 0 |
 
 - Semua perintah mendukung `--json` untuk output terstruktur.
-- Kalau FlutterBar tidak berjalan (pipe tidak ada), exit code 2 dengan pesan "FlutterBar is not running".
+- Kalau StatefulBar tidak berjalan (pipe tidak ada), exit code 2 dengan pesan "StatefulBar is not running".
 - Argumen yang tidak dikenal menghasilkan exit code 64 dan menampilkan usage.
-- **Sengaja tidak ada `flutterbar run`.** Menjalankan app hanya lewat tombol ▶, supaya Claude tidak
+- **Sengaja tidak ada `sbar run`.** Menjalankan app hanya lewat tombol ▶, supaya Claude tidak
   meluncurkan app sendiri.
 
 ### 9.2 IPC
-- Nama pipe `\\.\pipe\FlutterBar-<SID user>`, dengan ACL hanya untuk user saat ini.
+- Nama pipe `\\.\pipe\StatefulBar-<SID user>`, dengan ACL hanya untuk user saat ini.
 - Protokol: satu request JSON per koneksi, lalu satu response JSON:
   `{"command":"reload","args":{...}}` → `{"ok":true,"exitCode":0,"data":{...},"message":"..."}`.
 - Server menangani request secara berurutan. Request reload/restart yang datang saat state Reloading
@@ -515,15 +526,15 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 | Emulator timeout | Toast, emulator dibiarkan menyala |
 | Output flutter bukan JSON | Ditampilkan sebagai log `tool` |
 | `settings.json` rusak | Backup file lama, pakai default, toast |
-| Instance kedua `FlutterBar.App` dijalankan | Instance pertama dimunculkan (lewat named mutex dan pipe), lalu instance kedua keluar |
-| Exception tak tertangani di FlutterBar | Ditulis ke `%APPDATA%\FlutterBar\diag.log`, ditampilkan toast kalau memungkinkan. Job Object memastikan proses flutter ikut mati kalau FlutterBar crash |
+| Instance kedua `StatefulBar.exe` dijalankan | Instance pertama dimunculkan (lewat named mutex dan pipe), lalu instance kedua keluar |
+| Exception tak tertangani di StatefulBar | Ditulis ke `%APPDATA%\StatefulBar\diag.log`, ditampilkan toast kalau memungkinkan. Job Object memastikan proses flutter ikut mati kalau StatefulBar crash |
 
 Tidak ada exception yang ditelan diam-diam. Setiap catch harus menampilkan pesan ke user dan/atau
 menulis ke `diag.log`.
 
 ## 11. Testing
 
-- **Unit test (`FlutterBar.Core.Tests`, xUnit):**
+- **Unit test (`StatefulBar.Core.Tests`, xUnit):**
   - Parse dan validasi `launch.json`, termasuk JSONC dan field yang salah.
   - `IdeConfigImporter`, dengan fixture yang meniru `.idea/workspace.xml` dan `.vscode/launch.json`
     gts-mobile (termasuk `&quot;` dan argumen berspasi).
@@ -539,12 +550,12 @@ menulis ke `diag.log`.
   - Parsing output git.
   - Kontrak IPC: serialisasi request dan response, serta exit code.
 - **Integration test (opt-in, kategori `Integration`, butuh Flutter):** sebuah sample app minimal
-  dijalankan (device lewat `FLUTTERBAR_IT_DEVICE`; yang dipakai `chrome`), lalu diuji Run, Hot reload, Hot restart,
+  dijalankan (device lewat `STATEFULBAR_IT_DEVICE`; yang dipakai `chrome`), lalu diuji Run, Hot reload, Hot restart,
   Stop, dan CLI `status`/`reload`/`logs`.
 - **Checklist manual docking:** Windows 10 dan 11 dengan taskbar rata tengah dan rata kiri, auto-hide,
   aplikasi fullscreen, DPI 100/125/150%, tema gelap/terang, taskbar penuh (menyusut atau sembunyi),
   monitor kedua dicolok dan dicabut.
-- **Pengukuran RAM:** `FlutterBar.App` saat idle dan saat `LogWindow` terbuka berisi 20.000 baris. Yang dicatat:
+- **Pengukuran RAM:** `StatefulBar.exe` saat idle dan saat `LogWindow` terbuka berisi 20.000 baris. Yang dicatat:
   private working set (patokan §1), working set, dan private bytes. Hasilnya dicatat apa adanya.
 
 ## 12. Prasyarat, risiko, dan tindak lanjut
@@ -567,11 +578,11 @@ menulis ke `diag.log`.
   atau dibatalkan, hanya pohon proses yang masih hidup yang dimatikan. Job Object kill-on-close (§5.3) hanya untuk sesi
   `flutter run`.
 - **Stop sesuai §6.2:** kalau flutter keluar dalam 5 detik setelah `app.stop`, Job Object sesi itu tidak ditutup tetapi disimpan
-  sampai FlutterBar keluar, supaya daemon Gradle/Kotlin/adb tetap hangat untuk ▶ berikutnya. Exit atau crash FlutterBar tetap
+  sampai StatefulBar keluar, supaya daemon Gradle/Kotlin/adb tetap hangat untuk ▶ berikutnya. Exit atau crash StatefulBar tetap
   mematikan semuanya (§5.3).
 
 **Tindak lanjut di luar versi ini:**
-- Spike integrasi DTD supaya Dart MCP (`hot_reload`, `get_runtime_errors`) bisa menemukan sesi FlutterBar.
-- Update aturan `flutter.md` §9: kalau tidak ada DTD, pakai `flutterbar status/reload/logs`.
+- Spike integrasi DTD supaya Dart MCP (`hot_reload`, `get_runtime_errors`) bisa menemukan sesi StatefulBar.
+- Update aturan `flutter.md` §9: kalau tidak ada DTD, pakai `sbar status/reload/logs`.
 - Widget di beberapa monitor sekaligus (sekarang: satu widget, dipindah lewat Show on ▸, §7.3).
 - Installer (winget/Inno Setup).

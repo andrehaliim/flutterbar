@@ -25,7 +25,7 @@ public static class UiText
     public const string NoCommitYet = "(no commits yet)";
     public const string ConfirmExit = "Stop the session and exit?";
     public const string ConfirmExitYes = "Exit";
-    public const string UnexpectedError = "FlutterBar hit an error. Details are in diag.log";
+    public const string UnexpectedError = "StatefulBar hit an error. Details are in diag.log";
     public const string PathAdded = "Open a new terminal to pick up the PATH change";
     public const string NeedProject = "Select a project first";
 

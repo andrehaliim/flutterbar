@@ -132,7 +132,7 @@ public sealed class WidgetSettings
     private string _theme = ThemeSystem;
 
     /// <summary>
-    /// Colours of every FlutterBar window (spec §7.6): <c>system</c> follows the taskbar theme, <c>light</c> / <c>dark</c>
+    /// Colours of every StatefulBar window (spec §7.6): <c>system</c> follows the taskbar theme, <c>light</c> / <c>dark</c>
     /// override it. Anything else (also a hand-edited non-string) reads as <c>system</c>.
     /// </summary>
     [JsonConverter(typeof(LenientThemeConverter))]

@@ -723,7 +723,7 @@ public sealed class RunSessionTests : IDisposable
     public async Task Stop_CleanExit_RetainsJob_UntilRetainedJobsDisposed()
     {
         // Spec §6.2: the job is only closed when flutter does not exit within the grace; a clean stop keeps the
-        // session's daemons (Gradle, adb) warm for the next run, and they die with FlutterBar (§5.3).
+        // session's daemons (Gradle, adb) warm for the next run, and they die with StatefulBar (§5.3).
         using var retained = new RetainedJobs();
         var (session, handle) = await StartRunningAsync(FakeProcessHandle.FromFixture("stop"), retainedJobs: retained);
         await using var lifetime = session;
@@ -825,7 +825,7 @@ public sealed class RunSessionTests : IDisposable
 
         Assert.Single(handle.Writes);
         Assert.True(handle.Disposed);
-        Assert.True(handle.Job.Disposed); // the session's own RetainedJobs ends with it (FlutterBar exit)
+        Assert.True(handle.Job.Disposed); // the session's own RetainedJobs ends with it (StatefulBar exit)
         Assert.Equal(SessionState.Idle, session.Snapshot.State);
         await Assert.ThrowsAsync<ObjectDisposedException>(() => session.StartAsync(Request()));
     }

@@ -53,7 +53,7 @@ public interface IProcessHandle : IAsyncDisposable
 public enum ProcessContainment
 {
     /// <summary>
-    /// Kill-on-close Job Object: closing it, or FlutterBar exiting or crashing, kills every descendant. For the
+    /// Kill-on-close Job Object: closing it, or StatefulBar exiting or crashing, kills every descendant. For the
     /// <c>flutter run</c> session.
     /// </summary>
     KillOnCloseJob,

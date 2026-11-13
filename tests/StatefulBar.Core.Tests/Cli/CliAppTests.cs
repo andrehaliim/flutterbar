@@ -38,7 +38,7 @@ public sealed class CliAppTests
         var r = await RunAsync(null, "status");
 
         Assert.Equal(ExitCodes.NotRunning, r.Code);
-        Assert.Contains("FlutterBar is not running", r.Err);
+        Assert.Contains("StatefulBar is not running", r.Err);
     }
 
     [Fact]
