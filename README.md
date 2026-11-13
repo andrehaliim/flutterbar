@@ -192,6 +192,10 @@ Debug (Task 15): widget saja sekitar 117 MB, dengan 20.000 baris dan LogWindow s
   mematikan semuanya (Job Object).
 - Deteksi git/adb hanya saat StatefulBar start; git yang baru dipasang butuh restart StatefulBar.
 
+## Lisensi
+
+MIT, lihat [LICENSE](LICENSE).
+
 ## Merek dagang
 
 Flutter dan logo Flutter adalah merek dagang Google LLC. StatefulBar adalah proyek independen dan tidak berafiliasi dengan,

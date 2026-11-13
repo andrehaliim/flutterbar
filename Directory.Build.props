@@ -5,4 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
+  <!-- Shown in the exe's Properties > Details and by the installers. Product version also carries the commit hash. -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Authors>Andre Haliim</Authors>
+    <Company>Andre Haliim Studio</Company>
+    <Product>StatefulBar</Product>
+    <Copyright>Copyright (c) 2026 Andre Haliim Studio</Copyright>
+  </PropertyGroup>
 </Project>

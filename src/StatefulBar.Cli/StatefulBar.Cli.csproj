@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>sbar</AssemblyName>
+    <!-- File description (Task Manager, Properties); without it the CLI shows up as just "sbar". -->
+    <AssemblyTitle>StatefulBar CLI</AssemblyTitle>
     <RootNamespace>StatefulBar.Cli</RootNamespace>
   </PropertyGroup>
 
