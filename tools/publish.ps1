@@ -105,3 +105,7 @@ Write-Host "  Folder: $folder ($($files.Count) files, $folderMb MB)"
 Write-Host "  Zip:    $zip ($zipMb MB)"
 if ($setup) { Write-Host "  Setup:  $setup ($([Math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)" }
 Write-Host "  CLI check: sbar.exe status exited with $cliExit"
+
+# The CLI check above leaves $LASTEXITCODE at 2 or 3 on purpose; callers such as the GitHub Actions pwsh shell end
+# with "exit $LASTEXITCODE", so report success explicitly. Every failure above throws before reaching this line.
+exit 0
