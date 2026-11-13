@@ -11,11 +11,11 @@ public static class CliApp
 
     private const string UsageText = """
         Usage:
-          flutterbar status
-          flutterbar reload
-          flutterbar restart
-          flutterbar stop
-          flutterbar logs [--errors] [--tail N] [--since-last-reload]
+          sbar status
+          sbar reload
+          sbar restart
+          sbar stop
+          sbar logs [--errors] [--tail N] [--since-last-reload]
 
         All commands support --json.
         """;

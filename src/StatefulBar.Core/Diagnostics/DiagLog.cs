@@ -51,5 +51,5 @@ public static class DiagLog
     }
 
     private static string DefaultPath() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlutterBar", "diag.log");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StatefulBar", "diag.log");
 }

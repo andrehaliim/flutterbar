@@ -268,7 +268,7 @@ internal sealed partial class AppController
         }
         var created = await Task.Run(() =>
         {
-            if (File.Exists(LaunchConfigStore.PathFor(root)))
+            if (File.Exists(LaunchConfigStore.ResolvePath(root)))
             {
                 return false; // written meanwhile (e.g. by hand): never overwrite
             }
@@ -294,7 +294,7 @@ internal sealed partial class AppController
         {
             return;
         }
-        var path = LaunchConfigStore.PathFor(root);
+        var path = await Task.Run(() => LaunchConfigStore.ResolvePath(root)); // .statefulbar, else legacy .flutterbar
         try
         {
             await Task.Run(() => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose());

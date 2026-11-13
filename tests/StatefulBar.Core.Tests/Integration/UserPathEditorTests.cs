@@ -6,7 +6,7 @@ namespace StatefulBar.Core.Tests.Integration;
 
 public sealed class UserPathEditorTests
 {
-    private const string Folder = @"C:\Tools\FlutterBar";
+    private const string Folder = @"C:\Tools\StatefulBar";
     private readonly FakeUserRegistry _registry = new();
 
     private static string Expand(string s) => s.Replace("%USERPROFILE%", @"C:\Users\Andre", StringComparison.OrdinalIgnoreCase);
@@ -14,19 +14,19 @@ public sealed class UserPathEditorTests
     private RegistryValue? Path => _registry.Read(UserPathEditor.SubKey, UserPathEditor.ValueName);
 
     [Theory]
-    [InlineData(@"C:\a;C:\Tools\FlutterBar")]
-    [InlineData(@"C:\a;c:\tools\flutterbar")]
-    [InlineData(@"C:\a;C:\Tools\FlutterBar\")]
-    [InlineData(@"C:\a; C:\Tools\FlutterBar ;C:\b")]
-    [InlineData(@"""C:\Tools\FlutterBar"";C:\a")]
-    [InlineData(@"C:\a;;C:\Tools\FlutterBar;")]
+    [InlineData(@"C:\a;C:\Tools\StatefulBar")]
+    [InlineData(@"C:\a;c:\tools\statefulbar")]
+    [InlineData(@"C:\a;C:\Tools\StatefulBar\")]
+    [InlineData(@"C:\a; C:\Tools\StatefulBar ;C:\b")]
+    [InlineData(@"""C:\Tools\StatefulBar"";C:\a")]
+    [InlineData(@"C:\a;;C:\Tools\StatefulBar;")]
     public void Contains_MatchesCaseQuotesAndTrailingSeparator(string path) => Assert.True(UserPathEditor.Contains(path, Folder, Expand));
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(@"C:\Tools")]
-    [InlineData(@"C:\Tools\FlutterBar2;C:\Tools\Flutter")]
+    [InlineData(@"C:\Tools\StatefulBar2;C:\Tools\Flutter")]
     public void Contains_OtherFolders_False(string? path) => Assert.False(UserPathEditor.Contains(path, Folder, Expand));
 
     [Fact]
@@ -37,12 +37,12 @@ public sealed class UserPathEditorTests
     }
 
     [Theory]
-    [InlineData(null, @"C:\Tools\FlutterBar")]
-    [InlineData("", @"C:\Tools\FlutterBar")]
-    [InlineData(@"C:\a", @"C:\a;C:\Tools\FlutterBar")]
-    [InlineData(@"C:\a;", @"C:\a;C:\Tools\FlutterBar")]
-    [InlineData(@"C:\b;;C:\a", @"C:\b;;C:\a;C:\Tools\FlutterBar")]
-    [InlineData(@"%USERPROFILE%\bin;C:\a", @"%USERPROFILE%\bin;C:\a;C:\Tools\FlutterBar")]
+    [InlineData(null, @"C:\Tools\StatefulBar")]
+    [InlineData("", @"C:\Tools\StatefulBar")]
+    [InlineData(@"C:\a", @"C:\a;C:\Tools\StatefulBar")]
+    [InlineData(@"C:\a;", @"C:\a;C:\Tools\StatefulBar")]
+    [InlineData(@"C:\b;;C:\a", @"C:\b;;C:\a;C:\Tools\StatefulBar")]
+    [InlineData(@"%USERPROFILE%\bin;C:\a", @"%USERPROFILE%\bin;C:\a;C:\Tools\StatefulBar")]
     public void Append_KeepsExistingTextVerbatim(string? path, string expected) => Assert.Equal(expected, UserPathEditor.Append(path, Folder));
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class UserPathEditorTests
 
         Assert.Equal(PathAddOutcome.Added, UserPathEditor.AddFolder(_registry, Folder, Expand));
 
-        Assert.Equal(new RegistryValue(@"%USERPROFILE%\bin;C:\x;C:\Tools\FlutterBar", RegistryValueKind.ExpandString), Path);
+        Assert.Equal(new RegistryValue(@"%USERPROFILE%\bin;C:\x;C:\Tools\StatefulBar", RegistryValueKind.ExpandString), Path);
     }
 
     [Fact]
@@ -69,13 +69,13 @@ public sealed class UserPathEditorTests
 
         UserPathEditor.AddFolder(_registry, Folder, Expand);
 
-        Assert.Equal(new RegistryValue(@"C:\x;C:\Tools\FlutterBar", RegistryValueKind.String), Path);
+        Assert.Equal(new RegistryValue(@"C:\x;C:\Tools\StatefulBar", RegistryValueKind.String), Path);
     }
 
     [Fact]
     public void AddFolder_AlreadyPresent_DoesNotWrite()
     {
-        _registry.Seed(UserPathEditor.SubKey, UserPathEditor.ValueName, @"C:\x;c:\tools\flutterbar\", RegistryValueKind.ExpandString);
+        _registry.Seed(UserPathEditor.SubKey, UserPathEditor.ValueName, @"C:\x;c:\tools\statefulbar\", RegistryValueKind.ExpandString);
 
         Assert.Equal(PathAddOutcome.AlreadyPresent, UserPathEditor.AddFolder(_registry, Folder, Expand));
 

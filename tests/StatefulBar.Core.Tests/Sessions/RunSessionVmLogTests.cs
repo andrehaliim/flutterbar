@@ -21,7 +21,7 @@ public sealed class RunSessionVmLogTests : IDisposable
     private const string DebugPortLine =
         """[{"event":"app.debugPort","params":{"appId":"app-1","port":54178,"wsUri":"ws://127.0.0.1:54178/token=/ws"}}]""";
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarVmLog-" + Guid.NewGuid().ToString("N"));
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarVmLog-" + Guid.NewGuid().ToString("N"));
     private readonly LogBuffer _log = new();
     private readonly FakeVmLogConnector _connector = new();
 

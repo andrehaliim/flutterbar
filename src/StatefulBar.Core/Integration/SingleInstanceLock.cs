@@ -4,7 +4,7 @@ using StatefulBar.Core.Ipc;
 namespace StatefulBar.Core.Integration;
 
 /// <summary>
-/// One FlutterBar.App per user session (spec §10): a named mutex <c>Local\FlutterBar-&lt;SID&gt;</c>. It must be acquired
+/// One StatefulBar.exe per user session (spec §10): a named mutex <c>Local\StatefulBar-&lt;SID&gt;</c>. It must be acquired
 /// before the IPC server starts, so only the owner of the mutex can ever listen on the pipe. A mutex is owned by the
 /// thread that acquired it: dispose on that same thread (the app's UI thread).
 /// </summary>

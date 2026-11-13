@@ -12,8 +12,8 @@ public sealed class IpcRoundTripTests : IDisposable
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarPipe-" + Guid.NewGuid().ToString("N"));
-    private readonly string _pipe = "FlutterBar-test-" + Guid.NewGuid().ToString("N");
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarPipe-" + Guid.NewGuid().ToString("N"));
+    private readonly string _pipe = "StatefulBar-test-" + Guid.NewGuid().ToString("N");
     private readonly CancellationTokenSource _cts = new();
     private Task? _server;
 
@@ -154,6 +154,6 @@ public sealed class IpcRoundTripTests : IDisposable
     {
         var name = PipeNames.ForCurrentUser();
 
-        Assert.StartsWith("FlutterBar-S-1-", name, StringComparison.Ordinal);
+        Assert.StartsWith("StatefulBar-S-1-", name, StringComparison.Ordinal);
     }
 }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>flutterbar</AssemblyName>
+    <AssemblyName>sbar</AssemblyName>
     <RootNamespace>StatefulBar.Cli</RootNamespace>
   </PropertyGroup>
 

@@ -13,7 +13,26 @@ public sealed class AppSettingsStore(string path)
     };
 
     public static string DefaultPath { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StatefulBar", "settings.json");
+
+    /// <summary>Where the app kept its settings before the rename to StatefulBar (2026-11).</summary>
+    public static string LegacyDefaultPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlutterBar", "settings.json");
+
+    /// <summary>
+    /// One-time migration after the rename: copies <paramref name="legacyPath"/> to <paramref name="path"/> when only the
+    /// legacy file exists. The legacy file stays as it is. True when a copy was made.
+    /// </summary>
+    public static bool CopyLegacyIfMissing(string path, string legacyPath)
+    {
+        if (File.Exists(path) || !File.Exists(legacyPath))
+        {
+            return false;
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        File.Copy(legacyPath, path, overwrite: false);
+        return true;
+    }
 
     /// <summary>
     /// Missing file: defaults, no warning. Corrupt file: renamed to settings.json.bak-yyyyMMddHHmmss,

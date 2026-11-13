@@ -4,7 +4,7 @@ namespace StatefulBar.Core.Tests.Integration;
 
 public sealed class SingleInstanceLockTests
 {
-    private readonly string _name = @"Local\FlutterBar-test-" + Guid.NewGuid().ToString("N");
+    private readonly string _name = @"Local\StatefulBar-test-" + Guid.NewGuid().ToString("N");
 
     // A mutex is owned per thread: "another instance" is simulated by acquiring on a dedicated thread.
     private static T OnOtherThread<T>(Func<T> action)
@@ -20,7 +20,7 @@ public sealed class SingleInstanceLockTests
     public void NameForCurrentUser_IsLocalAndPerUser()
     {
         var name = SingleInstanceLock.NameForCurrentUser();
-        Assert.StartsWith(@"Local\FlutterBar-S-1-", name);
+        Assert.StartsWith(@"Local\StatefulBar-S-1-", name);
     }
 
     [Fact]

@@ -16,8 +16,28 @@ public static class LaunchConfigStore
         AllowTrailingCommas = true,
     };
 
+    /// <summary>Where launch.json is written: <c>.statefulbar/launch.json</c>.</summary>
     public static string PathFor(string projectRoot) =>
+        Path.Combine(projectRoot, ".statefulbar", "launch.json");
+
+    /// <summary>The folder name before the rename to StatefulBar (2026-11); still read when the new file is missing.</summary>
+    public static string LegacyPathFor(string projectRoot) =>
         Path.Combine(projectRoot, ".flutterbar", "launch.json");
+
+    /// <summary>
+    /// The file to read or open: <see cref="PathFor"/> when it exists, else the legacy <c>.flutterbar/launch.json</c> when
+    /// that exists, else <see cref="PathFor"/>. Touches the disk.
+    /// </summary>
+    public static string ResolvePath(string projectRoot)
+    {
+        var path = PathFor(projectRoot);
+        if (File.Exists(path))
+        {
+            return path;
+        }
+        var legacy = LegacyPathFor(projectRoot);
+        return File.Exists(legacy) ? legacy : path;
+    }
 
     public static LaunchConfig CreateDefault() =>
         new("default", DefaultProgram, null, RunMode.Debug, []);
@@ -25,7 +45,7 @@ public static class LaunchConfigStore
     /// <summary>Always reads from disk; nothing is cached.</summary>
     public static LaunchConfigLoadResult Load(string projectRoot)
     {
-        var path = PathFor(projectRoot);
+        var path = ResolvePath(projectRoot);
         string text;
         try
         {
@@ -62,7 +82,10 @@ public static class LaunchConfigStore
         }
     }
 
-    /// <summary>Writes launch.json atomically. Comments in an existing file are lost.</summary>
+    /// <summary>
+    /// Writes <see cref="PathFor"/> atomically. Comments in an existing file are lost. A legacy <c>.flutterbar</c> file is
+    /// left alone; the new file takes precedence from then on.
+    /// </summary>
     public static void Save(string projectRoot, IReadOnlyList<LaunchConfig> configs)
     {
         var path = PathFor(projectRoot);

@@ -4,7 +4,7 @@ namespace StatefulBar.Core.Tests.Config;
 
 public sealed class LaunchConfigStoreTests : IDisposable
 {
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("flutterbar-test-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("statefulbar-test-");
 
     public void Dispose() => _root.Delete(recursive: true);
 
@@ -25,8 +25,59 @@ public sealed class LaunchConfigStoreTests : IDisposable
     }
 
     [Fact]
-    public void PathFor_PointsToFlutterbarFolder() =>
-        Assert.Equal(Path.Combine(Root, ".flutterbar", "launch.json"), LaunchConfigStore.PathFor(Root));
+    public void PathFor_PointsToStatefulbarFolder() =>
+        Assert.Equal(Path.Combine(Root, ".statefulbar", "launch.json"), LaunchConfigStore.PathFor(Root));
+
+    private void WriteLegacyLaunch(string configName)
+    {
+        var path = LaunchConfigStore.LegacyPathFor(Root);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, $$"""{ "version": 1, "configurations": [ { "name": "{{configName}}" } ] }""");
+    }
+
+    [Fact]
+    public void ResolvePath_NoFile_IsTheNewPath() =>
+        Assert.Equal(LaunchConfigStore.PathFor(Root), LaunchConfigStore.ResolvePath(Root));
+
+    [Fact]
+    public void Load_OnlyLegacyFile_ReadsIt()
+    {
+        MakeProgram();
+        WriteLegacyLaunch("legacy");
+
+        var result = LaunchConfigStore.Load(Root);
+
+        Assert.Equal(Path.Combine(Root, ".flutterbar", "launch.json"), LaunchConfigStore.ResolvePath(Root));
+        Assert.True(result.FileExists);
+        Assert.Equal("legacy", Assert.Single(result.Configs).Name);
+    }
+
+    [Fact]
+    public void Load_BothFiles_NewWins()
+    {
+        MakeProgram();
+        WriteLegacyLaunch("legacy");
+        WriteLaunch("""{ "version": 1, "configurations": [ { "name": "new" } ] }""");
+
+        var result = LaunchConfigStore.Load(Root);
+
+        Assert.Equal(LaunchConfigStore.PathFor(Root), LaunchConfigStore.ResolvePath(Root));
+        Assert.Equal("new", Assert.Single(result.Configs).Name);
+    }
+
+    [Fact]
+    public void Save_WithLegacyFile_WritesNewPathAndLeavesLegacyAlone()
+    {
+        MakeProgram();
+        WriteLegacyLaunch("legacy");
+        var legacyText = File.ReadAllText(LaunchConfigStore.LegacyPathFor(Root));
+
+        LaunchConfigStore.Save(Root, [LaunchConfigStore.CreateDefault()]);
+
+        Assert.True(File.Exists(LaunchConfigStore.PathFor(Root)));
+        Assert.Equal(legacyText, File.ReadAllText(LaunchConfigStore.LegacyPathFor(Root)));
+        Assert.Equal("default", Assert.Single(LaunchConfigStore.Load(Root).Configs).Name);
+    }
 
     [Fact]
     public void Load_MissingFile_ReturnsFileExistsFalse()

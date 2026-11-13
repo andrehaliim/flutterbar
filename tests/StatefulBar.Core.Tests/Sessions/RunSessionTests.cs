@@ -19,7 +19,7 @@ public sealed class RunSessionTests : IDisposable
     private const string StartOkAppId = "7c65a290-0448-420b-baeb-2dcde4e0017b";
     private const string AppId = "app-1";
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarSession-" + Guid.NewGuid().ToString("N"));
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarSession-" + Guid.NewGuid().ToString("N"));
     private readonly LogBuffer _log = new();
 
     public RunSessionTests()

@@ -75,8 +75,8 @@ public sealed class TaskbarLayoutAnalyzerTests
     }
 
     [Theory]
-    [InlineData("FlutterBar.App")]
-    [InlineData("flutterbar.app")]
+    [InlineData("StatefulBar")]
+    [InlineData("statefulbar")]
     [InlineData("DockingSpike")]
     public void Classify_OurWidgetProcesses_Ignored(string process)
     {

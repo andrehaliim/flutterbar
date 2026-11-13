@@ -6,7 +6,7 @@ namespace StatefulBar.Core.Tests.Processes;
 /// <summary>Copies the built EchoArgs helper plus echoargs.cmd into a temp folder.</summary>
 internal sealed class EchoArgsFixture : IDisposable
 {
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("flutterbar-echo-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("statefulbar-echo-");
 
     public EchoArgsFixture(string subDirectory = "")
     {

@@ -42,7 +42,7 @@ internal sealed partial class ImportDialog : Window
         SetError(discovery.Error);
         FootText.Text = discovery.Rows.Count == 0
             ? "IDE files are never changed."
-            : "Checked configs are added to .flutterbar/launch.json. IDE files aren't changed."
+            : "Checked configs are added to .statefulbar/launch.json. IDE files aren't changed."
                 + (discovery.LaunchJsonExists ? " Comments in the existing launch.json are lost when it is saved." : "");
         UpdateImportButton();
     }

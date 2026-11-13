@@ -109,7 +109,7 @@ public class ProcessLauncherTests
     [Fact]
     public void Start_MissingExe_SurfacesOriginalWin32Exception()
     {
-        var spec = new ProcessSpec(Path.Combine(Path.GetTempPath(), "no-such-flutterbar-tool.exe"), [], Path.GetTempPath());
+        var spec = new ProcessSpec(Path.Combine(Path.GetTempPath(), "no-such-statefulbar-tool.exe"), [], Path.GetTempPath());
 
         Assert.Throws<System.ComponentModel.Win32Exception>(() => new ProcessLauncher().Start(spec));
     }

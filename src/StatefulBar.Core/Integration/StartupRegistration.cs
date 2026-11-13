@@ -4,7 +4,7 @@ namespace StatefulBar.Core.Integration;
 
 public enum StartupState
 {
-    /// <summary>No <c>FlutterBar</c> value in the Run key.</summary>
+    /// <summary>No <c>StatefulBar</c> value in the Run key.</summary>
     Off,
 
     /// <summary>The Run value starts this executable.</summary>
@@ -14,11 +14,34 @@ public enum StartupState
     OtherPath,
 }
 
-/// <summary>"Start with Windows" (spec §7.4): <c>HKCU\Software\Microsoft\Windows\CurrentVersion\Run\FlutterBar</c> = quoted exe path.</summary>
+/// <summary>"Start with Windows" (spec §7.4): <c>HKCU\Software\Microsoft\Windows\CurrentVersion\Run\StatefulBar</c> = quoted exe path.</summary>
 public static class StartupRegistration
 {
     public const string SubKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    public const string ValueName = "FlutterBar";
+    public const string ValueName = "StatefulBar";
+
+    /// <summary>The value name before the rename to StatefulBar (2026-11).</summary>
+    public const string LegacyValueName = "FlutterBar";
+
+    /// <summary>
+    /// One-time migration after the rename: a legacy <c>FlutterBar</c> Run value means the user had Start with Windows on,
+    /// so it is deleted and, unless a <c>StatefulBar</c> value already exists, this exe is registered instead (the legacy
+    /// value points at the old <c>FlutterBar.App.exe</c>). True when the legacy value was found.
+    /// </summary>
+    public static bool MigrateLegacy(IUserRegistry registry, string exePath)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        if (registry.Read(SubKey, LegacyValueName) is null)
+        {
+            return false;
+        }
+        if (registry.Read(SubKey, ValueName) is null)
+        {
+            Enable(registry, exePath);
+        }
+        registry.Delete(SubKey, LegacyValueName);
+        return true;
+    }
 
     public static string CommandFor(string exePath)
     {

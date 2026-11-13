@@ -150,7 +150,7 @@ public sealed class CliAppTests
         var r = await RunAsync(Success(), args);
 
         Assert.Equal(ExitCodes.Usage, r.Code);
-        Assert.Contains("flutterbar reload", r.Err);
+        Assert.Contains("sbar reload", r.Err);
         Assert.Equal(0, r.Client.Calls);
     }
 

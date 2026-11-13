@@ -14,7 +14,7 @@ internal sealed class TempProject : IDisposable
 {
     public TempProject()
     {
-        Root = Directory.CreateTempSubdirectory("flutterbar-orch-").FullName;
+        Root = Directory.CreateTempSubdirectory("statefulbar-orch-").FullName;
         Directory.CreateDirectory(Path.Combine(Root, "lib"));
         File.WriteAllText(Path.Combine(Root, "lib", "main.dart"), "void main() {}\n");
     }
@@ -29,7 +29,7 @@ internal sealed class TempProject : IDisposable
 
     public TempProject WithRawLaunchJson(string text)
     {
-        Directory.CreateDirectory(Path.Combine(Root, ".flutterbar"));
+        Directory.CreateDirectory(Path.Combine(Root, ".statefulbar"));
         File.WriteAllText(LaunchConfigStore.PathFor(Root), text);
         return this;
     }

@@ -7,7 +7,7 @@ public class PathResolverTests
     [Fact]
     public void Find_UsesPathExt_AndCaches_UntilClearCache()
     {
-        var dir = Directory.CreateTempSubdirectory("flutterbar-path-");
+        var dir = Directory.CreateTempSubdirectory("statefulbar-path-");
         try
         {
             var env = new Dictionary<string, string?>
@@ -34,7 +34,7 @@ public class PathResolverTests
     [Fact]
     public void Find_PrefersEarlierPathExtEntry()
     {
-        var dir = Directory.CreateTempSubdirectory("flutterbar-path-");
+        var dir = Directory.CreateTempSubdirectory("statefulbar-path-");
         try
         {
             File.WriteAllText(Path.Combine(dir.FullName, "t.cmd"), "");

@@ -14,7 +14,7 @@ public sealed class VmLogConnectorTests : IDisposable
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarVmConn-" + Guid.NewGuid().ToString("N"));
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarVmConn-" + Guid.NewGuid().ToString("N"));
 
     public VmLogConnectorTests()
     {

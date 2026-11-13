@@ -9,12 +9,12 @@ using StatefulBar.Core.Sessions;
 namespace StatefulBar.Core.Tests.Integration;
 
 /// <summary>
-/// xunit v2 has no dynamic skip: skipped at discovery when <c>FLUTTERBAR_IT_DEVICE</c> is empty, so the normal
-/// <c>dotnet test</c> stays fast. Run: <c>$env:FLUTTERBAR_IT_DEVICE="chrome"; dotnet test --filter Category=Integration</c>.
+/// xunit v2 has no dynamic skip: skipped at discovery when <c>STATEFULBAR_IT_DEVICE</c> is empty, so the normal
+/// <c>dotnet test</c> stays fast. Run: <c>$env:STATEFULBAR_IT_DEVICE="chrome"; dotnet test --filter Category=Integration</c>.
 /// </summary>
 public sealed class EndToEndFactAttribute : FactAttribute
 {
-    public const string DeviceVariable = "FLUTTERBAR_IT_DEVICE";
+    public const string DeviceVariable = "STATEFULBAR_IT_DEVICE";
 
     public EndToEndFactAttribute()
     {

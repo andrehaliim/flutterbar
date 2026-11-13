@@ -13,12 +13,28 @@ namespace StatefulBar.App.SystemIntegration;
 /// </summary>
 internal sealed class SystemActions(AppController ui, IUserRegistry registry)
 {
-    private const string CliExe = "flutterbar.exe";
+    private const string CliExe = "sbar.exe";
 
-    /// <summary>Folder of flutterbar.exe: next to FlutterBar.App.exe (the app project copies the CLI into its output).</summary>
+    /// <summary>Folder of sbar.exe (the CLI): next to StatefulBar.exe (the app project copies the CLI into its output).</summary>
     public static string CliFolder => Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
 
-    public static string AppExe => Environment.ProcessPath ?? Path.Combine(CliFolder, "FlutterBar.App.exe");
+    public static string AppExe => Environment.ProcessPath ?? Path.Combine(CliFolder, "StatefulBar.exe");
+
+    /// <summary>Moves a Run value left by FlutterBar (before the rename) to this exe; failures are logged only.</summary>
+    public async Task MigrateLegacyStartupAsync()
+    {
+        try
+        {
+            if (await Task.Run(() => StartupRegistration.MigrateLegacy(registry, AppExe)))
+            {
+                AppLog.Write($"Start with Windows: legacy \"{StartupRegistration.LegacyValueName}\" Run value replaced by \"{StartupRegistration.ValueName}\"");
+            }
+        }
+        catch (Exception ex) when (IsRegistryFailure(ex))
+        {
+            AppLog.Write("Start with Windows: migrating the legacy FlutterBar Run value failed", ex);
+        }
+    }
 
     public async Task AddCliToPathAsync()
     {

@@ -27,7 +27,7 @@ public interface IStatusProvider
 
 public interface IIpcClient
 {
-    /// <summary>Sends one request. A null result means the FlutterBar pipe does not exist (not running).</summary>
+    /// <summary>Sends one request. A null result means the StatefulBar pipe does not exist (not running).</summary>
     Task<IpcResponse?> SendAsync(IpcRequest request, TimeSpan timeout, CancellationToken ct);
 }
 
@@ -37,7 +37,7 @@ public static class PipeNames
     {
         using var identity = WindowsIdentity.GetCurrent();
         var sid = identity.User?.Value ?? throw new InvalidOperationException("Current Windows user has no SID.");
-        return "FlutterBar-" + sid;
+        return "StatefulBar-" + sid;
     }
 }
 

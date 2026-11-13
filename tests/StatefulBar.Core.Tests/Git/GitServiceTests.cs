@@ -24,7 +24,7 @@ internal sealed class GitTestRepo : IDisposable
 
     public GitTestRepo(string? dirName = null)
     {
-        var temp = Directory.CreateTempSubdirectory("flutterbar-git-");
+        var temp = Directory.CreateTempSubdirectory("statefulbar-git-");
         Temp = temp.FullName;
         Root = dirName is null ? Temp : Directory.CreateDirectory(Path.Combine(Temp, dirName)).FullName;
         Service = new GitService(_runner, GitExe!);

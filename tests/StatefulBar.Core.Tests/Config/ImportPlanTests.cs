@@ -4,7 +4,7 @@ namespace StatefulBar.Core.Tests.Config;
 
 public sealed class ImportPlanTests : IDisposable
 {
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("flutterbar-import-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("statefulbar-import-");
 
     public ImportPlanTests()
     {
@@ -148,7 +148,7 @@ public sealed class ImportPlanTests : IDisposable
     public void Discover_InvalidLaunchJson_ReturnsError()
     {
         PutIdeFiles();
-        Directory.CreateDirectory(Path.Combine(Root, ".flutterbar"));
+        Directory.CreateDirectory(Path.Combine(Root, ".statefulbar"));
         File.WriteAllText(LaunchConfigStore.PathFor(Root), "{ \"version\": 1, oops }");
 
         var discovery = ImportPlan.Discover(Root);
@@ -204,7 +204,7 @@ public sealed class ImportPlanTests : IDisposable
     [Fact]
     public void Apply_InvalidLaunchJson_Throws_AndKeepsFile()
     {
-        Directory.CreateDirectory(Path.Combine(Root, ".flutterbar"));
+        Directory.CreateDirectory(Path.Combine(Root, ".statefulbar"));
         File.WriteAllText(LaunchConfigStore.PathFor(Root), "{ broken");
 
         Assert.Throws<InvalidDataException>(() => ImportPlan.Apply(Root, [Candidate("beta", "idea")]));

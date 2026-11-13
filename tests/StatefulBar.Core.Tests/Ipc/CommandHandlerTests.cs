@@ -15,7 +15,7 @@ public sealed class CommandHandlerTests : IDisposable
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
     private const string AppId = "app-1";
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarIpc-" + Guid.NewGuid().ToString("N"));
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarIpc-" + Guid.NewGuid().ToString("N"));
     private readonly LogBuffer _log = new();
     private int _shown;
 

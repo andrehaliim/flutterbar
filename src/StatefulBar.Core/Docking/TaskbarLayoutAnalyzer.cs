@@ -51,7 +51,7 @@ public static class TaskbarElementClassifier
     };
 
     /// <summary>Our own widget processes (the owned widget window shows up in the taskbar UIA tree).</summary>
-    private static readonly HashSet<string> WidgetProcesses = new(StringComparer.OrdinalIgnoreCase) { "FlutterBar.App", "DockingSpike" };
+    private static readonly HashSet<string> WidgetProcesses = new(StringComparer.OrdinalIgnoreCase) { "StatefulBar", "DockingSpike" };
 
     public static bool IsTray(TaskbarElement element) =>
         element.ClassName.StartsWith("SystemTray.", StringComparison.Ordinal)

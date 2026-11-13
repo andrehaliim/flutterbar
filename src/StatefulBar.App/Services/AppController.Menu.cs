@@ -104,8 +104,12 @@ internal sealed partial class AppController
             ShowToast(UiText.NeedProject);
             return;
         }
-        var path = LaunchConfigStore.PathFor(root);
-        if (await Task.Run(() => File.Exists(path)))
+        var (path, exists) = await Task.Run(() =>
+        {
+            var resolved = LaunchConfigStore.ResolvePath(root); // .statefulbar, else legacy .flutterbar
+            return (resolved, File.Exists(resolved));
+        });
+        if (exists)
         {
             await OpenLaunchJsonAsync();
             return;

@@ -108,7 +108,7 @@ public partial class App : Application
         _system = new SystemActions(_controller, new WindowsUserRegistry());
         CreateWidget("startup");
         _ = InitializeControllerAsync(_controller);
-        _controller.Observe(RefreshStartupAsync(null), "Start with Windows");
+        _controller.Observe(MigrateThenRefreshStartupAsync(), "Start with Windows");
         if (args.Contains(TaskbarSurvey.Argument))
         {
             TaskbarSurvey.Start(); // round 2 batch 6a spike: every taskbar into diag.log, read-only (also in Release)
@@ -150,6 +150,17 @@ public partial class App : Application
     private AppSettings LoadSettings(out string? warning)
     {
         warning = null;
+        try
+        {
+            if (AppSettingsStore.CopyLegacyIfMissing(AppSettingsStore.DefaultPath, AppSettingsStore.LegacyDefaultPath))
+            {
+                AppLog.Write($"settings: copied {AppSettingsStore.LegacyDefaultPath} to {AppSettingsStore.DefaultPath} (rename from FlutterBar)");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AppLog.Write("settings: copying the FlutterBar settings failed, loading without them", ex);
+        }
         try
         {
             var settings = _store.Load(out warning);

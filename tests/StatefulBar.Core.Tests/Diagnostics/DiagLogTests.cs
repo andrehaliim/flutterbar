@@ -5,7 +5,7 @@ namespace StatefulBar.Core.Tests.Diagnostics;
 [Collection("DiagLog")]
 public sealed class DiagLogTests : IDisposable
 {
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "FlutterBarDiag-" + Guid.NewGuid().ToString("N"));
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "StatefulBarDiag-" + Guid.NewGuid().ToString("N"));
 
     private string LogPath => Path.Combine(_dir, "diag.log");
 

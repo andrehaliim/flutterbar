@@ -24,6 +24,47 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.False(settings.StartWithWindows);
     }
 
+    private string LegacyPath => Path.Combine(_dir.FullName, "FlutterBar", "settings.json");
+
+    private string NewPath => Path.Combine(_dir.FullName, "StatefulBar", "settings.json");
+
+    private void WriteLegacy(string text)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(LegacyPath)!);
+        File.WriteAllText(LegacyPath, text);
+    }
+
+    [Fact]
+    public void CopyLegacyIfMissing_OnlyLegacy_CopiesAndKeepsLegacy()
+    {
+        WriteLegacy("""{ "version": 1, "scanRoots": ["C:\\Work"] }""");
+
+        Assert.True(AppSettingsStore.CopyLegacyIfMissing(NewPath, LegacyPath));
+
+        Assert.True(File.Exists(LegacyPath));
+        Assert.Equal(["C:\\Work"], new AppSettingsStore(NewPath).Load(out _).ScanRoots);
+    }
+
+    [Fact]
+    public void CopyLegacyIfMissing_NewExists_LeavesItAlone()
+    {
+        WriteLegacy("""{ "version": 1, "scanRoots": ["C:\\Old"] }""");
+        Directory.CreateDirectory(Path.GetDirectoryName(NewPath)!);
+        File.WriteAllText(NewPath, """{ "version": 1, "scanRoots": ["C:\\New"] }""");
+
+        Assert.False(AppSettingsStore.CopyLegacyIfMissing(NewPath, LegacyPath));
+
+        Assert.Equal(["C:\\New"], new AppSettingsStore(NewPath).Load(out _).ScanRoots);
+    }
+
+    [Fact]
+    public void CopyLegacyIfMissing_NoLegacy_DoesNothing()
+    {
+        Assert.False(AppSettingsStore.CopyLegacyIfMissing(NewPath, LegacyPath));
+
+        Assert.False(Directory.Exists(Path.GetDirectoryName(NewPath)));
+    }
+
     [Fact]
     public void Load_Corrupt_BacksUpAndReturnsDefaults()
     {

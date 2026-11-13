@@ -4,7 +4,7 @@ namespace StatefulBar.Core.Tests.Config;
 
 public sealed class IdeConfigImporterTests : IDisposable
 {
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("flutterbar-test-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("statefulbar-test-");
 
     public void Dispose() => _root.Delete(recursive: true);
 

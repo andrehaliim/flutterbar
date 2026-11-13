@@ -17,7 +17,7 @@ public sealed class RunSessionProcessTests : IDisposable
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(20);
 
-    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "FlutterBarSessionProc-" + Guid.NewGuid().ToString("N"));
+    private readonly string _diagDir = Path.Combine(Path.GetTempPath(), "StatefulBarSessionProc-" + Guid.NewGuid().ToString("N"));
     private readonly LogBuffer _log = new();
 
     public RunSessionProcessTests()

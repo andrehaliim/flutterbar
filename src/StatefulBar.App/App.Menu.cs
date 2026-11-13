@@ -193,6 +193,15 @@ public partial class App
     }
 
     /// <summary>Reads the Run key (off the UI thread) and updates the menu check mark, if a menu is given.</summary>
+    private async Task MigrateThenRefreshStartupAsync()
+    {
+        if (_system is { } system)
+        {
+            await system.MigrateLegacyStartupAsync();
+        }
+        await RefreshStartupAsync(null);
+    }
+
     private async Task RefreshStartupAsync(WidgetContextMenu? menu)
     {
         if (_system is not { } system)
@@ -212,7 +221,7 @@ public partial class App
         _startup switch
         {
             null => "Couldn't read the registry status (see diag.log)",
-            StartupState.OtherPath => "Registered for FlutterBar.App.exe in another folder: turn it off and on again to use this exe",
+            StartupState.OtherPath => "Registered for StatefulBar.exe in another folder: turn it off and on again to use this exe",
             _ => null,
         });
 
