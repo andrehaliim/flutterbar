@@ -34,7 +34,7 @@ run, hot reload, dan stop tanpa membuka IDE.
 - Mengimpor run configuration dari Android Studio dan VS Code.
 - Menjalankan project lewat fvm bila project memakainya.
 - Flutter tools sekali klik: pub get, clean, build_runner, doctor.
-- Git dari flyout branch: fetch, pull, pindah branch, commit dan push.
+- Git dari flyout branch: fetch, pull, push, commit, pindah branch, dan diff file yang berubah.
 - Jendela log dengan pencarian, filter khusus error, dan lompat ke error berikutnya.
 - Tool command line `sbar` membuat terminal dan AI agent (Claude Code, Codex, Cursor, …) bisa hot reload dan membaca error.
 
@@ -112,12 +112,16 @@ Tombol di widget:
 
 ## Aksi git
 
-Klik chip branch: `Fetch` (`git fetch --prune`), `Pull` (`git pull` biasa), kolom `Commit message` + `Commit and push`, dan
-daftar branch.
+Klik chip branch: `Fetch` (`git fetch --prune`), `Pull` (`git pull` biasa), dan `Push` di kanan; kolom `Commit message` +
+`Commit`; jumlah file yang berubah; dan daftar branch.
 
-- `Commit and push` menjalankan `git add -A` untuk SELURUH repo (bukan hanya folder project; di monorepo perubahan di luar
-  project ikut ter-commit), `git commit`, lalu `git push` (`push -u origin <branch>` bila belum ada upstream).
-- Pesan kosong dan ada commit yang belum terkirim (`↑N`): tombol menjadi `Push ↑N` dan hanya mengirim commit itu.
+- `Commit` menjalankan `git add -A` untuk SELURUH repo (bukan hanya folder project; di monorepo perubahan di luar project ikut
+  ter-commit), lalu `git commit`. Tidak melakukan push.
+- `Push ↑N` mengirim commit yang belum terkirim (`push -u origin <branch>` bila belum ada upstream, sekaligus mempublikasikan
+  branch baru). Tombolnya nonaktif bila tidak ada yang perlu dikirim.
+- Klik `N changed files` untuk memeriksa sebelum commit: flyout melebar, daftar file yang berubah menggantikan daftar branch,
+  dan diff file terpilih terhadap HEAD (staged dan unstaged sekaligus, jadi persis yang direkam `Commit`) tampil di kanan.
+  Hanya-baca: tidak ada stage atau discard di sana. File biner dan file dengan lebih dari 5.000 baris berubah tidak ditampilkan.
 - Tidak pernah `--force`, tidak ada pull otomatis sebelum push; push ditolak = saran "Pull first.". Merge/rebase yang belum
   selesai dan HEAD detached ditolak.
 - Login remote HTTPS lewat Git Credential Manager (tidak pernah menunggu input terminal; batas 2 menit). Remote SSH yang butuh

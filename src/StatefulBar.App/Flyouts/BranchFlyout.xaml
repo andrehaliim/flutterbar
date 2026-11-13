@@ -1,64 +1,275 @@
 <UserControl x:Class="StatefulBar.App.Flyouts.BranchFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Branch flyout (spec §5.5): fetch / pull / commit and push (push only when pending commits and no message), results inline, then search over local branches; picking one runs git switch. -->
-    <StackPanel>
-        <TextBlock Text="Branch" Style="{StaticResource Fb.FlyoutHeader}" />
-        <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <Button x:Name="FetchButton" Content="Fetch" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Fetch" />
-            <Button x:Name="PullButton" Content="Pull" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Pull" />
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:git="clr-namespace:StatefulBar.Core.Git;assembly=StatefulBar.Core">
+    <!-- Branch flyout (spec §5.5): fetch / pull / push, commit, results inline, then search over local branches; picking one runs
+         git switch. "N changed files" opens the changes panel: the flyout widens, the changed files replace the branch list on
+         the left and the selected file's diff against HEAD shows on the right (read-only). -->
+    <UserControl.Resources>
+        <FontFamily x:Key="Branch.Mono">Cascadia Mono, Consolas</FontFamily>
+
+        <!-- Changed file row: status letter, name, muted folder, +added −deleted. -->
+        <DataTemplate x:Key="Branch.ChangeTemplate" DataType="{x:Type git:GitChangedFile}">
+            <Grid Margin="2,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="Letter" Text="M" FontWeight="SemiBold" Foreground="{DynamicResource Fb.Yellow}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                    <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding Folder, Mode=OneWay}" FontSize="11"
+                                                                                       Foreground="{DynamicResource Fb.Muted}" />
+                </TextBlock>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="6,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="Added" Text="{Binding Added, StringFormat=+{0}}" FontSize="11" Foreground="{DynamicResource Fb.Green}" />
+                    <TextBlock x:Name="Deleted" Text="{Binding Deleted, StringFormat=−{0}}" FontSize="11" Margin="5,0,0,0"
+                               Foreground="{DynamicResource Fb.Red}" />
+                    <TextBlock x:Name="Binary" Text="binary" FontSize="11" Foreground="{DynamicResource Fb.Muted}" Visibility="Collapsed" />
+                </StackPanel>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Added}" Value="{x:Null}">
+                    <Setter TargetName="Added" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Added}" Value="0">
+                    <Setter TargetName="Added" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Deleted}" Value="{x:Null}">
+                    <Setter TargetName="Deleted" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Deleted}" Value="0">
+                    <Setter TargetName="Deleted" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsBinary}" Value="True">
+                    <Setter TargetName="Binary" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Added}">
+                    <Setter TargetName="Letter" Property="Text" Value="A" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Green}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Untracked}">
+                    <Setter TargetName="Letter" Property="Text" Value="U" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Green}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Deleted}">
+                    <Setter TargetName="Letter" Property="Text" Value="D" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Red}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Renamed}">
+                    <Setter TargetName="Letter" Property="Text" Value="R" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Accent}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Copied}">
+                    <Setter TargetName="Letter" Property="Text" Value="C" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Accent}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.TypeChanged}">
+                    <Setter TargetName="Letter" Property="Text" Value="T" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:GitChangeKind.Conflicted}">
+                    <Setter TargetName="Letter" Property="Text" Value="!" />
+                    <Setter TargetName="Letter" Property="Foreground" Value="{DynamicResource Fb.Warning}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Diff row: old and new line numbers, +/− marker, text; added / removed rows are tinted, hunk headers blue. -->
+        <DataTemplate x:Key="Branch.DiffTemplate" DataType="{x:Type git:DiffLine}">
+            <Border x:Name="Row" Background="Transparent" Padding="0,0,8,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="Old" Text="{Binding OldNumber}" TextAlignment="Right" Margin="0,0,6,0" Foreground="{DynamicResource Fb.Grey}" />
+                    <TextBlock x:Name="New" Grid.Column="1" Text="{Binding NewNumber}" TextAlignment="Right" Margin="0,0,6,0"
+                               Foreground="{DynamicResource Fb.Grey}" />
+                    <TextBlock x:Name="Marker" Grid.Column="2" Text="" />
+                    <TextBlock x:Name="Text" Grid.Column="3" Text="{Binding Text}" />
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:DiffLineKind.Added}">
+                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource Fb.Diff.Added}" />
+                    <Setter TargetName="Marker" Property="Text" Value="+" />
+                    <Setter TargetName="Marker" Property="Foreground" Value="{DynamicResource Fb.Green}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:DiffLineKind.Removed}">
+                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource Fb.Diff.Removed}" />
+                    <Setter TargetName="Marker" Property="Text" Value="−" />
+                    <Setter TargetName="Marker" Property="Foreground" Value="{DynamicResource Fb.Red}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:DiffLineKind.Hunk}">
+                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource Fb.Diff.HunkBackground}" />
+                    <Setter TargetName="Text" Property="Foreground" Value="{DynamicResource Fb.Diff.HunkForeground}" />
+                    <Setter TargetName="Row" Property="Margin" Value="0,4,0,0" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="{x:Static git:DiffLineKind.Note}">
+                    <Setter TargetName="Text" Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+                    <Setter TargetName="Text" Property="FontStyle" Value="Italic" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <Style x:Key="Branch.DiffItem" TargetType="ListBoxItem">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- "▸ 4 changed files": a text button that opens / closes the changes panel. -->
+        <Style x:Key="Branch.LinkButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Fb.Muted}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="2,2" BorderThickness="1" BorderBrush="Transparent">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource Fb.Foreground}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Fb.Accent}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="MainColumn" Width="*" />
+            <ColumnDefinition x:Name="DiffColumn" Width="0" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0">
+            <TextBlock Text="Branch" Style="{StaticResource Fb.FlyoutHeader}" />
+            <ProgressBar x:Name="Spinner" Style="{StaticResource Fb.Spinner}" Visibility="Collapsed" />
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="FetchButton" Content="Fetch" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Fetch" />
+                <Button x:Name="PullButton" Grid.Column="1" Content="Pull" Style="{StaticResource Fb.Button}" AutomationProperties.Name="Pull" />
+                <Button x:Name="PushButton" Grid.Column="3" Content="Push" Style="{StaticResource Fb.Button}" Margin="0" IsEnabled="False"
+                        AutomationProperties.Name="Push" />
+            </Grid>
+            <Grid>
+                <TextBox x:Name="CommitMessage" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Commit message" />
+                <TextBlock Text="Commit message" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Text, ElementName=CommitMessage}" Value="">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="ChangesButton" Style="{StaticResource Branch.LinkButton}" HorizontalAlignment="Left" IsEnabled="False"
+                        AutomationProperties.Name="Show changed files">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ChangesChevron" Text="&#xE76C;" FontFamily="{StaticResource Fb.IconFont}" FontSize="8"
+                                   VerticalAlignment="Center" Margin="0,1,6,0" />
+                        <TextBlock x:Name="ChangedText" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="CommitButton" Grid.Column="1" Content="Commit" Style="{StaticResource Fb.Button}"
+                        Margin="6,0,0,0" IsEnabled="False" AutomationProperties.Name="Commit" />
+            </Grid>
+            <StackPanel x:Name="ChangesSection" Visibility="Collapsed">
+                <ListBox x:Name="ChangeList" Style="{StaticResource Fb.FlyoutList}" MaxHeight="300" ItemTemplate="{StaticResource Branch.ChangeTemplate}"
+                         AutomationProperties.Name="Changed files">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource Fb.ItemContainer}">
+                            <Setter Property="IsEnabled" Value="True" />
+                            <Setter Property="ToolTip" Value="{Binding Path}" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+                <TextBlock x:Name="ChangesMessage" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
+            </StackPanel>
+            <TextBlock x:Name="ResultText" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" Margin="2,0,2,8" />
+            <Grid x:Name="AdviceRow" Visibility="Collapsed" Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="AdviceText" Style="{StaticResource Fb.MutedText}" VerticalAlignment="Center" Margin="2,0" />
+                <Button x:Name="AdviceButton" Grid.Column="1" Style="{StaticResource Fb.Button}" Margin="6,0,0,0" />
+            </Grid>
+            <StackPanel x:Name="BranchSection">
+                <Border Height="1" Background="{DynamicResource Fb.Separator}" Margin="0,0,0,8" />
+                <Grid>
+                    <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Search branches" />
+                    <TextBlock Text="Search branches…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=Search}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+                <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Branch list" />
+            </StackPanel>
+            <TextBlock x:Name="Message" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
         </StackPanel>
-        <Grid>
-            <TextBox x:Name="CommitMessage" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Commit message" />
-            <TextBlock Text="Commit message" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Text, ElementName=CommitMessage}" Value="">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Grid>
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="ChangedText" Style="{StaticResource Fb.MutedText}" VerticalAlignment="Center" Margin="2,0" />
-            <Button x:Name="CommitPushButton" Grid.Column="1" Content="Commit and push" Style="{StaticResource Fb.Button}"
-                    Margin="6,0,0,0" IsEnabled="False" AutomationProperties.Name="Commit and push" />
-        </Grid>
-        <TextBlock x:Name="ResultText" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" Margin="2,0,2,8" />
-        <Grid x:Name="AdviceRow" Visibility="Collapsed" Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="AdviceText" Style="{StaticResource Fb.MutedText}" VerticalAlignment="Center" Margin="2,0" />
-            <Button x:Name="AdviceButton" Grid.Column="1" Style="{StaticResource Fb.Button}" Margin="6,0,0,0" />
-        </Grid>
-        <Border Height="1" Background="{DynamicResource Fb.Separator}" Margin="0,0,0,8" />
-        <Grid>
-            <TextBox x:Name="Search" Style="{StaticResource Fb.SearchBox}" AutomationProperties.Name="Search branches" />
-            <TextBlock Text="Search branches…" IsHitTestVisible="False" Margin="9,5,0,0" Foreground="{DynamicResource Fb.Muted}">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Text, ElementName=Search}" Value="">
-                                <Setter Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Grid>
-        <ListBox x:Name="List" Style="{StaticResource Fb.FlyoutList}" AutomationProperties.Name="Branch list" />
-        <TextBlock x:Name="Message" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
-    </StackPanel>
+
+        <!-- Changes panel: header (path, close), then the diff rows. Only laid out while DiffColumn has width. -->
+        <Border x:Name="DiffPanel" Grid.Column="1" Visibility="Collapsed" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource Fb.Separator}"
+                Margin="10,0,0,0" Padding="10,0,0,0">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="DiffTitle" Style="{StaticResource Fb.FlyoutHeader}" Margin="2,0,0,0" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button x:Name="CloseChangesButton" Grid.Column="1" Style="{StaticResource Fb.IconButton}" Content="&#xE711;"
+                            ToolTip="Close changes" AutomationProperties.Name="Close changes" />
+                </Grid>
+                <TextBlock x:Name="DiffMessage" DockPanel.Dock="Top" Style="{StaticResource Fb.MutedText}" Visibility="Collapsed" />
+                <ListBox x:Name="DiffList" ItemTemplate="{StaticResource Branch.DiffTemplate}" ItemContainerStyle="{StaticResource Branch.DiffItem}"
+                         Background="Transparent" BorderThickness="0" Foreground="{DynamicResource Fb.Foreground}"
+                         FontFamily="{StaticResource Branch.Mono}" FontSize="11.5" MinHeight="320" MaxHeight="460"
+                         VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Diff" />
+            </DockPanel>
+        </Border>
+    </Grid>
 </UserControl>

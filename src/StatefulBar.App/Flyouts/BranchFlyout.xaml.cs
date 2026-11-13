@@ -9,9 +9,15 @@ namespace StatefulBar.App.Flyouts;
 
 internal sealed partial class BranchFlyout : UserControl
 {
+    /// <summary>Width of the left column (buttons, message, changed files) while the changes panel is open.</summary>
+    private const double ChangesColumnWidth = 300;
+
     private readonly FlyoutList _list;
     private bool _loading;
     private bool _operating;
+    private int _loadingChanges; // list and diff loads may overlap
+    private bool _changesOpen;
+    private bool _fillingChanges; // SetChanges replaces the list: its selection change is not a user pick
     private GitStatusInfo? _status;
     private Action? _adviceAction;
     private readonly DispatcherTimer _resultTimer = new() { Interval = TimeSpan.FromSeconds(4) };
@@ -36,18 +42,30 @@ internal sealed partial class BranchFlyout : UserControl
         };
         FetchButton.Click += (_, _) => FetchRequested?.Invoke();
         PullButton.Click += (_, _) => PullRequested?.Invoke();
-        CommitPushButton.Click += (_, _) => RaiseCommitAndPush();
+        PushButton.Click += (_, _) =>
+        {
+            if (PushButton.IsEnabled)
+            {
+                PushRequested?.Invoke();
+            }
+        };
+        CommitButton.Click += (_, _) => RaiseCommit();
         CommitMessage.TextChanged += (_, _) => UpdateEnabled();
         CommitMessage.PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter)
             {
-                // Enter commits; pushing pending commits only is a deliberate button click.
-                if (!string.IsNullOrWhiteSpace(CommitMessage.Text))
-                {
-                    RaiseCommitAndPush();
-                }
+                RaiseCommit();
                 e.Handled = true;
+            }
+        };
+        ChangesButton.Click += (_, _) => SetChangesOpen(!_changesOpen);
+        CloseChangesButton.Click += (_, _) => SetChangesOpen(false);
+        ChangeList.SelectionChanged += (_, _) =>
+        {
+            if (!_fillingChanges && ChangeList.SelectedItem is GitChangedFile file)
+            {
+                FileSelected?.Invoke(file);
             }
         };
     }
@@ -58,18 +76,27 @@ internal sealed partial class BranchFlyout : UserControl
 
     public event Action? PullRequested;
 
-    public event Action<string>? CommitAndPushRequested;
+    public event Action<string>? CommitRequested;
 
     public event Action? PushRequested;
 
+    /// <summary>The changes panel opened (true: load the changed files, widen the flyout) or closed.</summary>
+    public event Action<bool>? ChangesToggled;
+
+    /// <summary>A changed file was selected (by the user, or the first one after a load): show its diff.</summary>
+    public event Action<GitChangedFile>? FileSelected;
+
     public IInputElement FocusTarget => _list.Focus;
 
-    /// <summary>The commit message is kept across openings (cleared only after a successful push).</summary>
+    public bool IsChangesOpen => _changesOpen;
+
+    /// <summary>The commit message is kept across openings (cleared only after a successful commit); the changes panel closes.</summary>
     public void Reset()
     {
         _list.ClearSearch();
         SetMessage(null);
         ClearResult();
+        SetChangesOpen(false);
     }
 
     /// <summary>A different project is shown: nothing typed or counted for the old one may stay.</summary>
@@ -78,6 +105,8 @@ internal sealed partial class BranchFlyout : UserControl
         ClearCommitMessage();
         SetStatus(null);
         ClearResult();
+        SetChangesOpen(false);
+        ChangeList.ItemsSource = null;
     }
 
     /// <summary>Inline success line ("✓ Pulled"), cleared by itself after a few seconds.</summary>
@@ -115,7 +144,7 @@ internal sealed partial class BranchFlyout : UserControl
         UpdateEnabled();
     }
 
-    /// <summary>A git action (fetch, pull, commit and push) is running: buttons are disabled and the spinner shows.</summary>
+    /// <summary>A git action (fetch, pull, commit, push) is running: buttons are disabled and the spinner shows.</summary>
     public void SetOperationBusy(bool busy)
     {
         _operating = busy;
@@ -123,15 +152,25 @@ internal sealed partial class BranchFlyout : UserControl
         UpdateEnabled();
     }
 
+    /// <summary>A changed-file list or diff load started (true) or ended (false); calls are paired.</summary>
+    public void SetChangesBusy(bool busy)
+    {
+        _loadingChanges = Math.Max(0, _loadingChanges + (busy ? 1 : -1));
+        UpdateEnabled();
+    }
+
     public void ClearCommitMessage() => CommitMessage.Clear();
 
-    /// <summary>Changed files and behind count; null (status unreadable) hides them.</summary>
+    /// <summary>Changed files and behind / ahead counts; null (status unreadable) hides them. No changes left closes the panel.</summary>
     public void SetStatus(GitStatusInfo? status)
     {
         _status = status;
-        var changed = status is null ? "" : status.ChangedFiles == 1 ? "1 changed file" : $"{status.ChangedFiles} changed files";
-        ChangedText.Text = status is { Ahead: > 0 } ? $"{changed} · ↑{status.Ahead}" : changed;
+        ChangedText.Text = status is null ? "" : status.ChangedFiles == 1 ? "1 changed file" : $"{status.ChangedFiles} changed files";
         PullButton.Content = status is { Behind: > 0 } ? $"Pull ↓{status.Behind}" : "Pull";
+        if (_changesOpen && status is { ChangedFiles: 0 })
+        {
+            SetChangesOpen(false); // e.g. everything was just committed
+        }
         UpdateEnabled();
     }
 
@@ -145,33 +184,129 @@ internal sealed partial class BranchFlyout : UserControl
         Message.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    private void RaiseCommitAndPush()
+    /// <summary>
+    /// Fills the changed-file list, keeping the selected path when it is still there (else the first file), and raises
+    /// <see cref="FileSelected"/> for it so its diff is (re)loaded.
+    /// </summary>
+    public void SetChanges(IReadOnlyList<GitChangedFile> files)
     {
-        if (!CommitPushButton.IsEnabled)
+        if (!_changesOpen)
         {
             return;
         }
-        if (string.IsNullOrWhiteSpace(CommitMessage.Text))
+        var keep = (ChangeList.SelectedItem as GitChangedFile)?.Path;
+        var select = files.FirstOrDefault(f => f.Path == keep) ?? files.FirstOrDefault();
+        _fillingChanges = true;
+        try
         {
-            PushRequested?.Invoke();
+            ChangeList.ItemsSource = files;
+            ChangeList.SelectedItem = select;
         }
-        else
+        finally
         {
-            CommitAndPushRequested?.Invoke(CommitMessage.Text.Trim());
+            _fillingChanges = false;
+        }
+        SetChangesMessage(files.Count == 0 ? "No uncommitted changes." : null);
+        if (select is null)
+        {
+            ClearDiff();
+            return;
+        }
+        ChangeList.ScrollIntoView(select);
+        FileSelected?.Invoke(select);
+    }
+
+    /// <summary>The changed files could not be read.</summary>
+    public void SetChangesError(string text)
+    {
+        ChangeList.ItemsSource = null;
+        SetChangesMessage(text);
+        ClearDiff();
+    }
+
+    public void ShowDiff(GitChangedFile file, IReadOnlyList<DiffLine> rows)
+    {
+        SetDiffTitle(file);
+        DiffMessage.Visibility = Visibility.Collapsed;
+        DiffList.ItemsSource = rows;
+        if (rows.Count > 0)
+        {
+            DiffList.ScrollIntoView(rows[0]);
+        }
+    }
+
+    public void ShowDiffError(GitChangedFile file, string text)
+    {
+        SetDiffTitle(file);
+        DiffList.ItemsSource = null;
+        DiffMessage.Text = text;
+        DiffMessage.Visibility = Visibility.Visible;
+    }
+
+    private void SetChangesOpen(bool open)
+    {
+        if (open == _changesOpen)
+        {
+            return;
+        }
+        _changesOpen = open;
+        ChangesChevron.Text = open ? "" : ""; // chevron down / right
+        AutomationProperties.SetName(ChangesButton, open ? "Hide changed files" : "Show changed files");
+        ChangesSection.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        BranchSection.Visibility = open ? Visibility.Collapsed : Visibility.Visible;
+        DiffPanel.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        MainColumn.Width = open ? new GridLength(ChangesColumnWidth) : new GridLength(1, GridUnitType.Star);
+        DiffColumn.Width = open ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        if (!open)
+        {
+            SetChangesMessage(null);
+            ClearDiff();
+        }
+        ChangesToggled?.Invoke(open);
+        UpdateEnabled();
+    }
+
+    private void SetChangesMessage(string? text)
+    {
+        ChangesMessage.Text = text ?? "";
+        ChangesMessage.Visibility = text is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void SetDiffTitle(GitChangedFile file)
+    {
+        var title = file is { Kind: GitChangeKind.Renamed or GitChangeKind.Copied, OldPath: { } old } ? $"{old} → {file.Path}" : file.Path;
+        DiffTitle.Text = title;
+        DiffTitle.ToolTip = title;
+    }
+
+    private void ClearDiff()
+    {
+        DiffList.ItemsSource = null;
+        DiffTitle.Text = "";
+        DiffTitle.ToolTip = null;
+        DiffMessage.Visibility = Visibility.Collapsed;
+    }
+
+    private void RaiseCommit()
+    {
+        if (CommitButton.IsEnabled)
+        {
+            CommitRequested?.Invoke(CommitMessage.Text.Trim());
         }
     }
 
     private void UpdateEnabled()
     {
-        Spinner.Visibility = _loading || _operating ? Visibility.Visible : Visibility.Collapsed;
+        Spinner.Visibility = _loading || _operating || _loadingChanges > 0 ? Visibility.Visible : Visibility.Collapsed;
         FetchButton.IsEnabled = !_operating;
         PullButton.IsEnabled = !_operating;
-        // Without a message the button only pushes: pending commits, or a branch that has no upstream yet.
-        var hasMessage = !string.IsNullOrWhiteSpace(CommitMessage.Text);
-        var pushOnly = !hasMessage && _status is { } status && (status.Ahead > 0 || status.Upstream is null);
-        var label = pushOnly ? (_status is { Ahead: > 0 } ahead ? $"Push ↑{ahead.Ahead}" : "Push") : "Commit and push";
-        CommitPushButton.Content = label;
-        AutomationProperties.SetName(CommitPushButton, label);
-        CommitPushButton.IsEnabled = !_operating && (hasMessage || pushOnly);
+        // Push sends pending commits, or publishes a branch that has no upstream yet.
+        var label = _status is { Ahead: > 0 } ahead ? $"Push ↑{ahead.Ahead}" : "Push";
+        PushButton.Content = label;
+        AutomationProperties.SetName(PushButton, label);
+        PushButton.IsEnabled = !_operating && _status is { } status && (status.Ahead > 0 || status.Upstream is null);
+        // An unreadable status (null) still allows a commit: git reports "Nothing to commit." itself.
+        CommitButton.IsEnabled = !_operating && !string.IsNullOrWhiteSpace(CommitMessage.Text) && _status is not { ChangedFiles: 0 };
+        ChangesButton.IsEnabled = _changesOpen || _status is { ChangedFiles: > 0 };
     }
 }

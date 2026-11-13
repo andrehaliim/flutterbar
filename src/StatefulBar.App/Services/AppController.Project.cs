@@ -20,11 +20,15 @@ internal sealed partial class AppController
     private int _generation; // bumped on every project change: results for an older project are dropped
     private HeadWatcher? _headWatcher;
     private GitState? _gitState;
-    private bool _gitBusy; // a fetch / pull / commit and push is running
+    private bool _gitBusy; // a fetch / pull / commit / push is running
     private IReadOnlyList<string> _branches = [];
     private ProjectFlyout? _projectFlyout;
     private BranchFlyout? _branchFlyout;
     private int _branchFlyoutGeneration = -1; // project the shared branch flyout last showed
+    private CancellationToken _branchFlyoutToken; // cancelled when the branch flyout closes or is replaced
+    private GitChanges? _changes; // last changed-file list of the open changes panel (its top level is used for the diffs)
+    private int _changesRequest; // only the latest list / diff load may fill the panel
+    private int _diffRequest;
 
     public async Task SelectProjectAsync(string path)
     {
@@ -297,8 +301,10 @@ internal sealed partial class AppController
             flyout.BranchChosen += branch => Fire(SwitchBranchAsync(branch), "Switch branch");
             flyout.FetchRequested += () => Fire(RunGitActionAsync(GitAction.Fetch, null), "Fetch");
             flyout.PullRequested += () => Fire(RunGitActionAsync(GitAction.Pull, null), "Pull");
-            flyout.CommitAndPushRequested += message => Fire(RunGitActionAsync(GitAction.CommitAndPush, message), "Commit and push");
+            flyout.CommitRequested += message => Fire(RunGitActionAsync(GitAction.Commit, message), "Commit");
             flyout.PushRequested += () => Fire(RunGitActionAsync(GitAction.Push, null), "Push");
+            flyout.ChangesToggled += open => OnChangesToggled(flyout, open);
+            flyout.FileSelected += file => Fire(LoadDiffAsync(flyout, file), "Diff");
         }
         flyout.Reset();
         if (_branchFlyoutGeneration != _generation)
@@ -308,7 +314,7 @@ internal sealed partial class AppController
             _branchFlyoutGeneration = _generation;
         }
         flyout.SetBranches(_branches, _gitState.Branch);
-        var token = ShowFlyout(WidgetChip.Branch, flyout, flyout.FocusTarget);
+        var token = _branchFlyoutToken = ShowFlyout(WidgetChip.Branch, flyout, flyout.FocusTarget);
         Fire(LoadBranchesAsync(flyout, root, _generation, token), "Branch list");
         Fire(RefreshGitStatusAsync(flyout, root, _generation), "Git status");
     }
@@ -317,7 +323,7 @@ internal sealed partial class AppController
     {
         Fetch,
         Pull,
-        CommitAndPush,
+        Commit,
         Push,
     }
 
@@ -345,8 +351,97 @@ internal sealed partial class AppController
         }
     }
 
+    /// <summary>The changes panel opened or closed: widen / restore the popup, and load the changed files when it opened.</summary>
+    private void OnChangesToggled(BranchFlyout flyout, bool open)
+    {
+        _flyout.SetWidth(open ? FlyoutHost.WideWidth : FlyoutHost.DefaultWidth);
+        _changesRequest++; // drop loads still running for the previous opening
+        _diffRequest++;
+        _changes = null;
+        if (open && Settings.CurrentProject is { } root)
+        {
+            Fire(LoadChangesAsync(flyout, root, _generation, _branchFlyoutToken), "Changed files");
+        }
+    }
+
+    /// <summary>Changed files of the whole repository for the changes panel (selecting one loads its diff).</summary>
+    private async Task LoadChangesAsync(BranchFlyout flyout, string root, int generation, CancellationToken token)
+    {
+        var git = (await _tools).Git;
+        if (git is null)
+        {
+            return;
+        }
+        var request = ++_changesRequest;
+        flyout.SetChangesBusy(true);
+        try
+        {
+            var changes = await Task.Run(() => git.GetChangesAsync(root, token), token);
+            if (request == _changesRequest && generation == _generation && !token.IsCancellationRequested && flyout.IsChangesOpen)
+            {
+                _changes = changes;
+                flyout.SetChanges(changes.Files);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            AppLog.Write($"changed files of {root} failed", ex);
+            if (request == _changesRequest && generation == _generation && !token.IsCancellationRequested && flyout.IsChangesOpen)
+            {
+                flyout.SetChangesError(UiText.CapLines(ex.Message));
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            AppLog.Write("changed files: flyout closed before git answered");
+        }
+        finally
+        {
+            flyout.SetChangesBusy(false);
+        }
+    }
+
+    /// <summary>Diff of one changed file against HEAD into the changes panel; a newer selection wins.</summary>
+    private async Task LoadDiffAsync(BranchFlyout flyout, GitChangedFile file)
+    {
+        var git = (await _tools).Git;
+        var changes = _changes;
+        if (git is null || changes is null)
+        {
+            return;
+        }
+        var request = ++_diffRequest;
+        var generation = _generation;
+        var token = _branchFlyoutToken;
+        flyout.SetChangesBusy(true);
+        try
+        {
+            var rows = await Task.Run(() => git.GetFileDiffAsync(changes.TopLevel, file, token), token);
+            if (request == _diffRequest && generation == _generation && !token.IsCancellationRequested && flyout.IsChangesOpen)
+            {
+                flyout.ShowDiff(file, rows);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            AppLog.Write($"diff of {file.Path} failed", ex);
+            if (request == _diffRequest && generation == _generation && !token.IsCancellationRequested && flyout.IsChangesOpen)
+            {
+                flyout.ShowDiffError(file, UiText.CapLines(ex.Message));
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            AppLog.Write("diff: flyout closed before git answered");
+        }
+        finally
+        {
+            flyout.SetChangesBusy(false);
+        }
+    }
+
     /// <summary>
-    /// Fetch, pull, push or commit and push from the branch flyout. One at a time. While the flyout is open the result is
+    /// Fetch, pull, commit or push from the branch flyout. One at a time. While the flyout is open the result is
     /// shown inside it (a toast would cover it); a toast is only used when it was closed meanwhile. After a pull that moved
     /// HEAD of a live session the pull advice replaces the plain "Pulled". Git output is capped at a few lines (the full
     /// text is in diag.log). Results are dropped when the project changed meanwhile.
@@ -374,7 +469,7 @@ internal sealed partial class AppController
                 GitAction.Fetch => ToOutcome(await git.FetchAsync(root, ct)),
                 GitAction.Pull => await BranchFlow.PullAsync(git, root, live, ct),
                 GitAction.Push => ToOutcome(await git.PushAsync(root, ct)),
-                _ => ToOutcome(await git.CommitAndPushAsync(root, commitMessage ?? "", ct)),
+                _ => ToOutcome(await git.CommitAsync(root, commitMessage ?? "", ct)),
             });
             if (generation != _generation)
             {
@@ -386,21 +481,20 @@ internal sealed partial class AppController
                 AppLog.Write("git pull: pubspec comparison skipped", adviceError);
             }
             AppLog.Write($"git {action}: success={outcome.Success} message={outcome.Message} advice={outcome.Advice?.ToString() ?? "-"}");
-            var pushed = action is GitAction.CommitAndPush or GitAction.Push;
-            if (outcome.Success && pushed)
+            if (outcome.Success && action == GitAction.Commit)
             {
                 flyout.ClearCommitMessage();
-            }
-            else if (!outcome.Success && outcome.Message.StartsWith(GitService.CommittedLocallyPrefix, StringComparison.Ordinal))
-            {
-                flyout.ClearCommitMessage(); // the commit exists; the next click only pushes
             }
             var text = UiText.CapLines(outcome.Message);
             if (!outcome.Success)
             {
                 flyout.SetMessage(text);
             }
-            await RefreshGitStatusAsync(flyout, root, generation);
+            await RefreshGitStatusAsync(flyout, root, generation); // no changes left closes the changes panel
+            if (flyout.IsChangesOpen)
+            {
+                await LoadChangesAsync(flyout, root, generation, _branchFlyoutToken);
+            }
             await RefreshGitAsync(root, generation, watch: false); // e.g. the first commit ends "(no commits yet)"
             if (generation != _generation)
             {

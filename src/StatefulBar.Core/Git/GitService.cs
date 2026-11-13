@@ -16,7 +16,7 @@ public enum BranchChangeAdvice
     RerunRequired,
 }
 
-public sealed class GitService(IProcessRunner runner, string gitExe)
+public sealed partial class GitService(IProcessRunner runner, string gitExe)
 {
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan NetworkTimeout = TimeSpan.FromMinutes(2);
@@ -213,31 +213,15 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
             var (pending, _) = await ReadStatusAsync(root, ct).ConfigureAwait(false);
             if (pending.ChangedFiles > 0)
             {
-                return new GitResult(false, "Enter a commit message.");
+                return new GitResult(false, EnterMessage);
             }
         }
         else
         {
-            var add = await RunAsync(root, CommandTimeout, null, ct, "add", "-A").ConfigureAwait(false);
-            if (add.ExitCode != 0)
+            (committed, var commitError) = await StageAndCommitAsync(root, message, ct).ConfigureAwait(false);
+            if (commitError is not null)
             {
-                return new GitResult(false, FailureText(add));
-            }
-            // Exit 1 = staged changes exist, 0 = nothing staged.
-            var staged = await RunAsync(root, CommandTimeout, null, ct, "diff", "--cached", "--quiet").ConfigureAwait(false);
-            if (staged.ExitCode != 0 && staged.ExitCode != 1)
-            {
-                return new GitResult(false, FailureText(staged));
-            }
-            if (staged.ExitCode == 1)
-            {
-                // Hooks (lefthook, husky) and GPG pinentry can be slow: same limit as the network commands.
-                var commit = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, "commit", "-m", message).ConfigureAwait(false);
-                if (commit.ExitCode != 0)
-                {
-                    return new GitResult(false, FailureText(commit));
-                }
-                committed = true;
+                return commitError;
             }
         }
 
@@ -253,6 +237,60 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         return await PushCoreAsync(root, target, committed, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// <c>git add -A</c> then <c>git commit -m</c>, without pushing. Refused on a detached HEAD and while a merge / rebase is
+    /// unfinished (add -A would mark conflict markers as resolved).
+    /// </summary>
+    public async Task<GitResult> CommitAsync(string root, string message, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return new GitResult(false, EnterMessage);
+        }
+        var branch = await GetSymbolicBranchAsync(root).ConfigureAwait(false);
+        if (branch is null)
+        {
+            return new GitResult(false, DetachedHead);
+        }
+        if (await HasConflictedStateAsync(root, ct).ConfigureAwait(false))
+        {
+            return new GitResult(false, ResolveConflictsFirst);
+        }
+        var (committed, error) = await StageAndCommitAsync(root, message, ct).ConfigureAwait(false);
+        if (error is not null)
+        {
+            return error;
+        }
+        return committed ? new GitResult(true, $"Committed to {branch}") : new GitResult(false, "Nothing to commit.");
+    }
+
+    public const string EnterMessage = "Enter a commit message.";
+
+    public const string DetachedHead = "HEAD is detached. Switch to a branch first.";
+
+    /// <summary><c>git add -A</c>, then <c>git commit -m</c> when something is staged. Committed = false when there was nothing.</summary>
+    private async Task<(bool Committed, GitResult? Error)> StageAndCommitAsync(string root, string message, CancellationToken ct)
+    {
+        var add = await RunAsync(root, CommandTimeout, null, ct, "add", "-A").ConfigureAwait(false);
+        if (add.ExitCode != 0)
+        {
+            return (false, new GitResult(false, FailureText(add)));
+        }
+        // Exit 1 = staged changes exist, 0 = nothing staged.
+        var staged = await RunAsync(root, CommandTimeout, null, ct, "diff", "--cached", "--quiet").ConfigureAwait(false);
+        if (staged.ExitCode != 0 && staged.ExitCode != 1)
+        {
+            return (false, new GitResult(false, FailureText(staged)));
+        }
+        if (staged.ExitCode == 0)
+        {
+            return (false, null);
+        }
+        // Hooks (lefthook, husky) and GPG pinentry can be slow: same limit as the network commands.
+        var commit = await RunAsync(root, NetworkTimeout, NoPromptEnvironment, ct, "commit", "-m", message).ConfigureAwait(false);
+        return commit.ExitCode == 0 ? (true, null) : (false, new GitResult(false, FailureText(commit)));
+    }
+
     private sealed record PushTarget(string Branch, bool HasUpstream);
 
     /// <summary>Checks shared by push and commit-and-push, all before anything is staged.</summary>
@@ -261,7 +299,7 @@ public sealed class GitService(IProcessRunner runner, string gitExe)
         var branch = await GetSymbolicBranchAsync(root).ConfigureAwait(false);
         if (branch is null)
         {
-            return (null, new GitResult(false, "HEAD is detached. Switch to a branch first."));
+            return (null, new GitResult(false, DetachedHead));
         }
         if (await HasConflictedStateAsync(root, ct).ConfigureAwait(false))
         {

@@ -144,6 +144,11 @@ internal sealed class TaskbarTheme : IDisposable
         Set("Fb.Red", light ? 0xFFC42B1C : 0xFFFF6B6B);
         Set("Fb.Grey", light ? 0xFF8A8A8A : 0xFF8A8A8A);
         Set("Fb.Warning", light ? 0xFFBC5B00 : 0xFFF7A034);
+        // Diff rows of the branch flyout's changes panel: translucent green / red over Fb.Background, blue hunk headers.
+        Set("Fb.Diff.Added", light ? 0x2E0F7B0Fu : 0x336CCB5Fu);
+        Set("Fb.Diff.Removed", light ? 0x2EC42B1Cu : 0x33FF6B6Bu);
+        Set("Fb.Diff.HunkBackground", light ? 0xFFDDE5F0 : 0xFF262A33);
+        Set("Fb.Diff.HunkForeground", light ? 0xFF1F5FA8 : 0xFF8AB4F8);
         Set("Fb.Menu.Background", light ? 0xFFF9F9F9 : 0xFF2C2C2C);
         Set("Fb.Menu.Border", light ? 0xFFE5E5E5 : 0xFF3A3A3A);
         Set("Fb.Menu.Hover", light ? 0xFFEAEAEA : 0xFF3D3D3D);

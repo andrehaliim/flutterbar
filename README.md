@@ -35,7 +35,7 @@ run, hot reload, and stop without opening the IDE.
 - Imports run configurations from Android Studio and VS Code.
 - Runs projects through fvm when they use it.
 - Flutter tools in one click: pub get, clean, build_runner, doctor.
-- Git from the branch flyout: fetch, pull, switch branch, commit and push.
+- Git from the branch flyout: fetch, pull, push, commit, switch branch, and a diff of the changed files.
 - A log window with search, an errors-only filter, and jump to the next error.
 - The `sbar` command line tool lets terminals and AI agents (Claude Code, Codex, Cursor, …) hot reload and read errors.
 
@@ -113,12 +113,16 @@ Widget buttons:
 
 ## Git actions
 
-Click the branch chip: `Fetch` (`git fetch --prune`), `Pull` (plain `git pull`), a `Commit message` box + `Commit and push`,
-and the branch list.
+Click the branch chip: `Fetch` (`git fetch --prune`), `Pull` (plain `git pull`), and `Push` on the right; a `Commit message`
+box + `Commit`; the changed-file count; and the branch list.
 
-- `Commit and push` runs `git add -A` for the WHOLE repo (not just the project folder; in a monorepo, changes outside the
-  project are committed too), `git commit`, then `git push` (`push -u origin <branch>` when there is no upstream yet).
-- Empty message with unpushed commits (`↑N`): the button becomes `Push ↑N` and only sends those commits.
+- `Commit` runs `git add -A` for the WHOLE repo (not just the project folder; in a monorepo, changes outside the project are
+  committed too), then `git commit`. It doesn't push.
+- `Push ↑N` sends the unpushed commits (`push -u origin <branch>` when there is no upstream yet, which also publishes a new
+  branch). It's disabled when there is nothing to push.
+- Click `N changed files` to review before committing: the flyout widens, the changed files replace the branch list, and the
+  selected file's diff against HEAD (staged and unstaged together, so exactly what `Commit` records) shows on the right.
+  Read-only: nothing is staged or discarded there. Binary files and files with more than 5,000 changed lines aren't shown.
 - Never `--force`, no automatic pull before push; a rejected push suggests "Pull first.". An unfinished merge/rebase and a
   detached HEAD are refused.
 - HTTPS remotes sign in through Git Credential Manager (never waits for terminal input; 2 minute limit). SSH remotes that need

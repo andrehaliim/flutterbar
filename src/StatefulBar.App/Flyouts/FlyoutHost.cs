@@ -44,7 +44,7 @@ internal sealed class FlyoutHost
             CornerRadius = new CornerRadius(8),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(8),
-            Width = 320,
+            Width = DefaultWidth,
             UseLayoutRounding = true,
             SnapsToDevicePixels = true,
         };
@@ -69,6 +69,11 @@ internal sealed class FlyoutHost
         _popup.Closed += OnClosed;
     }
 
+    public const double DefaultWidth = 320;
+
+    /// <summary>The branch flyout with its changes panel open (file list left, diff right).</summary>
+    public const double WideWidth = 800;
+
     /// <summary>The popup closed (any reason).</summary>
     public event Action? Closed;
 
@@ -87,6 +92,7 @@ internal sealed class FlyoutHost
         CancelContent();
         _contentCts = new CancellationTokenSource();
         var token = _contentCts.Token;
+        _frame.Width = DefaultWidth; // only the content that asked for more width keeps it (SetWidth after Show)
         _frame.Child = content;
         _active = active ?? content;
         _focus = focus;
@@ -116,6 +122,12 @@ internal sealed class FlyoutHost
             _frame.Child = null;
         }
     }
+
+    /// <summary>
+    /// Widens (or restores) the open popup for its current content; <see cref="Show"/> and closing go back to
+    /// <see cref="DefaultWidth"/>, so no other flyout inherits it. WPF keeps the popup on screen when it grows.
+    /// </summary>
+    public void SetWidth(double width) => _frame.Width = width;
 
     public void Close()
     {
@@ -184,6 +196,7 @@ internal sealed class FlyoutHost
         _source?.RemoveHook(WndProc);
         _source = null;
         _activated = false;
+        _frame.Width = DefaultWidth;
         CancelContent();
         Closed?.Invoke();
     }
