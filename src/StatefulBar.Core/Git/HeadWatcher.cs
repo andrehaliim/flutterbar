@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Git;
+namespace StatefulBar.Core.Git;
 
 /// <summary>
 /// Watches a git HEAD file and raises <see cref="Changed"/> (debounced 300 ms) when it is modified.

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 public interface IPathResolver
 {

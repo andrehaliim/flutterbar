@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace FlutterBar.Core.Config;
+namespace StatefulBar.Core.Config;
 
 /// <summary>A run config found in an IDE. <paramref name="Source"/> is "idea" or "vscode".</summary>
 public sealed record ImportCandidate(LaunchConfig Config, string Source, bool AlreadyExists);

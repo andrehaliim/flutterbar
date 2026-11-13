@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>The project commands of the Flutter flyout.</summary>
 public enum FlutterCommand

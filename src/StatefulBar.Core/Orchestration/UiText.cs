@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>English UI copy shared by the widget, flyouts and toasts (spec §5, §7, §10).</summary>
 public static class UiText

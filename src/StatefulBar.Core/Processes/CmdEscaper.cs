@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary>
 /// Builds a <c>cmd.exe</c> argument string for running a batch file with arguments that arrive verbatim.

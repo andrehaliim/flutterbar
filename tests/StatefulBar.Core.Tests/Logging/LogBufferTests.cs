@@ -1,6 +1,6 @@
-using FlutterBar.Core.Logging;
+using StatefulBar.Core.Logging;
 
-namespace FlutterBar.Core.Tests.Logging;
+namespace StatefulBar.Core.Tests.Logging;
 
 public class LogBufferTests
 {

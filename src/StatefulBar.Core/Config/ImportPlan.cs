@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Config;
+namespace StatefulBar.Core.Config;
 
 /// <summary>One checklist row of the import dialog.</summary>
 public sealed record ImportRow(ImportCandidate Candidate, string Title, string Detail, string ToolTip, bool IsChecked, bool IsEnabled, string? Note);

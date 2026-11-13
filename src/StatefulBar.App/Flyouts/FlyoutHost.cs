@@ -6,11 +6,11 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Docking;
-using FlutterBar.App.Native;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Docking;
+using StatefulBar.App.Native;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 /// <summary>
 /// The one flyout popup above the widget (spec §7.1, Placement=Top). It registers with

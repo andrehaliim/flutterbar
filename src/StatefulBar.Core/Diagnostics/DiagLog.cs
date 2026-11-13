@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace FlutterBar.Core.Diagnostics;
+namespace StatefulBar.Core.Diagnostics;
 
 /// <summary>
 /// Last-resort error sink writing to <c>diag.log</c>. Never throws to callers: if the file cannot be

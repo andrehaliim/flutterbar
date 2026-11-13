@@ -1,6 +1,6 @@
-using FlutterBar.Core.Git;
+using StatefulBar.Core.Git;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>Branch chip state. <see cref="IsRepo"/> false hides the chip; <see cref="Error"/> is set when git failed.</summary>
 public sealed record GitState(bool IsRepo, string? Branch, bool Unborn, string? Error)

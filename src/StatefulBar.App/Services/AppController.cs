@@ -3,27 +3,27 @@ using System.IO;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Flyouts;
-using FlutterBar.App.Native;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Git;
-using FlutterBar.Core.Ipc;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Flyouts;
+using StatefulBar.App.Native;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Git;
+using StatefulBar.Core.Ipc;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>
 /// Orchestration point of the app (Task 14): wires the Core services to the widget, flyouts and toasts, runs the IPC
 /// server and answers <see cref="IStatusProvider"/> for the CLI. Everything here runs on the UI thread; every git /
 /// flutter / scan / file call is awaited off it (<see cref="Task.Run(Func{Task})"/>), because the widget is owned by
 /// the taskbar and a stalled UI thread stalls taskbar input. Logic that needs no WPF lives in
-/// <c>FlutterBar.Core.Orchestration</c> (unit tested); this class is glue.
+/// <c>StatefulBar.Core.Orchestration</c> (unit tested); this class is glue.
 /// </summary>
 internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
 {

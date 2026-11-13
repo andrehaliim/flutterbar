@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Projects;
+namespace StatefulBar.Core.Projects;
 
 public static class PubspecInspector
 {

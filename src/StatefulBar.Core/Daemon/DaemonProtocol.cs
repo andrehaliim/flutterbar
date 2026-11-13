@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace FlutterBar.Core.Daemon;
+namespace StatefulBar.Core.Daemon;
 
 /// <summary>Parses and encodes the <c>flutter run --machine</c> line protocol (one JSON array per line).</summary>
 public static class DaemonProtocol

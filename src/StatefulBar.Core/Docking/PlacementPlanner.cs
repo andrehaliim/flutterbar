@@ -1,6 +1,6 @@
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Docking;
+namespace StatefulBar.Core.Docking;
 
 /// <summary>
 /// Where the widget goes in auto mode. <paramref name="X"/> is the left edge in physical px. <paramref name="NoFit"/> means

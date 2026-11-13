@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <param name="Name">Shown in the Flutter flyout next to "Open terminal".</param>
 public sealed record TerminalChoice(string Name, ProcessSpec Spec);

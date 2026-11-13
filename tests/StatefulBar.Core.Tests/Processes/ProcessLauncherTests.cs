@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Threading.Channels;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Processes;
+namespace StatefulBar.Core.Tests.Processes;
 
 public class ProcessLauncherTests
 {

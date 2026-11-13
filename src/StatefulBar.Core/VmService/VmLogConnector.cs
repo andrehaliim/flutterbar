@@ -2,9 +2,9 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Channels;
-using FlutterBar.Core.Diagnostics;
+using StatefulBar.Core.Diagnostics;
 
-namespace FlutterBar.Core.VmService;
+namespace StatefulBar.Core.VmService;
 
 /// <summary>One <c>dart:developer</c> <c>log()</c> call with every part resolved to text.</summary>
 public sealed record VmLogRecord(string LoggerName, string Message, int Level, string? Error, string? StackTrace);

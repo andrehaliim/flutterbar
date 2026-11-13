@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 internal sealed partial class DeviceFlyout : UserControl
 {

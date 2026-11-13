@@ -1,10 +1,10 @@
 using System.IO;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Services;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Services;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Import;
+namespace StatefulBar.App.Import;
 
 /// <summary>
 /// "Import config from IDE" (spec §4.2), from the menu and from "No config yet → Import from IDE"

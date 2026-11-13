@@ -1,12 +1,12 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Fakes;
-using FlutterBar.Core.VmService;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Fakes;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.Core.Tests.Sessions;
+namespace StatefulBar.Core.Tests.Sessions;
 
 // Shares the DiagLog collection: error paths write to the (static) DiagLog, redirected to a temp file here.
 [Collection("DiagLog")]

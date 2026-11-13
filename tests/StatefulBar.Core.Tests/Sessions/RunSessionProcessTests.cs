@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Processes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Processes;
 
-namespace FlutterBar.Core.Tests.Sessions;
+namespace StatefulBar.Core.Tests.Sessions;
 
 /// <summary>
 /// RunSession on real processes (EchoArgs <c>--fake-daemon</c>, which starts a long-lived child the way flutter starts

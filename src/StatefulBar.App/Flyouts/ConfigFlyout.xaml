@@ -1,4 +1,4 @@
-<UserControl x:Class="FlutterBar.App.Flyouts.ConfigFlyout" x:ClassModifier="internal"
+<UserControl x:Class="StatefulBar.App.Flyouts.ConfigFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Config flyout (spec §4.1, §10): launch.json is re-read on every open. -->

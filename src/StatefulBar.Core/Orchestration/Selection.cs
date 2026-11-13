@@ -1,8 +1,8 @@
-using FlutterBar.Core.Projects;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Projects;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>One-session rule (brief Step 7) and when a branch switch needs advice.</summary>
 public static class SessionGuard

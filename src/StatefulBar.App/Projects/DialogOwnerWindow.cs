@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Interop;
 
-namespace FlutterBar.App.Projects;
+namespace StatefulBar.App.Projects;
 
 /// <summary>
 /// Hidden, never-shown owner for a modal system dialog opened from the widget or a flyout. Without an explicit owner

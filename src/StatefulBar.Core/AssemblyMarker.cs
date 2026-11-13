@@ -1,4 +1,4 @@
-namespace FlutterBar.Core;
+namespace StatefulBar.Core;
 
 public static class AssemblyMarker
 {

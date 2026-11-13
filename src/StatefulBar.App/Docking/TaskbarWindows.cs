@@ -1,7 +1,7 @@
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>A taskbar window and the monitor it is on.</summary>
 internal sealed record TaskbarWindow(IntPtr Hwnd, TaskbarCandidate Info);

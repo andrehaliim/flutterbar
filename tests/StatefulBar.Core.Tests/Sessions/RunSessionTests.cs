@@ -1,15 +1,15 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Text.Json;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Daemon;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Daemon;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Sessions;
+namespace StatefulBar.Core.Tests.Sessions;
 
 // Shares the DiagLog collection: error paths write to the (static) DiagLog, redirected to a temp file here.
 [Collection("DiagLog")]

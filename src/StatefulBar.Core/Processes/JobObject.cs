@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary>Windows Job Object with KILL_ON_JOB_CLOSE: closing it (or crashing the owner) kills every process in it.</summary>
 public sealed class JobObject : IDisposable

@@ -1,16 +1,16 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Flyouts;
-using FlutterBar.App.Log;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Projects;
-using FlutterBar.Core.Sessions;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Flyouts;
+using StatefulBar.App.Log;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Projects;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>
 /// Flutter flyout (spec §7.5): pub get / clean / build_runner / doctor in the current project, one at a time, output in the

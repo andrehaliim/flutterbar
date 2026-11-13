@@ -1,6 +1,6 @@
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Tests.Layout;
+namespace StatefulBar.Core.Tests.Layout;
 
 public sealed class TaskbarGeometryTests
 {

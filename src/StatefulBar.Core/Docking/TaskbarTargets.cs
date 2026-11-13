@@ -1,7 +1,7 @@
 using System.Globalization;
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Docking;
+namespace StatefulBar.Core.Docking;
 
 /// <summary>A taskbar the widget can dock to: the monitor it is on (device name such as <c>\\.\DISPLAY2</c> and rect).</summary>
 public sealed record TaskbarCandidate(string Device, bool IsPrimary, Box Monitor);

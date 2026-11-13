@@ -1,6 +1,6 @@
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Fakes;
+namespace StatefulBar.Core.Tests.Fakes;
 
 /// <summary>Hands out queued <see cref="FakeProcessHandle"/>s (or throws <see cref="StartException"/>) and records specs.</summary>
 public sealed class FakeLauncher : IProcessLauncher

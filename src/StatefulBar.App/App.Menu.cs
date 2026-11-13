@@ -1,15 +1,15 @@
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Docking;
-using FlutterBar.App.Menu;
-using FlutterBar.App.Projects;
-using FlutterBar.App.Theme;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Docking;
+using StatefulBar.App.Menu;
+using StatefulBar.App.Projects;
+using StatefulBar.App.Theme;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App;
+namespace StatefulBar.App;
 
 /// <summary>Right-click menu wiring (spec §7.4, Task 16). One menu per widget window (a recreated window gets a new one).</summary>
 public partial class App

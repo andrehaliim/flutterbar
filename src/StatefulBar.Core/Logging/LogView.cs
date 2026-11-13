@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 
-namespace FlutterBar.Core.Logging;
+namespace StatefulBar.Core.Logging;
 
 /// <summary>How a <see cref="LogRow"/> relates to its <see cref="LogEntry"/>.</summary>
 public enum LogRowRole

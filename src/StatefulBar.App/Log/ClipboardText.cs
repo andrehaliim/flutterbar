@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace FlutterBar.App.Log;
+namespace StatefulBar.App.Log;
 
 /// <summary>
 /// Puts text on the clipboard with a short bounded retry (2 x 50 ms). WPF <c>Clipboard.SetText</c> retries for about

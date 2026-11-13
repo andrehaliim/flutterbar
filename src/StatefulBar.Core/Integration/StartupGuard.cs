@@ -1,6 +1,6 @@
-using FlutterBar.Core.Ipc;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Core.Integration;
+namespace StatefulBar.Core.Integration;
 
 public enum UnhandledAction
 {

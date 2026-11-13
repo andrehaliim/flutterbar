@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
-using FlutterBar.Core.IO;
+using StatefulBar.Core.IO;
 
-namespace FlutterBar.Core.Settings;
+namespace StatefulBar.Core.Settings;
 
 public sealed class AppSettingsStore(string path)
 {

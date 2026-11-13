@@ -1,15 +1,15 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Flyouts;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Flyouts;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>Flyout dispatch plus the config and device flyouts (brief Steps 4-5).</summary>
 internal sealed partial class AppController

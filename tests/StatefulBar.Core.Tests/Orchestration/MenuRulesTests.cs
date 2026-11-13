@@ -1,9 +1,9 @@
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 public sealed class MenuRulesTests
 {

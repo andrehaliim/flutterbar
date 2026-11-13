@@ -3,11 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>flutterbar</AssemblyName>
-    <RootNamespace>FlutterBar.Cli</RootNamespace>
+    <RootNamespace>StatefulBar.Cli</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FlutterBar.Core\FlutterBar.Core.csproj" />
+    <ProjectReference Include="..\StatefulBar.Core\StatefulBar.Core.csproj" />
   </ItemGroup>
 
 </Project>

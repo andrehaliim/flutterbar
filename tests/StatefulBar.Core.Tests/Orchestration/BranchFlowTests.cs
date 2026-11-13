@@ -1,8 +1,8 @@
-using FlutterBar.Core.Git;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Tests.Git;
+using StatefulBar.Core.Git;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Tests.Git;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 public class BranchFlowTests
 {

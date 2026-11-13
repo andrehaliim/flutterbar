@@ -3,10 +3,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.Core.Logging;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.Core.Logging;
 
-namespace FlutterBar.App.Log;
+namespace StatefulBar.App.Log;
 
 /// <summary>
 /// Spec §8: an ordinary top-level window (own taskbar button, NOT owned by the widget) listing the

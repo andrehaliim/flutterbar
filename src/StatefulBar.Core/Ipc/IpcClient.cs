@@ -2,7 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 
-namespace FlutterBar.Core.Ipc;
+namespace StatefulBar.Core.Ipc;
 
 public sealed class IpcClient(string pipeName) : IIpcClient
 {

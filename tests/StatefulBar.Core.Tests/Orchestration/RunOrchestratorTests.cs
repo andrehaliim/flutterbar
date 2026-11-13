@@ -1,13 +1,13 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 /// <summary>Temp project folder with lib/main.dart (launch.json validation checks that the program exists).</summary>
 internal sealed class TempProject : IDisposable

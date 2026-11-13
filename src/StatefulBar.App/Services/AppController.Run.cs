@@ -1,9 +1,9 @@
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Sessions;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>▶ / ⚡ / 🔄 / ⏹ and the one-session confirmation (brief Steps 6-7).</summary>
 internal sealed partial class AppController

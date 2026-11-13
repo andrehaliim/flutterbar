@@ -1,8 +1,8 @@
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Tests.Fakes;
 using Microsoft.Win32;
 
-namespace FlutterBar.Core.Tests.Integration;
+namespace StatefulBar.Core.Tests.Integration;
 
 public sealed class StartupRegistrationTests
 {

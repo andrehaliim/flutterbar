@@ -5,11 +5,11 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using FlutterBar.App.Menu;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Sessions;
+using StatefulBar.App.Menu;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.App.Widget;
+namespace StatefulBar.App.Widget;
 
 /// <summary>
 /// The taskbar widget window (spec §7.1): three layouts (Full / Compact / ButtonsOnly) kept in one grid; the docking

@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Layout;
+namespace StatefulBar.Core.Layout;
 
 public readonly record struct Box(double Left, double Top, double Right, double Bottom);
 

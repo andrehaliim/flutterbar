@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace FlutterBar.Core.Logging;
+namespace StatefulBar.Core.Logging;
 
 /// <summary>
 /// Recognises the framing lines Flutter prints around uncaught exceptions. Device log prefixes are ignored: Android

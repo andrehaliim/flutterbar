@@ -1,6 +1,6 @@
-using FlutterBar.Core.Orchestration;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 public sealed class ToastSlotTests
 {

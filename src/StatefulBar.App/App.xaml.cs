@@ -1,26 +1,26 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Docking;
-using FlutterBar.App.Import;
-using FlutterBar.App.Log;
-using FlutterBar.App.Services;
-using FlutterBar.App.SystemIntegration;
-using FlutterBar.App.Theme;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Ipc;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
-using FlutterBar.Core.VmService;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Docking;
+using StatefulBar.App.Import;
+using StatefulBar.App.Log;
+using StatefulBar.App.Services;
+using StatefulBar.App.SystemIntegration;
+using StatefulBar.App.Theme;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Ipc;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.App;
+namespace StatefulBar.App;
 
 /// <summary>
 /// Composition root: settings, theme, run session, the widget window and its docking (Task 13), and the

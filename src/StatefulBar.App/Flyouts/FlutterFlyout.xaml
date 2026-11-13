@@ -1,4 +1,4 @@
-<UserControl x:Class="FlutterBar.App.Flyouts.FlutterFlyout" x:ClassModifier="internal"
+<UserControl x:Class="StatefulBar.App.Flyouts.FlutterFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Flutter flyout (spec §7.5): project commands as a list (output goes to the log). While a command runs: spinner,

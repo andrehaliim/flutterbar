@@ -1,10 +1,10 @@
-namespace FlutterBar.Core.Tests;
+namespace StatefulBar.Core.Tests;
 
 public class SmokeTests
 {
     [Fact]
     public void CoreAssemblyLoads()
     {
-        Assert.NotNull(typeof(FlutterBar.Core.AssemblyMarker).Assembly);
+        Assert.NotNull(typeof(StatefulBar.Core.AssemblyMarker).Assembly);
     }
 }

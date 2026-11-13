@@ -1,10 +1,10 @@
-using FlutterBar.Core.Docking;
+using StatefulBar.Core.Docking;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FlutterBar.Core.Projects;
+using StatefulBar.Core.Projects;
 
-namespace FlutterBar.Core.Settings;
+namespace StatefulBar.Core.Settings;
 
 public sealed class AppSettings
 {

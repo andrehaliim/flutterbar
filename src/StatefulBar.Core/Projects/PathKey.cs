@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Projects;
+namespace StatefulBar.Core.Projects;
 
 internal static class PathKey
 {

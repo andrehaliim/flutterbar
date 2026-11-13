@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using FlutterBar.Core.Git;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Git;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Git;
+namespace StatefulBar.Core.Tests.Git;
 
 /// <summary>xunit v2 has no dynamic skip, so skip at discovery time when git is not installed.</summary>
 public sealed class GitFactAttribute : FactAttribute

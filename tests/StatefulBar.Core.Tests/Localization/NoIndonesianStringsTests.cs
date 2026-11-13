@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace FlutterBar.Core.Tests.Localization;
+namespace StatefulBar.Core.Tests.Localization;
 
 /// <summary>
 /// Guards the "all user-facing text is English" rule: scans the app sources (comments excluded) for
@@ -149,11 +149,11 @@ public class NoIndonesianStringsTests
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "FlutterBar.sln")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "StatefulBar.sln")))
         {
             dir = dir.Parent;
         }
 
-        return dir?.FullName ?? throw new InvalidOperationException("FlutterBar.sln not found above " + AppContext.BaseDirectory);
+        return dir?.FullName ?? throw new InvalidOperationException("StatefulBar.sln not found above " + AppContext.BaseDirectory);
     }
 }

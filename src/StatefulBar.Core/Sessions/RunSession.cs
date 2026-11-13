@@ -1,11 +1,11 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Daemon;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.VmService;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Daemon;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.Core.Sessions;
+namespace StatefulBar.Core.Sessions;
 
 /// <summary>
 /// One <c>flutter run --machine</c> session (spec §6.2). Transitions:

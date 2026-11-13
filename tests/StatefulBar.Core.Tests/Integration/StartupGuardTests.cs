@@ -1,7 +1,7 @@
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Ipc;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Core.Tests.Integration;
+namespace StatefulBar.Core.Tests.Integration;
 
 public sealed class StartupGuardTests
 {

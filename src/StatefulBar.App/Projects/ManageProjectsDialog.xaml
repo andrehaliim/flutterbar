@@ -1,4 +1,4 @@
-<Window x:Class="FlutterBar.App.Projects.ManageProjectsDialog" x:ClassModifier="internal"
+<Window x:Class="StatefulBar.App.Projects.ManageProjectsDialog" x:ClassModifier="internal"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Manage projects" Width="600" Height="680" MinWidth="440" MinHeight="400"

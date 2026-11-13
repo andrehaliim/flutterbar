@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 public sealed record ToolResolution(ProcessSpec? Spec, string? Error);
 

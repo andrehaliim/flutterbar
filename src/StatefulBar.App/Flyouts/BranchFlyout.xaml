@@ -1,4 +1,4 @@
-<UserControl x:Class="FlutterBar.App.Flyouts.BranchFlyout" x:ClassModifier="internal"
+<UserControl x:Class="StatefulBar.App.Flyouts.BranchFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Branch flyout (spec §5.5): fetch / pull / commit and push (push only when pending commits and no message), results inline, then search over local branches; picking one runs git switch. -->

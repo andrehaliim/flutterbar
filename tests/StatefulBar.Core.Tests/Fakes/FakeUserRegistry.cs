@@ -1,7 +1,7 @@
-using FlutterBar.Core.Integration;
+using StatefulBar.Core.Integration;
 using Microsoft.Win32;
 
-namespace FlutterBar.Core.Tests.Fakes;
+namespace StatefulBar.Core.Tests.Fakes;
 
 /// <summary>In-memory HKCU: tests never touch the real PATH or Run key.</summary>
 public sealed class FakeUserRegistry : IUserRegistry

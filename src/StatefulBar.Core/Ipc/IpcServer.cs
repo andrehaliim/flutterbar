@@ -3,9 +3,9 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
-using FlutterBar.Core.Diagnostics;
+using StatefulBar.Core.Diagnostics;
 
-namespace FlutterBar.Core.Ipc;
+namespace StatefulBar.Core.Ipc;
 
 /// <summary>
 /// Named-pipe server: one UTF-8 JSON line request and one JSON line response per connection. Connections are served

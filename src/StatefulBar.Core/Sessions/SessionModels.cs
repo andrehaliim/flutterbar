@@ -1,7 +1,7 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Sessions;
+namespace StatefulBar.Core.Sessions;
 
 public enum SessionState
 {

@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Layout;
+namespace StatefulBar.Core.Layout;
 
 public enum WidgetSize
 {

@@ -1,9 +1,9 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>What the widget has selected when ▶ is pressed.</summary>
 public sealed record RunSelection(string? ProjectRoot, string? ConfigName, string? DeviceId);

@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 internal sealed partial class ConfigFlyout : UserControl
 {

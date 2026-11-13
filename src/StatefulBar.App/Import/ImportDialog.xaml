@@ -1,4 +1,4 @@
-<Window x:Class="FlutterBar.App.Import.ImportDialog" x:ClassModifier="internal"
+<Window x:Class="StatefulBar.App.Import.ImportDialog" x:ClassModifier="internal"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Import config from IDE" Width="560" Height="520" MinWidth="420" MinHeight="320"

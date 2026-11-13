@@ -1,6 +1,6 @@
-using FlutterBar.Core.Config;
+using StatefulBar.Core.Config;
 
-namespace FlutterBar.Core.Tests.Config;
+namespace StatefulBar.Core.Tests.Config;
 
 public sealed class ShellSplitterTests
 {

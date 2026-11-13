@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Logging;
+namespace StatefulBar.Core.Logging;
 
 public enum LogKind
 {

@@ -1,7 +1,7 @@
-using FlutterBar.Cli;
-using FlutterBar.Core.Ipc;
+using StatefulBar.Cli;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Core.Tests.Cli;
+namespace StatefulBar.Core.Tests.Cli;
 
 public sealed class CliAppTests
 {

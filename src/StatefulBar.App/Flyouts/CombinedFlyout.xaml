@@ -1,4 +1,4 @@
-<UserControl x:Class="FlutterBar.App.Flyouts.CombinedFlyout" x:ClassModifier="internal"
+<UserControl x:Class="StatefulBar.App.Flyouts.CombinedFlyout" x:ClassModifier="internal"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- Combined flyout for the Compact / ButtonsOnly sizes (spec §7.1): the four dropdowns as full-width rows (icon, label,

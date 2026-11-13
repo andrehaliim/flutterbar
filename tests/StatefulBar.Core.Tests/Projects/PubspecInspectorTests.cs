@@ -1,6 +1,6 @@
-using FlutterBar.Core.Projects;
+using StatefulBar.Core.Projects;
 
-namespace FlutterBar.Core.Tests.Projects;
+namespace StatefulBar.Core.Tests.Projects;
 
 public class PubspecInspectorTests
 {

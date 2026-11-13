@@ -1,14 +1,14 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 /// <summary>
 /// ▶ preparation counts as an active session: a selection change cancels it, but only until flutter is being launched;

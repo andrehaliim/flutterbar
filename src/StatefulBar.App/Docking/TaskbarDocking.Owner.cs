@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Owner relation to the taskbar (spike v2/v3.2 rules) and the TaskbarCreated message. Cross-process owner attaches the

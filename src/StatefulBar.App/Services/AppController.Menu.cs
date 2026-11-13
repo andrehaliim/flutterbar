@@ -1,13 +1,13 @@
 using System.IO;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Projects;
-using FlutterBar.App.SystemIntegration;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Projects;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Projects;
+using StatefulBar.App.SystemIntegration;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Projects;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>Right-click menu actions that need the controller's state (Task 16): Manage projects, Rescan, launch.json, import refresh.</summary>
 internal sealed partial class AppController

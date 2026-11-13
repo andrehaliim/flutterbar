@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 /// <summary>One row of a flyout list. <see cref="Value"/> carries the payload (path, branch, config name, device, emulator).</summary>
 internal sealed class FlyoutItem

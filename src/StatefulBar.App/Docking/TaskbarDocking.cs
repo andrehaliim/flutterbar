@@ -1,11 +1,11 @@
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Docks a borderless WPF window onto a taskbar (spec §7.3): the main one, or the one on the monitor chosen with

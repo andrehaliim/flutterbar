@@ -1,7 +1,7 @@
 using System.Text.Json;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Processes;
+namespace StatefulBar.Core.Tests.Processes;
 
 /// <summary>Copies the built EchoArgs helper plus echoargs.cmd into a temp folder.</summary>
 internal sealed class EchoArgsFixture : IDisposable

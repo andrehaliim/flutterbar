@@ -3,9 +3,9 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
-using FlutterBar.Core.Logging;
+using StatefulBar.Core.Logging;
 
-namespace FlutterBar.App.Log;
+namespace StatefulBar.App.Log;
 
 /// <summary>
 /// Drives the LogWindow list. <see cref="LogBuffer.Appended"/> is only a wake-up signal (it can fire out of sequence

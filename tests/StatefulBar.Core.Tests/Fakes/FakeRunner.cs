@@ -1,6 +1,6 @@
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Fakes;
+namespace StatefulBar.Core.Tests.Fakes;
 
 /// <summary>Answers every <see cref="RunAsync"/> through <paramref name="handler"/> and records the calls.</summary>
 public sealed class FakeRunner(Func<ProcessSpec, ProcessResult> handler) : IProcessRunner

@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace FlutterBar.Core.VmService;
+namespace StatefulBar.Core.VmService;
 
 /// <summary>
 /// A Dart object as the VM service describes it (<c>@Instance</c>). <c>Text</c> is <c>valueAsString</c>, which the

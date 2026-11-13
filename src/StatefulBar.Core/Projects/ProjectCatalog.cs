@@ -1,6 +1,6 @@
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Projects;
+namespace StatefulBar.Core.Projects;
 
 public sealed record ProjectInfo(string Path, string DisplayName, bool Available, DateTimeOffset? LastUsed);
 

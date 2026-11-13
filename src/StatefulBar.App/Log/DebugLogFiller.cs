@@ -1,7 +1,7 @@
 #if DEBUG
-using FlutterBar.Core.Logging;
+using StatefulBar.Core.Logging;
 
-namespace FlutterBar.App.Log;
+namespace StatefulBar.App.Log;
 
 /// <summary>Debug-only: writes dummy lines into the real <see cref="LogBuffer"/> (Task 15 manual check). Not in Release.</summary>
 internal static class DebugLogFiller
@@ -44,7 +44,7 @@ internal static class DebugLogFiller
         }
         GC.Collect();
         var p = System.Diagnostics.Process.GetCurrentProcess();
-        FlutterBar.App.Diagnostics.AppLog.Write(
+        StatefulBar.App.Diagnostics.AppLog.Write(
             $"DEBUG gc-on-log-close: windowAlive={window.IsAlive} viewModelAlive={viewModel.IsAlive} listBoxAlive={list.IsAlive} managedMB={GC.GetTotalMemory(true) / 1048576.0:F1} privateMB={p.PrivateMemorySize64 / 1048576.0:F1} workingSetMB={p.WorkingSet64 / 1048576.0:F1}");
     }
 

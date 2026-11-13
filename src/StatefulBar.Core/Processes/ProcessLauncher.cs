@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-using FlutterBar.Core.Diagnostics;
+using StatefulBar.Core.Diagnostics;
 
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary>Starts processes with redirected stdio; <paramref name="containment"/> decides whether they go into a kill-on-close job.</summary>
 public sealed class ProcessLauncher(ProcessContainment containment = ProcessContainment.KillOnCloseJob) : IProcessLauncher

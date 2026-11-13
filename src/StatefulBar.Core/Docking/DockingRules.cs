@@ -1,6 +1,6 @@
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Docking;
+namespace StatefulBar.Core.Docking;
 
 /// <summary>v3.2 auto-hide tracking: how much of the live taskbar rect is on the primary monitor.</summary>
 public static class AutoHideVisibility

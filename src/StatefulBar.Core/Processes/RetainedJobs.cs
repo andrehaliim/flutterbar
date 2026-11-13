@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary>
 /// Kill-on-close jobs of run sessions whose flutter process exited on its own (a clean Stop, or a failed run). Keeping

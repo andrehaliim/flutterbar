@@ -1,9 +1,9 @@
 using System.IO;
 using System.Text.Json;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.Core.Settings;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>
 /// Settings live on the UI thread. Saving takes a snapshot there (in-memory JSON round trip) and writes it atomically on a

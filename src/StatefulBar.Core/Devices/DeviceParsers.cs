@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace FlutterBar.Core.Devices;
+namespace StatefulBar.Core.Devices;
 
 public static class DeviceParsers
 {

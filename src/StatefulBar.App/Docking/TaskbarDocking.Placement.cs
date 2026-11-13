@@ -1,12 +1,12 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>Placement: auto (gaps + debounce), manual (offset from right), drag; auto-hide tracking, the background UIA query, then show/hide and the topmost reassert.</summary>
 internal sealed partial class TaskbarDocking

@@ -3,9 +3,9 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
-using FlutterBar.Core.Git;
+using StatefulBar.Core.Git;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 internal sealed partial class BranchFlyout : UserControl
 {

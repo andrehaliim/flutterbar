@@ -2,11 +2,11 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using System.Windows.Threading;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.App.Widget;
+namespace StatefulBar.App.Widget;
 
 /// <summary>Which chip/area was clicked; Task 14 opens the matching flyout.</summary>
 internal enum WidgetChip

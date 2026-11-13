@@ -1,6 +1,6 @@
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Projects;
+namespace StatefulBar.Core.Projects;
 
 /// <summary>
 /// Edits <c>scanRoots</c>, <c>manualProjects</c> and <c>hiddenProjects</c> (spec §4.3) for the "Manage projects" dialog.

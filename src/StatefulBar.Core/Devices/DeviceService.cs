@@ -1,6 +1,6 @@
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Devices;
+namespace StatefulBar.Core.Devices;
 
 /// <summary>
 /// Lists connected devices and available emulators through the project's flutter tool, and launches emulators.

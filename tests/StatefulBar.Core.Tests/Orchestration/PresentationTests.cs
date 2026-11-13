@@ -1,11 +1,11 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 public class PresentationTests
 {

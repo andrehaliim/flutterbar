@@ -3,10 +3,10 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.VmService;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.Core.Tests.VmService;
+namespace StatefulBar.Core.Tests.VmService;
 
 // Shares the DiagLog collection: failures write to the (static) DiagLog, redirected to a temp file here.
 [Collection("DiagLog")]

@@ -1,7 +1,7 @@
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Devices;
+namespace StatefulBar.Core.Tests.Devices;
 
 public class DeviceServiceTests
 {

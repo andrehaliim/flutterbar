@@ -2,10 +2,10 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Ipc;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Core.Tests.Ipc;
+namespace StatefulBar.Core.Tests.Ipc;
 
 [Collection("DiagLog")]
 public sealed class IpcRoundTripTests : IDisposable

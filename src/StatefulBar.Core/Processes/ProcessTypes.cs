@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary><paramref name="Environment"/> entries are added to (or override) the child's inherited environment.</summary>
 public sealed record ProcessSpec(

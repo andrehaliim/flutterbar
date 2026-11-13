@@ -1,8 +1,8 @@
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>Size submenu of the right-click menu (spec §7.4).</summary>
 public static class WidgetSizeMenu

@@ -1,6 +1,6 @@
-using FlutterBar.Core.Integration;
+using StatefulBar.Core.Integration;
 
-namespace FlutterBar.Core.Tests.Integration;
+namespace StatefulBar.Core.Tests.Integration;
 
 public sealed class EnvironmentPathTests
 {

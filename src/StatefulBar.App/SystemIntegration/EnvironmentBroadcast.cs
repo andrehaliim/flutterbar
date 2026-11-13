@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace FlutterBar.App.SystemIntegration;
+namespace StatefulBar.App.SystemIntegration;
 
 /// <summary>Tells running programs (Explorer, new terminals started from it) that the user environment changed.</summary>
 internal static class EnvironmentBroadcast

@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Spike for the widget on a second monitor (round 2 plan, batch 6a). Started with <c>--survey-taskbars</c>: a few seconds

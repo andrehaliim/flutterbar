@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>
 /// Decides what the single toast slot shows. A plain toast never replaces a pending confirmation (that would answer

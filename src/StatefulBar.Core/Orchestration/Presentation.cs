@@ -1,8 +1,8 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Devices;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Devices;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>Config chip: text, red error state, tooltip (program/flavor/mode) and the error lines for the flyout.</summary>
 public sealed record ConfigChipState(string Text, bool IsError, string? ToolTip, LaunchConfig? Selected, IReadOnlyList<string> ErrorLines);

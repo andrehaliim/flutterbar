@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Integration;
+namespace StatefulBar.Core.Integration;
 
 /// <summary>
 /// "Rescan" re-reads PATH: a process keeps the PATH it was started with, so tools installed or added to PATH after

@@ -1,7 +1,7 @@
-using FlutterBar.Core.Projects;
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Projects;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Tests.Projects;
+namespace StatefulBar.Core.Tests.Projects;
 
 public sealed class ProjectListEditorTests
 {

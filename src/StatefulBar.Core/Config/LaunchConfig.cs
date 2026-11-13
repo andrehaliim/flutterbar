@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Config;
+namespace StatefulBar.Core.Config;
 
 public enum RunMode
 {

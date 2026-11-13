@@ -1,7 +1,7 @@
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Tests.Docking;
+namespace StatefulBar.Core.Tests.Docking;
 
 public sealed class PlacementPlannerTests
 {

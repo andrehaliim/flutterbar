@@ -1,8 +1,8 @@
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Win32 glue for <see cref="FullscreenRule"/>: the foreground window (classified as shell by its owning process,

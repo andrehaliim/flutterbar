@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Daemon;
+namespace StatefulBar.Core.Daemon;
 
 /// <summary>One parsed item of <c>flutter run --machine</c> stdout.</summary>
 public abstract record DaemonMessage;

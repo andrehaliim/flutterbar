@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace FlutterBar.Core.Integration;
+namespace StatefulBar.Core.Integration;
 
 /// <summary>A string value under HKCU. <paramref name="Data"/> is never environment-expanded.</summary>
 public sealed record RegistryValue(string Data, RegistryValueKind Kind);

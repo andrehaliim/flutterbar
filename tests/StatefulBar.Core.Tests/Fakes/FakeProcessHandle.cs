@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Fakes;
+namespace StatefulBar.Core.Tests.Fakes;
 
 /// <summary>
 /// Scripted stand-in for a <c>flutter run --machine</c> process.

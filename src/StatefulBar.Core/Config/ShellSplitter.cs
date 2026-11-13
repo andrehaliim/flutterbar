@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace FlutterBar.Core.Config;
+namespace StatefulBar.Core.Config;
 
 /// <summary>Splits a command line into arguments: whitespace separates, quotes group.</summary>
 public static class ShellSplitter

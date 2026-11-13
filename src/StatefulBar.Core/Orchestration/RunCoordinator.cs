@@ -1,6 +1,6 @@
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Orchestration;
+namespace StatefulBar.Core.Orchestration;
 
 /// <summary>What <see cref="RunCoordinator.CancelPreparation"/> did.</summary>
 public enum PreparationCancel

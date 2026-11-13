@@ -1,6 +1,6 @@
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.Core.Docking;
+namespace StatefulBar.Core.Docking;
 
 /// <summary>
 /// One UI Automation element of the taskbar tree, flattened to the properties the docking rules need.

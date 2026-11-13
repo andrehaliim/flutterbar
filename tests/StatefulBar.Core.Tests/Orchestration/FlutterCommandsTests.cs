@@ -1,11 +1,11 @@
 using System.ComponentModel;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Orchestration;
+namespace StatefulBar.Core.Tests.Orchestration;
 
 public class FlutterCommandsTests
 {

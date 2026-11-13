@@ -1,6 +1,6 @@
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Git;
+namespace StatefulBar.Core.Git;
 
 public sealed record GitResult(bool Success, string Message);
 

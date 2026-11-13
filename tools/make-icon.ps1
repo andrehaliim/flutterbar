@@ -7,7 +7,7 @@
   Coordinates are in a 64 x 64 design space. The pill edges are snapped to whole pixels at every size, and sizes up to
   24 px use a larger pill and larger glyphs so the three buttons stay readable.
 
-.PARAMETER Out        Output .ico (default: src/FlutterBar.App/Assets/flutterbar.ico).
+.PARAMETER Out        Output .ico (default: src/StatefulBar.App/Assets/flutterbar.ico).
 .PARAMETER PreviewDir Optional folder that receives one PNG per size (flutterbar-<size>.png), for a visual check.
 .PARAMETER Sizes      Icon sizes in pixels. 256 is stored as PNG, smaller sizes as 32-bit bitmaps.
 

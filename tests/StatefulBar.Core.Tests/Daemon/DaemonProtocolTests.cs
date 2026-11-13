@@ -1,6 +1,6 @@
-using FlutterBar.Core.Daemon;
+using StatefulBar.Core.Daemon;
 
-namespace FlutterBar.Core.Tests.Daemon;
+namespace StatefulBar.Core.Tests.Daemon;
 
 public class DaemonProtocolTests
 {

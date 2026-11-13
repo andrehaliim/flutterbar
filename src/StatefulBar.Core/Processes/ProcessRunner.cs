@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace FlutterBar.Core.Processes;
+namespace StatefulBar.Core.Processes;
 
 /// <summary>
 /// Runs one-shot commands (flutter devices / emulators, git, adb) to completion. They are not put into a kill-on-close

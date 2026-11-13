@@ -1,11 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.App.Theme;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Theme;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Menu;
+namespace StatefulBar.App.Menu;
 
 internal enum MenuCommand
 {

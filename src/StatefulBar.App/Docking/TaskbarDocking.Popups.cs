@@ -3,10 +3,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// v3 rule: while any context menu, tooltip or flyout is open the topmost reassert is suspended (SWP_NOZORDER), and on

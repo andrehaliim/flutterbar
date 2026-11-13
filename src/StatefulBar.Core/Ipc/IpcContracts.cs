@@ -1,7 +1,7 @@
 using System.Security.Principal;
 using System.Text.Json;
 
-namespace FlutterBar.Core.Ipc;
+namespace StatefulBar.Core.Ipc;
 
 public static class ExitCodes
 {

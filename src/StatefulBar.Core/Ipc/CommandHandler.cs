@@ -1,8 +1,8 @@
 using System.Globalization;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.Core.Ipc;
+namespace StatefulBar.Core.Ipc;
 
 /// <summary>
 /// Executes IPC commands against the session. reload/restart are not serialized: the session answers a second

@@ -1,8 +1,8 @@
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.Core.Tests.Sessions;
+namespace StatefulBar.Core.Tests.Sessions;
 
 public sealed class SessionControlsTests
 {

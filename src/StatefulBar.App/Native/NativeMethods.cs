@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
-using FlutterBar.Core.Layout;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Native;
+namespace StatefulBar.App.Native;
 
 /// <summary>Win32 interop for docking. Coordinates are physical pixels (the app manifest is PerMonitorV2).</summary>
 internal static class NativeMethods

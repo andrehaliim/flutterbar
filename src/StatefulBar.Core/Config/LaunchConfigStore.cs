@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using FlutterBar.Core.IO;
+using StatefulBar.Core.IO;
 
-namespace FlutterBar.Core.Config;
+namespace StatefulBar.Core.Config;
 
 public static class LaunchConfigStore
 {

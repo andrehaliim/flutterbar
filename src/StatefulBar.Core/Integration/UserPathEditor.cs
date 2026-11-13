@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace FlutterBar.Core.Integration;
+namespace StatefulBar.Core.Integration;
 
 public enum PathAddOutcome
 {

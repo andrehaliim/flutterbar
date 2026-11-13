@@ -1,6 +1,6 @@
-using FlutterBar.Core.Devices;
+using StatefulBar.Core.Devices;
 
-namespace FlutterBar.Core.Tests.Devices;
+namespace StatefulBar.Core.Tests.Devices;
 
 public class DeviceParsersTests
 {

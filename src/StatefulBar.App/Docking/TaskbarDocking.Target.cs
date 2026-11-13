@@ -1,8 +1,8 @@
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Which taskbar the widget docks to (spec §7.3, round 2 batch 6b): the one on <see cref="TargetMonitor"/>, else the main

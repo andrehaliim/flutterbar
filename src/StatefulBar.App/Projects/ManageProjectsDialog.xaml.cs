@@ -1,11 +1,11 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.App.Flyouts;
-using FlutterBar.Core.Projects;
+using StatefulBar.App.Flyouts;
+using StatefulBar.Core.Projects;
 using Microsoft.Win32;
 
-namespace FlutterBar.App.Projects;
+namespace StatefulBar.App.Projects;
 
 internal enum ManageProjectsSection
 {

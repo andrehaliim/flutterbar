@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Ipc;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Ipc;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.Core.Tests.Integration;
+namespace StatefulBar.Core.Tests.Integration;
 
 /// <summary>
 /// xunit v2 has no dynamic skip: skipped at discovery when <c>FLUTTERBAR_IT_DEVICE</c> is empty, so the normal

@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Sessions;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Sessions;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 /// <summary>What the Flutter flyout shows: session state (what may run), the running command, build_runner.</summary>
 internal sealed record FlutterFlyoutState(SessionState Session, FlutterCommand? Running, bool UsesBuildRunner);

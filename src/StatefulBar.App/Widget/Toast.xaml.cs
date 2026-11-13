@@ -2,11 +2,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Docking;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Docking;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.Widget;
+namespace StatefulBar.App.Widget;
 
 /// <summary>Content of a toast: message, up to two buttons and a close button.</summary>
 internal sealed partial class Toast : UserControl

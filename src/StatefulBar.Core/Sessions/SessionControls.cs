@@ -1,6 +1,6 @@
-using FlutterBar.Core.Config;
+using StatefulBar.Core.Config;
 
-namespace FlutterBar.Core.Sessions;
+namespace StatefulBar.Core.Sessions;
 
 public enum StatusDot
 {

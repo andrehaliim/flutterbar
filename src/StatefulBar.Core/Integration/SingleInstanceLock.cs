@@ -1,7 +1,7 @@
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Ipc;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Core.Integration;
+namespace StatefulBar.Core.Integration;
 
 /// <summary>
 /// One FlutterBar.App per user session (spec §10): a named mutex <c>Local\FlutterBar-&lt;SID&gt;</c>. It must be acquired

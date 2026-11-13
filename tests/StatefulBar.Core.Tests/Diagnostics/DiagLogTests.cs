@@ -1,6 +1,6 @@
-using FlutterBar.Core.Diagnostics;
+using StatefulBar.Core.Diagnostics;
 
-namespace FlutterBar.Core.Tests.Diagnostics;
+namespace StatefulBar.Core.Tests.Diagnostics;
 
 [Collection("DiagLog")]
 public sealed class DiagLogTests : IDisposable

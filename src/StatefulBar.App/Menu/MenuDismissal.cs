@@ -1,10 +1,10 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
 
-namespace FlutterBar.App.Menu;
+namespace StatefulBar.App.Menu;
 
 /// <summary>
 /// Closes a context menu on a mouse press anywhere outside FlutterBar (desktop, taskbar, another app). The widget never

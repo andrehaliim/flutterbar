@@ -1,8 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
-using FlutterBar.Core.Projects;
+using StatefulBar.Core.Projects;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 internal sealed partial class ProjectFlyout : UserControl
 {

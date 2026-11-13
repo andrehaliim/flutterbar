@@ -3,10 +3,10 @@ using System.Security;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
-using FlutterBar.App.Diagnostics;
+using StatefulBar.App.Diagnostics;
 using Microsoft.Win32;
 
-namespace FlutterBar.App.Theme;
+namespace StatefulBar.App.Theme;
 
 /// <summary>Style ▸ Theme (spec §7.6): follow the taskbar, or force light / dark.</summary>
 internal enum ThemeChoice

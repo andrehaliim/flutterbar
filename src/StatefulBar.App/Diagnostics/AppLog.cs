@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using FlutterBar.Core.Diagnostics;
+using StatefulBar.Core.Diagnostics;
 
-namespace FlutterBar.App.Diagnostics;
+namespace StatefulBar.App.Diagnostics;
 
 /// <summary>
 /// Non-blocking front end for <see cref="DiagLog"/>. The widget is owned by the taskbar, which attaches the input

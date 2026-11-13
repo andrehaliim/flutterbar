@@ -1,9 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using FlutterBar.App.Widget;
+using StatefulBar.App.Widget;
 
-namespace FlutterBar.App.Flyouts;
+namespace StatefulBar.App.Flyouts;
 
 /// <summary>
 /// Compact / ButtonsOnly: one row per dropdown (project, branch, config, device) showing its label and whole value. Picking a

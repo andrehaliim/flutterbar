@@ -1,7 +1,7 @@
-using FlutterBar.Core.Integration;
+using StatefulBar.Core.Integration;
 using Microsoft.Win32;
 
-namespace FlutterBar.App.SystemIntegration;
+namespace StatefulBar.App.SystemIntegration;
 
 /// <summary>
 /// The real HKCU behind <see cref="IUserRegistry"/>. Only reached from the menu items "Add CLI to PATH" and

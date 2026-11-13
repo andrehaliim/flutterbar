@@ -2,10 +2,10 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// Process name (file name without extension) per PID, cached. Uses <c>QueryFullProcessImageName</c> with

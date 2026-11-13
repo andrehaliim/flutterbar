@@ -1,15 +1,15 @@
 using System.IO;
 using System.Security;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Services;
-using FlutterBar.Core.Integration;
-using FlutterBar.Core.Orchestration;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Services;
+using StatefulBar.Core.Integration;
+using StatefulBar.Core.Orchestration;
 
-namespace FlutterBar.App.SystemIntegration;
+namespace StatefulBar.App.SystemIntegration;
 
 /// <summary>
 /// Menu items "Add CLI to PATH" and "Start with Windows" (spec §7.4). Registry work and the environment broadcast
-/// run off the UI thread; failures are logged and toasted. The PATH/Run logic itself is <c>FlutterBar.Core.Integration</c>.
+/// run off the UI thread; failures are logged and toasted. The PATH/Run logic itself is <c>StatefulBar.Core.Integration</c>.
 /// </summary>
 internal sealed class SystemActions(AppController ui, IUserRegistry registry)
 {

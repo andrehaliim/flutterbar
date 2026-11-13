@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
-using FlutterBar.Core.Ipc;
+using StatefulBar.Core.Ipc;
 
-namespace FlutterBar.Cli;
+namespace StatefulBar.Cli;
 
 public static class CliApp
 {

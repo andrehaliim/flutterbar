@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-using FlutterBar.Core.Config;
+using StatefulBar.Core.Config;
 
-namespace FlutterBar.App.Import;
+namespace StatefulBar.App.Import;
 
 /// <summary>
 /// Checklist of <see cref="ImportCandidate"/>s (spec §4.2). Pure view: discovery and saving are done by

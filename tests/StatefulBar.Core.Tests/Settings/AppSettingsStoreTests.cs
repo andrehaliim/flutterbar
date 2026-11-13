@@ -1,6 +1,6 @@
-using FlutterBar.Core.Settings;
+using StatefulBar.Core.Settings;
 
-namespace FlutterBar.Core.Tests.Settings;
+namespace StatefulBar.Core.Tests.Settings;
 
 public sealed class AppSettingsStoreTests : IDisposable
 {

@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace FlutterBar.Core.IO;
+namespace StatefulBar.Core.IO;
 
 internal static class AtomicFile
 {

@@ -1,14 +1,14 @@
 using System.IO;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Flyouts;
-using FlutterBar.App.Projects;
-using FlutterBar.App.Widget;
-using FlutterBar.Core.Git;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Projects;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Flyouts;
+using StatefulBar.App.Projects;
+using StatefulBar.App.Widget;
+using StatefulBar.Core.Git;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Projects;
 using Microsoft.Win32;
 
-namespace FlutterBar.App.Services;
+namespace StatefulBar.App.Services;
 
 /// <summary>Project selection, the project scan/catalog and the branch chip (brief Steps 1-3).</summary>
 internal sealed partial class AppController

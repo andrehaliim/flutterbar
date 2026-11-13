@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// One read of the target taskbar (main or secondary, spec §7.3). <paramref name="AppButtons"/> holds every OCCUPIED box left of the tray (Start,

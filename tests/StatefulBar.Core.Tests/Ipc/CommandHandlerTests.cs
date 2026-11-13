@@ -1,13 +1,13 @@
 using System.Text.Json;
-using FlutterBar.Core.Config;
-using FlutterBar.Core.Diagnostics;
-using FlutterBar.Core.Ipc;
-using FlutterBar.Core.Logging;
-using FlutterBar.Core.Processes;
-using FlutterBar.Core.Sessions;
-using FlutterBar.Core.Tests.Fakes;
+using StatefulBar.Core.Config;
+using StatefulBar.Core.Diagnostics;
+using StatefulBar.Core.Ipc;
+using StatefulBar.Core.Logging;
+using StatefulBar.Core.Processes;
+using StatefulBar.Core.Sessions;
+using StatefulBar.Core.Tests.Fakes;
 
-namespace FlutterBar.Core.Tests.Ipc;
+namespace StatefulBar.Core.Tests.Ipc;
 
 [Collection("DiagLog")]
 public sealed class CommandHandlerTests : IDisposable

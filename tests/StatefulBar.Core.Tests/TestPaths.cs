@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Tests;
+namespace StatefulBar.Core.Tests;
 
 public static class TestPaths
 {
@@ -12,12 +12,12 @@ public static class TestPaths
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "FlutterBar.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "StatefulBar.sln")))
             {
                 return dir.FullName;
             }
             dir = dir.Parent;
         }
-        throw new InvalidOperationException("FlutterBar.sln not found above " + AppContext.BaseDirectory);
+        throw new InvalidOperationException("StatefulBar.sln not found above " + AppContext.BaseDirectory);
     }
 }

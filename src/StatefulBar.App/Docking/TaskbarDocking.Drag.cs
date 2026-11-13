@@ -1,12 +1,12 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using FlutterBar.App.Diagnostics;
-using FlutterBar.App.Native;
-using FlutterBar.Core.Docking;
-using FlutterBar.Core.Layout;
+using StatefulBar.App.Diagnostics;
+using StatefulBar.App.Native;
+using StatefulBar.Core.Docking;
+using StatefulBar.Core.Layout;
 
-namespace FlutterBar.App.Docking;
+namespace StatefulBar.App.Docking;
 
 /// <summary>
 /// "Drag widget" mode (spec §7.3): horizontal move with mouse capture (never <c>Window.DragMove</c>, which activates the

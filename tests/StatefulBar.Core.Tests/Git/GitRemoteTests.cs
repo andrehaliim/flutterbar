@@ -1,8 +1,8 @@
-using FlutterBar.Core.Git;
-using FlutterBar.Core.Orchestration;
-using FlutterBar.Core.Processes;
+using StatefulBar.Core.Git;
+using StatefulBar.Core.Orchestration;
+using StatefulBar.Core.Processes;
 
-namespace FlutterBar.Core.Tests.Git;
+namespace StatefulBar.Core.Tests.Git;
 
 /// <summary>Fetch, pull and commit-and-push against a real bare remote in a temp folder (spec §5.5).</summary>
 public class GitRemoteTests

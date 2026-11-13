@@ -1,7 +1,7 @@
 using System.Text.Json;
-using FlutterBar.Core.VmService;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.Core.Tests.VmService;
+namespace StatefulBar.Core.Tests.VmService;
 
 public sealed class VmLogProtocolTests
 {

@@ -1,6 +1,6 @@
-using FlutterBar.Core.VmService;
+using StatefulBar.Core.VmService;
 
-namespace FlutterBar.Core.Tests.Fakes;
+namespace StatefulBar.Core.Tests.Fakes;
 
 /// <summary>Records connections and lets a test push <c>log()</c> records or a failure into the newest one.</summary>
 public sealed class FakeVmLogConnector : IVmLogConnector

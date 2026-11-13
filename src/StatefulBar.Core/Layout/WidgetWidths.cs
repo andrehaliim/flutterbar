@@ -1,4 +1,4 @@
-namespace FlutterBar.Core.Layout;
+namespace StatefulBar.Core.Layout;
 
 /// <summary>Maps <c>widget.size</c> in settings.json to <see cref="WidgetSize"/>.</summary>
 public static class WidgetSizeNames
