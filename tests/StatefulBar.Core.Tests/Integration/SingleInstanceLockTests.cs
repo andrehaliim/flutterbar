@@ -56,9 +56,17 @@ public sealed class SingleInstanceLockTests
         var leaked = OnOtherThread(() => SingleInstanceLock.TryAcquire(_name, out _));
         Assert.NotNull(leaked);
 
-        using var next = SingleInstanceLock.TryAcquire(_name, out var abandoned);
+        // Windows marks the mutex abandoned once the owning thread is gone at the OS level, which can be a moment after
+        // Thread.Join returns; until then the mutex still reads as held.
+        SingleInstanceLock? next = null;
+        var abandoned = false;
+        var acquired = SpinWait.SpinUntil(
+            () => (next = SingleInstanceLock.TryAcquire(_name, out abandoned)) is not null, TimeSpan.FromSeconds(5));
 
-        Assert.NotNull(next);
-        Assert.True(abandoned);
+        using (next)
+        {
+            Assert.True(acquired);
+            Assert.True(abandoned);
+        }
     }
 }
