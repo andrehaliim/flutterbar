@@ -447,7 +447,9 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Exit
 
 ### 7.5 Flutter tools
-- Tombol logo Flutter (monokrom) di kiri tombol log pada Full dan Compact; di Buttons only lewat menu klik kanan.
+- Tombol kunci pas (glyph Segoe `E90F`, sama dengan ikon menu "Flutter tools…") di kiri tombol log pada Full dan
+  Compact; di Buttons only lewat menu klik kanan. Sebelumnya logo Flutter monokrom; diganti 2026-11-13 karena pedoman
+  merek Flutter melarang logo yang diubah dan pemakaiannya di dalam produk.
 - Flyout berupa daftar: Pub get, Clean, Clean and pub get, Run build_runner (hanya bila `build_runner` ada di
   `dependencies`/`dev_dependencies` pubspec), Doctor.
 - Perintah dijalankan lewat `FlutterToolLocator` (fvm otomatis; build_runner = `dart run build_runner build

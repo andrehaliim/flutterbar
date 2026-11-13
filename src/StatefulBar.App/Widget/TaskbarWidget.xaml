@@ -98,15 +98,6 @@
             <Setter Property="Fill" Value="{DynamicResource Fb.Grey}" />
         </Style>
 
-        <!-- Flutter logo (monochrome, follows the button foreground) for the Flutter tools button in Full and Compact. -->
-        <Style x:Key="Style.FlutterLogo" TargetType="Path">
-            <Setter Property="Width" Value="13" />
-            <Setter Property="Height" Value="13" />
-            <Setter Property="Stretch" Value="Uniform" />
-            <Setter Property="Fill" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
-            <Setter Property="Data" Value="M14.314,0 L2.3,12 L6,15.7 L21.684,0.013 Z M14.328,11.072 L7.857,17.53 L14.327,24 L21.7,24 L15.24,17.532 L21.7,11.072 Z" />
-        </Style>
-
         <!-- Menu of the log button (Full and Compact): a click (left or right) asks "log or terminal" instead of opening the
              log at once. Same look as the widget menu (Menu/MenuStyles.xaml); tracked by TaskbarDocking like every ContextMenu. -->
         <ContextMenu x:Key="LogButtonMenu" Placement="Top" Style="{StaticResource Fb.ContextMenu}">
@@ -151,7 +142,7 @@
         <Border x:Name="Frame" BorderThickness="1" BorderBrush="Transparent">
             <!-- All three sizes stay in the tree (Hidden, not Collapsed) so each can be measured for the size choice. -->
             <Grid x:Name="Root" ClipToBounds="True">
-                <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | Flutter tools, log (console glyph) -->
+                <!-- Full: ● [project▾] [⎇ branch▾] [config▾] [device▾] | buttons | Flutter tools (wrench), log (console glyph) -->
                 <DockPanel x:Name="FullPanel" Margin="6,0" LastChildFill="True">
                     <Ellipse x:Name="DotFull" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -159,9 +150,7 @@
                         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                         <Rectangle Style="{StaticResource Style.Separator}" />
                         <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
-                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
-                            <Path Style="{StaticResource Style.FlutterLogo}" />
-                        </Button>
+                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools" Content="&#xE90F;" />
                         <Button Style="{StaticResource Style.IconButton}" Click="OnLogButtonClick" Content="&#xE756;"
                                 Foreground="{DynamicResource Fb.Foreground}" ToolTip="Log and terminal" AutomationProperties.Name="Log and terminal"
                                 ContextMenu="{StaticResource LogButtonMenu}" />
@@ -186,7 +175,7 @@
                     </StackPanel>
                 </DockPanel>
 
-                <!-- Compact: ● Configuration ▾ | buttons | Flutter tools, log (console glyph); the tooltip lists the current selection -->
+                <!-- Compact: ● Configuration ▾ | buttons | Flutter tools (wrench), log (console glyph); the tooltip lists the current selection -->
                 <DockPanel x:Name="CompactPanel" Margin="6,0" LastChildFill="True" Visibility="Hidden">
                     <Ellipse x:Name="DotCompact" DockPanel.Dock="Left" Style="{StaticResource Style.Dot}" ToolTip="{Binding StatusToolTip}" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -194,9 +183,7 @@
                         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource SessionButtons}" Focusable="False" />
                         <Rectangle Style="{StaticResource Style.Separator}" />
                         <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
-                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools">
-                            <Path Style="{StaticResource Style.FlutterLogo}" />
-                        </Button>
+                                Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools" Content="&#xE90F;" />
                         <Button Style="{StaticResource Style.IconButton}" Click="OnLogButtonClick" Content="&#xE756;"
                                 Foreground="{DynamicResource Fb.Foreground}" ToolTip="Log and terminal" AutomationProperties.Name="Log and terminal"
                                 ContextMenu="{StaticResource LogButtonMenu}" />

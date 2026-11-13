@@ -77,7 +77,7 @@ Klik kanan widget:
 
 Tombol di widget:
 
-- **Logo Flutter** (Full/Compact; di Buttons only lewat menu > Flutter tools…): Pub get, Clean, Clean and pub get,
+- **Kunci pas** (Flutter tools; Full/Compact; di Buttons only lewat menu > Flutter tools…): Pub get, Clean, Clean and pub get,
   Run build_runner (hanya bila `build_runner` ada di pubspec), dan Doctor. Satu perintah sekaligus, bisa di-Cancel, output masuk
   ke log. Clean nonaktif selama app berjalan; ▶ menunggu sampai perintah selesai.
 - **Tombol log** (paling kanan): menu Open log dan Open terminal (Windows Terminal bila ada, selain itu PowerShell,

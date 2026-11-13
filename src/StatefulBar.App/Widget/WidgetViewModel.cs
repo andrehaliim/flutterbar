@@ -19,7 +19,7 @@ internal enum WidgetChip
     /// <summary>Compact name area or ButtonsOnly status dot: the combined flyout.</summary>
     Combined,
 
-    /// <summary>Flutter logo button (or the menu's "Flutter tools"): pub get, clean, doctor, build_runner.</summary>
+    /// <summary>Flutter tools button (wrench glyph) or the menu's "Flutter tools": pub get, clean, doctor, build_runner.</summary>
     Flutter,
 }
 
