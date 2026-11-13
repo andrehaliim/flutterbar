@@ -282,6 +282,8 @@
                         AutomationProperties.Name="Next error" />
                 <Button Style="{StaticResource Log.ToolButton}" Content="Clear" Click="OnClearClick" ToolTip="Clear the view (the buffer is kept)" />
                 <Button Style="{StaticResource Log.ToolButton}" Content="Copy" Click="OnCopyClick" ToolTip="Copy selected lines, or all (Ctrl+C)" />
+                <Button Style="{StaticResource Log.ToolButton}" Content="Open terminal" Click="OnOpenTerminalClick"
+                        ToolTip="Open a terminal in the project folder" />
             </StackPanel>
             <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource Fb.Muted}" HorizontalAlignment="Right"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />

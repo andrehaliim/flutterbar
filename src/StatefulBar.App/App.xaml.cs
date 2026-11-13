@@ -99,10 +99,9 @@ public partial class App : Application
         _theme = new TaskbarTheme(Resources, Dispatcher, TaskbarTheme.ParseMode(_settings.Widget.Theme));
         _session = new RunSession(new ProcessLauncher(), _log, vmLogs: new VmLogConnector());
         _viewModel = new WidgetViewModel(_session, Dispatcher) { BackgroundOpacity = _settings.Widget.BackgroundOpacity / 100.0 };
-        LogWindow.Configure(_log);
         _viewModel.OpenLogRequested += OpenLog;
         _controller = new AppController(Dispatcher, _saver, _session, _log, _viewModel, () => _widget, ShowWidgetFromCli, warning);
-        _viewModel.OpenTerminalRequested += () => _controller?.Observe(_controller.OpenTerminalAsync(), "Open terminal");
+        LogWindow.Configure(_log, () => _controller?.Observe(_controller.OpenTerminalAsync(), "Open terminal"));
         _importFlow = new ImportFlow(_controller);
         _controller.ImportRequested += _importFlow.Open; // "No config yet → Import from IDE"
         _system = new SystemActions(_controller, new WindowsUserRegistry());

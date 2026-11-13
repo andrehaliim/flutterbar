@@ -15,7 +15,7 @@ namespace StatefulBar.App.Services;
 /// <summary>
 /// Flutter flyout (spec §7.5): pub get / clean / build_runner / doctor in the current project, one at a time, output in the
 /// log. A command keeps running when the flyout closes (Cancel is in the flyout). "Open terminal" in the project folder
-/// lives in the log button's menu and in the widget's right-click menu.
+/// lives in the LogWindow toolbar and in the widget's right-click menu.
 /// </summary>
 internal sealed partial class AppController
 {
@@ -24,7 +24,7 @@ internal sealed partial class AppController
     private CancellationTokenSource? _flutterCts;
     private bool _usesBuildRunner;
 
-    /// <summary>"Open terminal" from the log button's menu or the widget's right-click menu.</summary>
+    /// <summary>"Open terminal" from the LogWindow toolbar or the widget's right-click menu.</summary>
     public async Task OpenTerminalAsync()
     {
         _flyout.Close();

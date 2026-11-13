@@ -20,6 +20,7 @@ public partial class LogWindow : Window
     private const double BottomTolerance = 2;
 
     private static LogBuffer? s_buffer;
+    private static Action? s_openTerminal;
     private static LogWindow? s_instance;
 
 #if DEBUG
@@ -67,8 +68,15 @@ public partial class LogWindow : Window
 #endif
     }
 
-    /// <summary>Called once at startup with the buffer the run session writes to.</summary>
-    public static void Configure(LogBuffer buffer) => s_buffer = buffer;
+    /// <summary>
+    /// Called once at startup with the buffer the run session writes to and what the "Open terminal" button does
+    /// (a terminal in the current project folder).
+    /// </summary>
+    public static void Configure(LogBuffer buffer, Action openTerminal)
+    {
+        s_buffer = buffer;
+        s_openTerminal = openTerminal;
+    }
 
     /// <summary>
     /// Opens the window (or focuses the open one) and scrolls to <paramref name="seq"/>, expanding its exception block;
@@ -343,6 +351,8 @@ public partial class LogWindow : Window
     private void OnClearClick(object sender, RoutedEventArgs e) => _vm.Clear();
 
     private void OnCopyClick(object sender, RoutedEventArgs e) => CopyToClipboard();
+
+    private void OnOpenTerminalClick(object sender, RoutedEventArgs e) => s_openTerminal?.Invoke();
 
     private void CopyToClipboard()
     {

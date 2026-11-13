@@ -68,7 +68,6 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
         _restart = new RelayCommand(() => ReloadRequested?.Invoke(true), () => _controls.RestartEnabled);
         _stop = new RelayCommand(() => StopRequested?.Invoke(), () => _controls.StopEnabled);
         OpenLogCommand = new RelayCommand(() => OpenLogRequested?.Invoke());
-        OpenTerminalCommand = new RelayCommand(() => OpenTerminalRequested?.Invoke());
         ProjectChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Project));
         BranchChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Branch));
         ConfigChipCommand = new RelayCommand(() => ChipRequested?.Invoke(WidgetChip.Config));
@@ -103,9 +102,6 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
 
     /// <summary>🖥 pressed: Task 15 opens the LogWindow.</summary>
     public event Action? OpenLogRequested;
-
-    /// <summary>"Open terminal" picked in the log button's menu.</summary>
-    public event Action? OpenTerminalRequested;
 
     /// <summary>A chip was clicked: Task 14 opens the flyout.</summary>
     public event Action<WidgetChip>? ChipRequested;
@@ -265,8 +261,6 @@ internal sealed class WidgetViewModel : INotifyPropertyChanged, IDisposable
     public ICommand StopCommand => _stop;
 
     public ICommand OpenLogCommand { get; }
-
-    public ICommand OpenTerminalCommand { get; }
 
     public ICommand ProjectChipCommand { get; }
 

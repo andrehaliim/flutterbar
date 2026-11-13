@@ -98,21 +98,6 @@
             <Setter Property="Fill" Value="{DynamicResource Fb.Grey}" />
         </Style>
 
-        <!-- Menu of the log button (Full and Compact): a click (left or right) asks "log or terminal" instead of opening the
-             log at once. Same look as the widget menu (Menu/MenuStyles.xaml); tracked by TaskbarDocking like every ContextMenu. -->
-        <ContextMenu x:Key="LogButtonMenu" Placement="Top" Style="{StaticResource Fb.ContextMenu}">
-            <MenuItem Header="Open log" Click="OnLogMenuOpenLogClick">
-                <MenuItem.Icon>
-                    <TextBlock Text="&#xE756;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
-                </MenuItem.Icon>
-            </MenuItem>
-            <MenuItem Header="Open terminal" Click="OnLogMenuOpenTerminalClick">
-                <MenuItem.Icon>
-                    <TextBlock Text="&#xE943;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
-                </MenuItem.Icon>
-            </MenuItem>
-        </ContextMenu>
-
         <!-- ▶ / ⏳ / ⚡ / 🔄 / ⏹, shared by the three sizes; visibility and enabled state come from SessionControls -->
         <DataTemplate x:Key="SessionButtons">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -151,9 +136,8 @@
                         <Rectangle Style="{StaticResource Style.Separator}" />
                         <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
                                 Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools" Content="&#xE90F;" />
-                        <Button Style="{StaticResource Style.IconButton}" Click="OnLogButtonClick" Content="&#xE756;"
-                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Log and terminal" AutomationProperties.Name="Log and terminal"
-                                ContextMenu="{StaticResource LogButtonMenu}" />
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" ClipToBounds="True">
                         <Button Style="{StaticResource Style.Chip}" Content="{Binding ProjectName}" Command="{Binding ProjectChipCommand}" ToolTip="Project"
@@ -184,9 +168,8 @@
                         <Rectangle Style="{StaticResource Style.Separator}" />
                         <Button Style="{StaticResource Style.IconButton}" Command="{Binding FlutterToolsCommand}" ToolTip="{Binding FlutterToolTip}"
                                 Foreground="{DynamicResource Fb.Foreground}" AutomationProperties.Name="Flutter tools" Content="&#xE90F;" />
-                        <Button Style="{StaticResource Style.IconButton}" Click="OnLogButtonClick" Content="&#xE756;"
-                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Log and terminal" AutomationProperties.Name="Log and terminal"
-                                ContextMenu="{StaticResource LogButtonMenu}" />
+                        <Button Style="{StaticResource Style.IconButton}" Command="{Binding OpenLogCommand}" Content="&#xE756;"
+                                Foreground="{DynamicResource Fb.Foreground}" ToolTip="Open log" AutomationProperties.Name="Open log" />
                     </StackPanel>
                     <Button Style="{StaticResource Style.Chip}" Command="{Binding CombinedChipCommand}" Content="Configuration"
                             HorizontalAlignment="Left" ToolTip="{Binding SelectionSummary}" AutomationProperties.Name="Configuration" />
