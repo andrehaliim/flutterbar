@@ -1,4 +1,4 @@
-# Build, format check, unit tests, and the release zip for every push or pull request to main.
+# Build, format check, unit tests, the release zip, and the Store package for every push or pull request to main.
 # Docs-only changes are skipped. Integration tests need a real Flutter device and stay skipped here.
 name: CI
 
@@ -49,14 +49,23 @@ jobs:
       - name: Test
         run: dotnet test StatefulBar.sln -c Release --no-build
 
-      - name: Publish release zip
+      - name: Publish release zip and Store package
         shell: pwsh
-        run: ./tools/publish.ps1
+        run: ./tools/publish.ps1 -Msix
 
       - name: Upload release zip
         uses: actions/upload-artifact@v4
         with:
           name: StatefulBar-win-x64
           path: artifacts/StatefulBar-*-win-x64.zip
+          retention-days: 7
+          if-no-files-found: error
+
+      # Unsigned on purpose (the Store signs it): for the Partner Center upload, not for installing by hand.
+      - name: Upload Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: StatefulBar-msix
+          path: artifacts/StatefulBar-*-win-x64.msix
           retention-days: 7
           if-no-files-found: error

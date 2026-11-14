@@ -10,13 +10,17 @@
 .PARAMETER Out        Output .ico (default: src/StatefulBar.App/Assets/statefulbar.ico).
 .PARAMETER PreviewDir Optional folder that receives one PNG per size (statefulbar-<size>.png), for a visual check.
 .PARAMETER Sizes      Icon sizes in pixels. 256 is stored as PNG, smaller sizes as 32-bit bitmaps.
+.PARAMETER MsixDir    Folder that receives the logos of the Microsoft Store package (packaging\msix\Assets):
+                      Square44x44Logo.png, Square150x150Logo.png, StoreLogo.png (50 x 50). With this parameter only
+                      the logos are written; the .ico is left alone.
 
   Uses WPF (PresentationCore) only, nothing to install. Compatible with Windows PowerShell 5.1.
 #>
 param(
     [string]$Out = '',
     [string]$PreviewDir = '',
-    [int[]]$Sizes = @(16, 20, 24, 32, 40, 48, 64, 256)
+    [int[]]$Sizes = @(16, 20, 24, 32, 40, 48, 64, 256),
+    [string]$MsixDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -137,6 +141,22 @@ function ConvertTo-IconDib($bitmap) {
     $writer.Write((New-Object byte[] ($maskStride * $size)))
     $writer.Flush()
     return , $stream.ToArray()
+}
+
+if ($MsixDir -ne '') {
+    $msixDir = [IO.Path]::GetFullPath($MsixDir)
+    if (-not (Test-Path $msixDir)) { New-Item -ItemType Directory -Force $msixDir | Out-Null }
+    # Plain file names only: scale-200 or targetsize-32 variants need a resources.pri, which the package does not have.
+    $logos = @(
+        @{ Name = 'Square44x44Logo'; Size = 44 },
+        @{ Name = 'Square150x150Logo'; Size = 150 },
+        @{ Name = 'StoreLogo'; Size = 50 }
+    )
+    foreach ($logo in $logos) {
+        [IO.File]::WriteAllBytes((Join-Path $msixDir "$($logo.Name).png"), (ConvertTo-Png (New-IconBitmap $logo.Size)))
+    }
+    Write-Host "Wrote the package logos to $msixDir ($(($logos | ForEach-Object { "$($_.Name) $($_.Size)" }) -join ', '))"
+    return
 }
 
 $images = @()

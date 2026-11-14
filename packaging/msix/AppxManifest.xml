@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Package manifest of the Microsoft Store build. tools\publish.ps1 -Msix copies it into the package folder and sets
+  Identity/@Version to <Version> from Directory.Build.props plus ".0" (the Store wants a four-part version ending in 0).
+
+  Identity Name, Identity Publisher, and PublisherDisplayName come from Partner Center (Product identity) and must
+  match it exactly, or the Store rejects the package. The Store signs the package; nothing here is signed by us.
+
+  Two applications share the package:
+    App  StatefulBar.exe, the widget. Its startup task is how "Start with Windows" works here (a package cannot write
+         the real HKCU Run key); users turn it on or off in Settings > Apps > Startup.
+    Cli  sbar.exe, reachable from any terminal through the execution alias, so nothing is added to PATH.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 desktop desktop4 rescap">
+
+  <Identity
+    Name="AndreHaliimStudio.StatefulBar"
+    Publisher="CN=FF5EBF5A-5CC5-4789-8A06-8A2C2E5A87CF"
+    Version="0.0.0.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>StatefulBar</DisplayName>
+    <PublisherDisplayName>Andre Haliim Studio</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <!-- 1809: the first release with console execution aliases for packaged desktop apps. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App" Executable="StatefulBar.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="StatefulBar"
+        Description="Run, hot reload, and stop Flutter apps from the Windows taskbar"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png" />
+      <Extensions>
+        <desktop:Extension Category="windows.startupTask" Executable="StatefulBar.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="StatefulBarStartup" Enabled="false" DisplayName="StatefulBar" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+
+    <Application Id="Cli" Executable="sbar.exe" EntryPoint="Windows.FullTrustApplication"
+      desktop4:Subsystem="console" desktop4:SupportsMultipleInstances="true">
+      <uap:VisualElements
+        DisplayName="StatefulBar CLI"
+        Description="Command line tool for StatefulBar"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        AppListEntry="none" />
+      <Extensions>
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="sbar.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias desktop4:Subsystem="console">
+            <uap5:ExecutionAlias Alias="sbar.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

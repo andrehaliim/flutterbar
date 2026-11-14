@@ -8,6 +8,7 @@ How to build, test, and package StatefulBar. For using the app, see the [README]
 - [Build and test](#build-and-test)
 - [Release package](#release-package)
 - [Installer](#installer)
+- [Microsoft Store package](#microsoft-store-package)
 - [CI and releases](#ci-and-releases)
 - [Tests](#tests)
 - [RAM usage](#ram-usage)
@@ -89,16 +90,56 @@ see [Requirements](#requirements)).
 Unattended install, e.g. for testing: `StatefulBar-<version>-win-x64-setup.exe /VERYSILENT /TASKS="startup,addtopath"`;
 uninstall with `"%LOCALAPPDATA%\Programs\StatefulBar\unins000.exe" /VERYSILENT`.
 
+## Microsoft Store package
+
+```
+.\tools\publish.ps1 -Msix
+```
+
+Also builds the Store package from the same release folder:
+
+| Output | Contents |
+|---|---|
+| `artifacts\msix\layout\` | The release folder plus `packaging\msix\AppxManifest.xml` and the logos, with the version set to `<Version>.0` |
+| `artifacts\StatefulBar-<version>-win-x64.msix` | The layout packed by `makeappx.exe`; only when the Windows SDK is installed |
+
+- The `.msix` is not signed, because the Store signs it. It is for the Partner Center upload and cannot be installed by
+  hand. CI builds it on every run and attaches it to the run as the `StatefulBar-msix` artifact.
+- `Identity` (`Name`, `Publisher`) and `PublisherDisplayName` in the manifest come from Partner Center > Product identity.
+  A test guards them; change them only when Partner Center changes.
+- The logos in `packaging\msix\Assets` are drawn by `.\tools\make-icon.ps1 -MsixDir packaging\msix\Assets`.
+
+To test the packaged app without the Store or a certificate, turn on Developer Mode in Windows and register the layout:
+
+```
+Add-AppxPackage -Register artifacts\msix\layout\AppxManifest.xml
+```
+
+Exit every other StatefulBar first (one instance per user), start "StatefulBar" from the Start menu, and remove the test
+package afterwards with `Get-AppxPackage AndreHaliimStudio.StatefulBar | Remove-AppxPackage`. It must be gone before the
+Store version is installed on the same PC.
+
+What is different when packaged (`PackageIdentity.IsPackaged`, logged as `packaged=True` in the start line of `diag.log`):
+
+- "Start with Windows…" opens Settings > Apps > Startup: the package's startup task replaces the `Run` registry value,
+  which a package cannot write.
+- "Add CLI to PATH…" is hidden: `sbar` is available in every terminal through the package's execution alias.
+- Settings and `diag.log` use `%APPDATA%\StatefulBar` when that folder already exists (it is shared with an installed
+  copy), otherwise Windows keeps them in the package's own folder under `%LOCALAPPDATA%\Packages`.
+- Flutter, git, and adb started by the widget run outside the package, so they read and write their usual locations.
+
 ## CI and releases
 
 GitHub Actions, in `.github/workflows/`:
 
 - **CI** (`ci.yml`) runs on every push and pull request to `main`, except changes that only touch `*.md`, `docs/`, or
-  `LICENSE`: format check (`dotnet format --verify-no-changes`), Release build, unit tests, then `tools\publish.ps1`. The
-  zip is attached to the run as the `StatefulBar-win-x64` artifact for 7 days.
+  `LICENSE`: format check (`dotnet format --verify-no-changes`), Release build, unit tests, then `tools\publish.ps1 -Msix`.
+  The zip and the Store package are attached to the run as the `StatefulBar-win-x64` and `StatefulBar-msix` artifacts for
+  7 days.
 - **Release** (`release.yml`) runs when a `v*` tag is pushed. It checks that the tag matches `<Version>` in
   `Directory.Build.props`, runs the tests, builds the zip and `Setup.exe` (Inno Setup from Chocolatey), writes
-  `SHA256SUMS.txt`, and creates a **draft** GitHub Release with those three files and generated release notes.
+  `SHA256SUMS.txt`, and creates a **draft** GitHub Release with those three files and generated release notes. The Store
+  package of the same build is attached to the workflow run (30 days), not to the Release.
 
 To ship a new version:
 

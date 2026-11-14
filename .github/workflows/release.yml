@@ -1,5 +1,6 @@
 # Pushing a version tag (e.g. v1.0.0) builds the zip and Setup.exe and creates a DRAFT GitHub Release with them.
 # The tag must match <Version> in Directory.Build.props. Review the draft on GitHub, then publish it by hand.
+# The Store package (.msix) of the same build is attached to the workflow run, not to the Release.
 name: Release
 
 on:
@@ -41,9 +42,19 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
 
-      - name: Build the zip and the installer
+      - name: Build the zip, the installer, and the Store package
         shell: pwsh
-        run: ./tools/publish.ps1 -Installer
+        run: ./tools/publish.ps1 -Installer -Msix
+
+      # Kept out of the GitHub Release: the package is unsigned (the Store signs it), so it cannot be installed by
+      # hand. Download it from this run and upload it in Partner Center.
+      - name: Upload Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: StatefulBar-${{ steps.version.outputs.version }}-msix
+          path: artifacts/StatefulBar-*-win-x64.msix
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Checksums
         shell: pwsh

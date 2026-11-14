@@ -446,6 +446,12 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
   dan, bila `StatefulBar` belum ada, diganti value `StatefulBar` yang menunjuk exe ini
 - Exit
 
+Saat berjalan sebagai paket MSIX (versi Microsoft Store; `PackageIdentity.IsPackaged`, aturan di `SystemMenu`), dua item
+berbeda karena paket tidak bisa menulis registry `HKCU` yang asli:
+- "Add CLI to PATH…" disembunyikan: `sbar` tersedia lewat execution alias paket.
+- "Start with Windows…" bukan toggle, melainkan perintah yang membuka Settings > Apps > Startup. Windows menjalankan
+  widget lewat startup task paket; value `Run` tidak dibaca, tidak ditulis, dan migrasi `FlutterBar` tidak dijalankan.
+
 ### 7.5 Flutter tools
 - Tombol kunci pas (glyph Segoe `E90F`, sama dengan ikon menu "Flutter tools…") di kiri tombol log pada Full dan
   Compact; di Buttons only lewat menu klik kanan. Sebelumnya logo Flutter monokrom; diganti 2026-11-13 karena pedoman
