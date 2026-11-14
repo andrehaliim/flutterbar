@@ -29,15 +29,20 @@ Captions, colours, and the frame size are in `config.json`; the frame layout is 
 | `widget_error.png` | The widget window | Running, after a hot reload that throws (red dot) |
 | `01_widget.png` | Copy of `widget_running.png` | The frame shows the widget on the taskbar only |
 | `02_cli.png` | A console after `sbar status`, `sbar reload`, `sbar logs --errors --since-last-reload` | Without the title bar and the empty lower part |
-| `03_log.png` | The log window, scrolled to the top | Without the title bar; one clean hot reload, then one that throws |
+| `03_log.png` | The log window (about 730 px wide, so the whole toolbar stays inside the frame), scrolled to the top | Without the title bar; one clean hot reload, then one that throws |
 | `04_devices.png` | The device flyout | Idle, list loaded |
-| `05_git.png` | The branch flyout | Idle, a commit message typed |
+| `05_git.png` | The branch flyout with the changes panel open (800 px wide), `main.dart` selected, on a transparent background | A commit message typed; two changed files (see below); wait until the file-path tooltip is gone |
 | `06_tools.png` | The Flutter tools flyout | Idle |
 | `07_sizes.png` | Full, Compact, Buttons only, each Dark then Light, stacked with a transparent background | Running |
 | `08_menu.png` | The right-click menu with the Style submenu open, on a transparent background | Idle |
 
 For the hot reload that throws, add `throw StateError('Counter overflow');` as the first line of
 `_MyHomePageState.build` in `tests/sample_app/lib/main.dart`, hot reload, and restore the file afterwards.
+
+For the changes panel, make a small edit that reads well as a diff and undo it afterwards: add
+`lib/counter_limits.dart` with `const int maxCounter = 99;`, import it in `lib/main.dart`, and wrap `_counter++;` in
+`if (_counter < maxCounter) { ... }`. Remove the temporary `.statefulbar/launch.json` first, or it shows up as a changed
+file too.
 
 The three `widget_*.png` files are also used by every frame for the widget on the drawn taskbar (`images` in
 `config.json`).

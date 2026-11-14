@@ -66,9 +66,9 @@
     },
     "05_git": {
       "layout": "desktop",
-      "kind": "popup",
+      "kind": "wide",
       "state": "idle",
-      "en": ["Commit and push in place", "Fetch, pull, switch branch, commit and push."]
+      "en": ["Review, commit, push", "See the diff of changed files, then commit and push."]
     },
     "06_tools": {
       "layout": "desktop",

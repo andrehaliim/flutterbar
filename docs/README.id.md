@@ -46,7 +46,7 @@ Klik gambar untuk melihat ukuran penuhnya.
   <img src="images/02_cli.png" width="49%" alt="Terminal yang menjalankan sbar status, sbar reload, dan sbar logs">
   <img src="images/03_log.png" width="49%" alt="Jendela log dengan satu hot reload dan satu blok exception">
   <img src="images/04_devices.png" width="49%" alt="Flyout device berisi device dan emulator yang belum menyala">
-  <img src="images/05_git.png" width="49%" alt="Flyout branch dengan Fetch, Pull, serta Commit and push">
+  <img src="images/05_git.png" width="49%" alt="Flyout branch dengan daftar file berubah dan diff-nya">
   <img src="images/06_tools.png" width="49%" alt="Flyout Flutter tools dengan Pub get, Clean, dan Doctor">
   <img src="images/07_sizes.png" width="49%" alt="Widget dalam tiga ukuran, tema gelap dan terang">
   <img src="images/08_menu.png" width="49%" alt="Menu klik kanan dengan submenu Style terbuka">

@@ -6,6 +6,7 @@
 
   Placeholders: theme, shot, title, subtitle, and per caption:
     kind   popup   flyout or menu, standing on the taskbar above the widget's left edge
+           wide    a widened flyout with its own rounded corners; stands on the taskbar and runs off the right edge
            window  a normal window (log); wider than the stage, it runs off the right edge
            terminal  like window, with padding around the console text
            stack   a pre-composed picture, centred in the stage
@@ -54,6 +55,9 @@ p { margin-top: 14px; font-size: 18px; font-weight: 500; line-height: 1.4; color
 /* Flyouts and menus open above the widget, left edges aligned (the widget ends 98 px from the right edge). */
 .kind-popup .shot { bottom: 8px; left: var(--widget-left); }
 .kind-popup .shot img { border-radius: 10px; }
+
+/* A flyout that widened beyond the stage (the branch flyout's changes panel): still on the taskbar, off the right edge. */
+.kind-wide .shot { bottom: 8px; left: 410px; }
 
 .kind-window .shot, .kind-terminal .shot { left: 410px; top: 50%; transform: translateY(-50%); }
 .kind-window .shot img { border-radius: 8px; }

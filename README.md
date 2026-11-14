@@ -47,7 +47,7 @@ Click a picture to see it at full size.
   <img src="docs/images/02_cli.png" width="49%" alt="A terminal running sbar status, sbar reload, and sbar logs">
   <img src="docs/images/03_log.png" width="49%" alt="The log window with a hot reload and an exception block">
   <img src="docs/images/04_devices.png" width="49%" alt="The device flyout with devices and an offline emulator">
-  <img src="docs/images/05_git.png" width="49%" alt="The branch flyout with Fetch, Pull, and Commit and push">
+  <img src="docs/images/05_git.png" width="49%" alt="The branch flyout with changed files and a diff">
   <img src="docs/images/06_tools.png" width="49%" alt="The Flutter tools flyout with Pub get, Clean, and Doctor">
   <img src="docs/images/07_sizes.png" width="49%" alt="The widget in three sizes, dark and light">
   <img src="docs/images/08_menu.png" width="49%" alt="The right-click menu with the Style submenu open">
