@@ -13,6 +13,10 @@
 .PARAMETER MsixDir    Folder that receives the logos of the Microsoft Store package (packaging\msix\Assets):
                       Square44x44Logo.png, Square150x150Logo.png, StoreLogo.png (50 x 50). With this parameter only
                       the logos are written; the .ico is left alone.
+.PARAMETER StoreDir   Folder that receives the images for the Store listing in Partner Center (Store logos):
+                      AppTile-300.png, AppTile-150.png, AppTile-71.png (the icon), BoxArt-1080x1080.png and
+                      Poster-720x1080.png (the icon and the name on the dark blue of the README screenshots). With
+                      this parameter only these images are written.
 
   Uses WPF (PresentationCore) only, nothing to install. Compatible with Windows PowerShell 5.1.
 #>
@@ -20,7 +24,8 @@ param(
     [string]$Out = '',
     [string]$PreviewDir = '',
     [int[]]$Sizes = @(16, 20, 24, 32, 40, 48, 64, 256),
-    [string]$MsixDir = ''
+    [string]$MsixDir = '',
+    [string]$StoreDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -156,6 +161,43 @@ if ($MsixDir -ne '') {
         [IO.File]::WriteAllBytes((Join-Path $msixDir "$($logo.Name).png"), (ConvertTo-Png (New-IconBitmap $logo.Size)))
     }
     Write-Host "Wrote the package logos to $msixDir ($(($logos | ForEach-Object { "$($_.Name) $($_.Size)" }) -join ', '))"
+    return
+}
+
+if ($StoreDir -ne '') {
+    $storeDir = [IO.Path]::GetFullPath($StoreDir)
+    if (-not (Test-Path $storeDir)) { New-Item -ItemType Directory -Force $storeDir | Out-Null }
+    $backdrop = New-Brush '#0B2A4A' # the wallpaper of the README screenshots (screenshots\config.json)
+    $white = New-Brush '#FFFFFF'
+    $typeface = New-Object Windows.Media.Typeface (
+        (New-Object Windows.Media.FontFamily 'Segoe UI'), [Windows.FontStyles]::Normal, [Windows.FontWeights]::SemiBold,
+        [Windows.FontStretches]::Normal)
+
+    # The icon with the product name under it, centred on the backdrop.
+    function New-StoreArt([int]$width, [int]$height, [int]$iconSize, [double]$fontSize) {
+        $text = New-Object Windows.Media.FormattedText (
+            'StatefulBar', [Globalization.CultureInfo]::InvariantCulture, [Windows.FlowDirection]::LeftToRight, $typeface,
+            $fontSize, $white, 1.0)
+        $gap = [Math]::Round($fontSize * 0.55)
+        $top = [Math]::Round(($height - $iconSize - $gap - $text.Height) / 2)
+        $visual = New-Object Windows.Media.DrawingVisual
+        $dc = $visual.RenderOpen()
+        $dc.DrawRectangle($backdrop, $null, (New-Object Windows.Rect (0, 0, $width, $height)))
+        $dc.DrawImage((New-IconBitmap $iconSize), (New-Object Windows.Rect ([Math]::Round(($width - $iconSize) / 2), $top, $iconSize, $iconSize)))
+        $dc.DrawText($text, (New-Object Windows.Point ([Math]::Round(($width - $text.Width) / 2), ($top + $iconSize + $gap))))
+        $dc.Close()
+        $bitmap = New-Object Windows.Media.Imaging.RenderTargetBitmap ($width, $height, 96, 96, ([Windows.Media.PixelFormats]::Pbgra32))
+        $bitmap.Render($visual)
+        $bitmap.Freeze()
+        return $bitmap
+    }
+
+    foreach ($size in 300, 150, 71) {
+        [IO.File]::WriteAllBytes((Join-Path $storeDir "AppTile-$size.png"), (ConvertTo-Png (New-IconBitmap $size)))
+    }
+    [IO.File]::WriteAllBytes((Join-Path $storeDir 'BoxArt-1080x1080.png'), (ConvertTo-Png (New-StoreArt 1080 1080 520 96)))
+    [IO.File]::WriteAllBytes((Join-Path $storeDir 'Poster-720x1080.png'), (ConvertTo-Png (New-StoreArt 720 1080 400 76)))
+    Write-Host "Wrote the Store listing images to $storeDir (app tiles 300, 150, 71; box art 1080x1080; poster 720x1080)"
     return
 }
 

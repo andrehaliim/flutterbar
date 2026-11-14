@@ -108,6 +108,9 @@ Also builds the Store package from the same release folder:
 - `Identity` (`Name`, `Publisher`) and `PublisherDisplayName` in the manifest come from Partner Center > Product identity.
   A test guards them; change them only when Partner Center changes.
 - The logos in `packaging\msix\Assets` are drawn by `.\tools\make-icon.ps1 -MsixDir packaging\msix\Assets`.
+- The images for the Store listing (Partner Center > Store listings > Store logos) are drawn by
+  `.\tools\make-icon.ps1 -StoreDir artifacts\store`: three app tile icons (300, 150, 71), the 1:1 box art, and the 9:16
+  poster. They are uploaded by hand and are not part of the package or the repository.
 
 To test the packaged app without the Store or a certificate, turn on Developer Mode in Windows and register the layout:
 
