@@ -6,19 +6,20 @@
   Identity Name, Identity Publisher, and PublisherDisplayName come from Partner Center (Product identity) and must
   match it exactly, or the Store rejects the package. The Store signs the package; nothing here is signed by us.
 
-  Two applications share the package:
-    App  StatefulBar.exe, the widget. Its startup task is how "Start with Windows" works here (a package cannot write
-         the real HKCU Run key); users turn it on or off in Settings > Apps > Startup.
-    Cli  sbar.exe, reachable from any terminal through the execution alias, so nothing is added to PATH.
+  One application, the widget (StatefulBar.exe), with two extensions:
+    startup task     how "Start with Windows" works here (a package cannot write the real HKCU Run key); users turn
+                     it on or off in Settings > Apps > Startup.
+    execution alias  makes sbar.exe reachable from any terminal, so nothing is added to PATH.
+  sbar.exe must not become an application of its own: it would have to be hidden from the app list
+  (AppListEntry="none"), and Partner Center rejects such a "headless app" without a waiver.
 -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap5 desktop desktop4 rescap">
+  IgnorableNamespaces="uap uap3 desktop rescap">
 
   <Identity
     Name="AndreHaliimStudio.StatefulBar"
@@ -33,7 +34,7 @@
   </Properties>
 
   <Dependencies>
-    <!-- 1809: the first release with console execution aliases for packaged desktop apps. -->
+    <!-- 1809 is the oldest Windows 10 release the package is offered to. -->
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
@@ -53,24 +54,11 @@
         <desktop:Extension Category="windows.startupTask" Executable="StatefulBar.exe" EntryPoint="Windows.FullTrustApplication">
           <desktop:StartupTask TaskId="StatefulBarStartup" Enabled="false" DisplayName="StatefulBar" />
         </desktop:Extension>
-      </Extensions>
-    </Application>
-
-    <Application Id="Cli" Executable="sbar.exe" EntryPoint="Windows.FullTrustApplication"
-      desktop4:Subsystem="console" desktop4:SupportsMultipleInstances="true">
-      <uap:VisualElements
-        DisplayName="StatefulBar CLI"
-        Description="Command line tool for StatefulBar"
-        BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png"
-        AppListEntry="none" />
-      <Extensions>
-        <uap5:Extension Category="windows.appExecutionAlias" Executable="sbar.exe" EntryPoint="Windows.FullTrustApplication">
-          <uap5:AppExecutionAlias desktop4:Subsystem="console">
-            <uap5:ExecutionAlias Alias="sbar.exe" />
-          </uap5:AppExecutionAlias>
-        </uap5:Extension>
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="sbar.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="sbar.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
       </Extensions>
     </Application>
   </Applications>

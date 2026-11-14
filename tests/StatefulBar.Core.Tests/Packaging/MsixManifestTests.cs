@@ -9,7 +9,8 @@ namespace StatefulBar.Core.Tests.Packaging;
 public sealed class MsixManifestTests
 {
     private static readonly XNamespace Foundation = "http://schemas.microsoft.com/appx/manifest/foundation/windows10";
-    private static readonly XNamespace Uap5 = "http://schemas.microsoft.com/appx/manifest/uap/windows10/5";
+    private static readonly XNamespace Uap = "http://schemas.microsoft.com/appx/manifest/uap/windows10";
+    private static readonly XNamespace Uap3 = "http://schemas.microsoft.com/appx/manifest/uap/windows10/3";
     private static readonly XNamespace Desktop = "http://schemas.microsoft.com/appx/manifest/desktop/windows10";
     private static readonly XNamespace Rescap = "http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities";
 
@@ -34,23 +35,30 @@ public sealed class MsixManifestTests
         Assert.Equal("0.0.0.0", Package.Element(Foundation + "Identity")!.Attribute("Version")!.Value);
 
     [Fact]
-    public void Applications_AreTheWidgetAndTheCli()
+    public void TheWidget_IsTheOnlyApplication()
     {
-        var executables = Package.Element(Foundation + "Applications")!
-            .Elements(Foundation + "Application")
-            .Select(a => a.Attribute("Executable")!.Value);
+        var application = Assert.Single(Package.Element(Foundation + "Applications")!.Elements(Foundation + "Application"));
 
-        // The assembly names of StatefulBar.App and StatefulBar.Cli.
-        Assert.Equal(["StatefulBar.exe", "sbar.exe"], executables);
+        // The assembly name of StatefulBar.App.
+        Assert.Equal("StatefulBar.exe", application.Attribute("Executable")!.Value);
     }
+
+    // Partner Center rejects a package with an application hidden from the app list ("headless app") unless the
+    // publisher holds a waiver. That is why sbar.exe is an alias of the widget's entry and not an application of its own.
+    [Fact]
+    public void NoApplication_IsHiddenFromTheAppList() =>
+        Assert.DoesNotContain(Package.Descendants(Uap + "VisualElements"), v => v.Attribute("AppListEntry") is not null);
 
     [Fact]
     public void Cli_IsReachableAsSbar()
     {
-        var alias = Assert.Single(Package.Descendants(Uap5 + "ExecutionAlias"));
+        var alias = Assert.Single(Package.Descendants(Desktop + "ExecutionAlias"));
+        var extension = alias.Ancestors(Uap3 + "Extension").Single();
 
         Assert.Equal("sbar.exe", alias.Attribute("Alias")!.Value);
-        Assert.Equal("sbar.exe", alias.Ancestors(Uap5 + "Extension").Single().Attribute("Executable")!.Value);
+        // The assembly name of StatefulBar.Cli.
+        Assert.Equal("sbar.exe", extension.Attribute("Executable")!.Value);
+        Assert.Equal("windows.appExecutionAlias", extension.Attribute("Category")!.Value);
     }
 
     [Fact]
