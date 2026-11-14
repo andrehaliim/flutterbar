@@ -440,14 +440,24 @@ Idle ──Run──► Starting ──app.started──► Running ◄──┐
 - Open launch.json, yang membuka file dengan aplikasi default `.json`
 - Open log (membuka `LogWindow`)
 - Flutter tools… (membuka flyout Flutter, §7.5; satu-satunya jalan masuk di ukuran Buttons only) dan Open terminal
+- Updates ▸ Check now / Check automatically (`UpdateCheck`). Satu permintaan `GET` ke
+  `api.github.com/repos/andrehaliim/statefulbar/releases/latest` (tanpa login; yang terkirim hanya `User-Agent`
+  `StatefulBar/<versi>`), batas waktu 10 detik, di luar thread UI. Rilis yang lebih baru memunculkan toast
+  "StatefulBar x.y.z is available" dengan tombol "View release"; alamat yang dibuka disusun dari nomor versi yang sudah
+  divalidasi, tidak diambil dari jawaban server. Tidak ada yang diunduh atau dijalankan.
+  - Check now selalu menjawab: versi baru, "You're on the latest version (x.y.z)", atau "Couldn't check for updates: …".
+  - Check automatically (`updates.auto`, bawaan menyala): pengecekan pertama satu menit setelah start bila
+    `updates.lastCheck` sudah lewat 24 jam, lalu dilihat lagi tiap jam. Memberi tahu satu kali per versi
+    (`updates.notifiedVersion`); kegagalan hanya dicatat di `diag.log` dan dicoba lagi dalam satu jam.
 - Add CLI to PATH…, yang menambah folder `sbar.exe` ke PATH user (`HKCU\Environment`) setelah
   konfirmasi
 - Start with Windows (`HKCU\...\Run\StatefulBar`, toggle). Value lama `FlutterBar` (sebelum rename) dihapus saat start
   dan, bila `StatefulBar` belum ada, diganti value `StatefulBar` yang menunjuk exe ini
 - Exit
 
-Saat berjalan sebagai paket MSIX (versi Microsoft Store; `PackageIdentity.IsPackaged`, aturan di `SystemMenu`), dua item
-berbeda karena paket tidak bisa menulis registry `HKCU` yang asli:
+Saat berjalan sebagai paket MSIX (versi Microsoft Store; `PackageIdentity.IsPackaged`, aturan di `SystemMenu`), tiga item
+berbeda. Dua yang terakhir karena paket tidak bisa menulis registry `HKCU` yang asli:
+- "Updates" disembunyikan dan pengecekan otomatis tidak berjalan: Store yang memperbarui paket.
 - "Add CLI to PATH…" disembunyikan: `sbar` tersedia lewat execution alias paket.
 - "Start with Windows…" bukan toggle, melainkan perintah yang membuka Settings > Apps > Startup. Windows menjalankan
   widget lewat startup task paket; value `Run` tidak dibaca, tidak ditulis, dan migrasi `FlutterBar` tidak dijalankan.

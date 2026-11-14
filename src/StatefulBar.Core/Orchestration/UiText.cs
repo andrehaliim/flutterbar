@@ -31,6 +31,14 @@ public static class UiText
     public const string StartupToggle = "Start with Windows";
     public const string StartupSettings = "Start with Windows…";
     public const string StartupSettingsToolTip = "Opens the Windows startup settings, where StatefulBar is turned on or off";
+    public const string ViewRelease = "View release";
+    public const string UpdateCheckRunning = "Already checking for updates";
+
+    public static string UpdateAvailable(Version latest) => $"StatefulBar {Updates.UpdateCheck.Three(latest)} is available";
+
+    public static string UpToDate(Version current) => $"You're on the latest version ({Updates.UpdateCheck.Three(current)})";
+
+    public static string UpdateCheckFailed(string reason) => $"Couldn't check for updates: {reason}";
 
     /// <summary>
     /// At most <paramref name="maxLines"/> non-empty lines of git output for a toast or inline message, with an ellipsis line

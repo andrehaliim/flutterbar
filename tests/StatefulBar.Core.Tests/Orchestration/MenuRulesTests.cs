@@ -81,6 +81,7 @@ public sealed class MenuRulesTests
         Assert.True(menu.StartupIsToggle);
         Assert.Equal("Start with Windows", menu.StartupHeader);
         Assert.Null(menu.StartupToolTip);
+        Assert.True(menu.ShowUpdates);
     }
 
     [Fact]
@@ -92,5 +93,15 @@ public sealed class MenuRulesTests
         Assert.False(menu.StartupIsToggle); // a package cannot write the real HKCU Run key
         Assert.Equal("Start with Windows…", menu.StartupHeader);
         Assert.Equal("Opens the Windows startup settings, where StatefulBar is turned on or off", menu.StartupToolTip);
+        Assert.False(menu.ShowUpdates); // the Store updates the package
+    }
+
+    [Fact]
+    public void UpdateCopy()
+    {
+        Assert.Equal("StatefulBar 1.0.2 is available", UiText.UpdateAvailable(new Version(1, 0, 2)));
+        Assert.Equal("You're on the latest version (1.0.1)", UiText.UpToDate(new Version(1, 0, 1, 0)));
+        Assert.Equal("Couldn't check for updates: timed out", UiText.UpdateCheckFailed("timed out"));
+        Assert.Equal("View release", UiText.ViewRelease);
     }
 }

@@ -79,6 +79,27 @@ public sealed class AppSettings
     }
 
     public bool StartWithWindows { get; set; }
+
+    private UpdateSettings _updates = new();
+
+    /// <summary>"Check for updates" (spec §7.4); missing in settings written by 1.0.0.</summary>
+    public UpdateSettings Updates
+    {
+        get => _updates;
+        set => _updates = value ?? new UpdateSettings();
+    }
+}
+
+public sealed class UpdateSettings
+{
+    /// <summary>The automatic daily check (menu: Updates ▸ Check automatically).</summary>
+    public bool Auto { get; set; } = true;
+
+    /// <summary>When the last check got an answer from GitHub; the next automatic one is due a day later.</summary>
+    public DateTimeOffset? LastCheck { get; set; }
+
+    /// <summary>The newest version the automatic check already told the user about (<c>major.minor.patch</c>).</summary>
+    public string? NotifiedVersion { get; set; }
 }
 
 public sealed class ProjectState

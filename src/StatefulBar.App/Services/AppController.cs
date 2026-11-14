@@ -99,6 +99,7 @@ internal sealed partial class AppController : IStatusProvider, IAsyncDisposable
         }
         StartIpc();
         Fire(ScanAsync(), "Scan projects");
+        Fire(UpdateLoopAsync(), "Update check");
         var tools = await _tools;
         if (tools.Git is null)
         {

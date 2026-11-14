@@ -101,6 +101,9 @@ Right-click the widget:
 - **Show on**: move to another monitor's taskbar (needs "Show my taskbar on all displays"). There is only one widget, never
   duplicated. When that monitor is unplugged the widget moves to the main taskbar, and comes back when it is plugged in again.
 - **Drag widget** / **Reset to auto position**: move the widget horizontally; the position is saved.
+- **Updates**: "Check now" asks GitHub whether a newer release exists and answers with a toast; "View release" on that
+  toast opens the release page in your browser. With "Check automatically" on (the default), StatefulBar asks once a day
+  and tells you once about each new version. It never downloads or installs anything.
 - **Manage projects**, **Import config from IDE…**, **Edit launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
   **Add CLI to PATH…**, **Start with Windows**, **Exit**.
 

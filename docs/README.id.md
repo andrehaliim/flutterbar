@@ -100,6 +100,9 @@ Klik kanan widget:
 - **Show on**: pindah ke taskbar monitor lain (butuh "Show my taskbar on all displays"). Satu widget saja, tidak
   diduplikasi. Bila monitor itu dicabut, widget pindah ke taskbar utama dan kembali saat monitor dicolok lagi.
 - **Drag widget** / **Reset to auto position**: geser widget secara horizontal; posisinya disimpan.
+- **Updates**: "Check now" menanyakan ke GitHub apakah ada rilis yang lebih baru dan menjawab lewat toast; tombol
+  "View release" di toast itu membuka halaman rilis di browser. Selama "Check automatically" menyala (bawaan), StatefulBar
+  bertanya sekali sehari dan memberi tahu satu kali untuk tiap versi baru. Tidak ada yang diunduh atau dipasang.
 - **Manage projects**, **Import config from IDE…**, **Edit launch.json**, **Open log**, **Flutter tools…**, **Open terminal**,
   **Add CLI to PATH…**, **Start with Windows**, **Exit**.
 

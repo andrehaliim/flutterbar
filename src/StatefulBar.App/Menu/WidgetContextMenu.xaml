@@ -106,6 +106,15 @@
         </MenuItem.Icon>
     </MenuItem>
     <Separator Style="{StaticResource Fb.MenuSeparator}" />
+    <!-- Updates (spec §7.4): the GitHub build asks GitHub for a newer release; hidden in the Store build. -->
+    <MenuItem x:Name="UpdatesItem" Header="Updates">
+        <MenuItem.Icon>
+            <TextBlock Text="&#xE895;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
+        </MenuItem.Icon>
+        <MenuItem Header="Check now" Click="OnCheckUpdatesClick" />
+        <MenuItem x:Name="AutoUpdateItem" Header="Check automatically" IsCheckable="True" Click="OnAutoUpdateClick"
+                  ToolTip="Once a day, StatefulBar asks GitHub whether a newer version exists" />
+    </MenuItem>
     <MenuItem x:Name="AddToPathItem" Header="Add CLI to PATH…" Click="OnAddToPathClick">
         <MenuItem.Icon>
             <TextBlock Text="&#xE713;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />

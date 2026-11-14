@@ -350,4 +350,42 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.Null(settings.Widget.OffsetFromRight);
         Assert.True(settings.StartWithWindows);
     }
+
+    [Fact]
+    public void Updates_DefaultToAutomatic_AndRoundTrip()
+    {
+        var store = new AppSettingsStore(SettingsPath);
+        var settings = new AppSettings();
+        Assert.True(settings.Updates.Auto);
+        Assert.Null(settings.Updates.LastCheck);
+        Assert.Null(settings.Updates.NotifiedVersion);
+
+        var checkedAt = new DateTimeOffset(2026, 11, 14, 9, 30, 0, TimeSpan.FromHours(7));
+        settings.Updates.Auto = false;
+        settings.Updates.LastCheck = checkedAt;
+        settings.Updates.NotifiedVersion = "1.0.2";
+        store.Save(settings);
+
+        Assert.Contains("\"updates\"", File.ReadAllText(SettingsPath));
+        var loaded = store.Load(out var warning);
+        Assert.Null(warning);
+        Assert.False(loaded.Updates.Auto);
+        Assert.Equal(checkedAt, loaded.Updates.LastCheck);
+        Assert.Equal("1.0.2", loaded.Updates.NotifiedVersion);
+    }
+
+    // Settings written by 1.0.0 have no "updates" section, and a hand-edited null must not break the app.
+    [Theory]
+    [InlineData("{\"startWithWindows\":true}")]
+    [InlineData("{\"startWithWindows\":true,\"updates\":null}")]
+    public void Load_WithoutUpdates_UsesTheDefaults(string json)
+    {
+        File.WriteAllText(SettingsPath, json);
+
+        var settings = new AppSettingsStore(SettingsPath).Load(out var warning);
+
+        Assert.Null(warning);
+        Assert.True(settings.Updates.Auto);
+        Assert.Null(settings.Updates.LastCheck);
+    }
 }

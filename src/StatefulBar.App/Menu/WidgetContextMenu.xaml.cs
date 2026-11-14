@@ -19,6 +19,7 @@ internal enum MenuCommand
     OpenLog,
     FlutterTools,
     OpenTerminal,
+    CheckForUpdates,
     AddToPath,
     StartupSettings,
     Exit,
@@ -130,6 +131,12 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         TerminalItem.IsEnabled = hasProject;
     }
 
+    /// <summary>Updates ▸ Check automatically was switched on or off.</summary>
+    public event Action<bool>? AutoUpdateToggled;
+
+    /// <summary>Called when the menu opens: the stored <c>updates.auto</c>.</summary>
+    public void SetAutoUpdate(bool on) => AutoUpdateItem.IsChecked = on;
+
     private bool _startupIsToggle = true;
 
     /// <summary>
@@ -138,6 +145,7 @@ internal sealed partial class WidgetContextMenu : ContextMenu
     /// </summary>
     public void SetSystemMenu(SystemMenu system)
     {
+        UpdatesItem.Visibility = system.ShowUpdates ? Visibility.Visible : Visibility.Collapsed;
         AddToPathItem.Visibility = system.ShowAddCliToPath ? Visibility.Visible : Visibility.Collapsed;
         _startupIsToggle = system.StartupIsToggle;
         StartupItem.IsCheckable = system.StartupIsToggle;
@@ -238,6 +246,14 @@ internal sealed partial class WidgetContextMenu : ContextMenu
     private void OnFlutterToolsClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.FlutterTools);
 
     private void OnOpenTerminalClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.OpenTerminal);
+
+    private void OnCheckUpdatesClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.CheckForUpdates);
+
+    private void OnAutoUpdateClick(object sender, RoutedEventArgs e)
+    {
+        var on = AutoUpdateItem.IsChecked;
+        Dispatcher.BeginInvoke(() => AutoUpdateToggled?.Invoke(on));
+    }
 
     private void OnAddToPathClick(object sender, RoutedEventArgs e) => Raise(MenuCommand.AddToPath);
 

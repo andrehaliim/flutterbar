@@ -29,6 +29,7 @@ public partial class App
         menu.DragToggled += on => docking.DragMode = on;
         menu.SizeChosen += size => ChangeSize(widget, docking, size);
         menu.StartupToggled += on => Observe(ToggleStartupAsync(menu, on), "Start with Windows");
+        menu.AutoUpdateToggled += ChangeAutoUpdate;
         menu.CommandInvoked += command => OnMenuCommand(command, docking);
         menu.Opened += (_, _) => OnMenuOpened(menu, docking);
         menu.BackgroundOpacityChanged += ApplyBackgroundOpacity;
@@ -43,6 +44,7 @@ public partial class App
         menu.SetBackgroundOpacity(_settings.Widget.BackgroundOpacity);
         menu.SetTheme(TaskbarTheme.ParseMode(_settings.Widget.Theme));
         menu.SetMonitors(TaskbarTargets.MenuItems([.. TaskbarWindows.All().Select(t => t.Info)], _settings.Widget.Monitor));
+        menu.SetAutoUpdate(_settings.Updates.Auto);
         if (SystemItems.StartupIsToggle)
         {
             ApplyStartup(menu);
@@ -88,6 +90,9 @@ public partial class App
                 break;
             case MenuCommand.OpenTerminal:
                 controller.Observe(controller.OpenTerminalAsync(), "Open terminal");
+                break;
+            case MenuCommand.CheckForUpdates:
+                controller.Observe(controller.CheckForUpdatesFromMenuAsync(), "Check for updates");
                 break;
             case MenuCommand.AddToPath:
                 if (_system is { } system)
@@ -163,6 +168,17 @@ public partial class App
             theme.Mode = mode;
         }
         SaveSettings($"theme={setting}");
+    }
+
+    /// <summary>Updates ▸ Check automatically: the daily check reads the setting each time it is due, so nothing else changes.</summary>
+    private void ChangeAutoUpdate(bool on)
+    {
+        if (_settings.Updates.Auto == on)
+        {
+            return;
+        }
+        _settings.Updates.Auto = on;
+        SaveSettings($"updates.auto={on}");
     }
 
     private void SaveBackgroundOpacity()
