@@ -131,10 +131,6 @@ On the web, hot reload behaves like hot restart and answers code 0. Android isn'
 development machine failed to install (`INSTALL_FAILED_INSUFFICIENT_STORAGE`) and the `windows` device needs the Visual
 Studio C++ toolchain.
 
-Tests that need a real mouse, taskbar, or device are in [manual-test-checklist.md](manual-test-checklist.md) (in Indonesian,
-like the design spec in [superpowers/specs](superpowers/specs)). New rows are marked "BELUM DIUJI (user)" (not tested yet)
-until tested.
-
 ## RAM usage
 
 **Release** build, `StatefulBar.exe` idle for 5 minutes after start (no session, LogWindow closed), 96 DPI.
