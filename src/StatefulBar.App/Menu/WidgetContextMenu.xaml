@@ -106,7 +106,7 @@
         </MenuItem.Icon>
     </MenuItem>
     <Separator Style="{StaticResource Fb.MenuSeparator}" />
-    <MenuItem Header="Add CLI to PATH…" Click="OnAddToPathClick">
+    <MenuItem x:Name="AddToPathItem" Header="Add CLI to PATH…" Click="OnAddToPathClick">
         <MenuItem.Icon>
             <TextBlock Text="&#xE713;" FontFamily="{StaticResource Fb.Menu.IconFont}" FontSize="16" />
         </MenuItem.Icon>

@@ -43,3 +43,20 @@ public static class ExitFlow
 {
     public static bool NeedsConfirmation(SessionState state) => SessionGuard.NeedsStopConfirmation(state);
 }
+
+/// <summary>
+/// "Add CLI to PATH…" and "Start with Windows" (spec §7.4). As a plain exe both change the registry. As a package
+/// (<see cref="Integration.PackageIdentity"/>) they cannot: the PATH item is hidden because <c>sbar</c> comes with the
+/// package's execution alias, and Start with Windows becomes a command that opens the Windows startup settings, where
+/// the package's startup task is turned on or off.
+/// </summary>
+/// <param name="StartupIsToggle">True: a check mark that follows the Run key. False: a command (<see cref="StartupSettingsUri"/>).</param>
+public sealed record SystemMenu(bool ShowAddCliToPath, bool StartupIsToggle, string StartupHeader, string? StartupToolTip)
+{
+    /// <summary>The "Startup apps" page of Windows Settings.</summary>
+    public const string StartupSettingsUri = "ms-settings:startupapps";
+
+    public static SystemMenu For(bool packaged) => packaged
+        ? new SystemMenu(false, false, UiText.StartupSettings, UiText.StartupSettingsToolTip)
+        : new SystemMenu(true, true, UiText.StartupToggle, null);
+}

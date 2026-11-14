@@ -28,6 +28,9 @@ public static class UiText
     public const string UnexpectedError = "StatefulBar hit an error. Details are in diag.log";
     public const string PathAdded = "Open a new terminal to pick up the PATH change";
     public const string NeedProject = "Select a project first";
+    public const string StartupToggle = "Start with Windows";
+    public const string StartupSettings = "Start with Windows…";
+    public const string StartupSettingsToolTip = "Opens the Windows startup settings, where StatefulBar is turned on or off";
 
     /// <summary>
     /// At most <paramref name="maxLines"/> non-empty lines of git output for a toast or inline message, with an ellipsis line

@@ -71,4 +71,26 @@ public sealed class MenuRulesTests
         Assert.Equal("StatefulBar hit an error. Details are in diag.log", UiText.UnexpectedError);
         Assert.Equal("Open a new terminal to pick up the PATH change", UiText.PathAdded);
     }
+
+    [Fact]
+    public void SystemMenu_Unpackaged_KeepsTheRegistryBackedItems()
+    {
+        var menu = SystemMenu.For(packaged: false);
+
+        Assert.True(menu.ShowAddCliToPath);
+        Assert.True(menu.StartupIsToggle);
+        Assert.Equal("Start with Windows", menu.StartupHeader);
+        Assert.Null(menu.StartupToolTip);
+    }
+
+    [Fact]
+    public void SystemMenu_Packaged_HidesPathAndLeavesStartupToWindows()
+    {
+        var menu = SystemMenu.For(packaged: true);
+
+        Assert.False(menu.ShowAddCliToPath); // sbar comes from the package's execution alias
+        Assert.False(menu.StartupIsToggle); // a package cannot write the real HKCU Run key
+        Assert.Equal("Start with Windows…", menu.StartupHeader);
+        Assert.Equal("Opens the Windows startup settings, where StatefulBar is turned on or off", menu.StartupToolTip);
+    }
 }

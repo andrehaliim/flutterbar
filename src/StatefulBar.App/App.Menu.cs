@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using StatefulBar.App.Diagnostics;
 using StatefulBar.App.Docking;
 using StatefulBar.App.Menu;
@@ -14,12 +16,16 @@ namespace StatefulBar.App;
 /// <summary>Right-click menu wiring (spec §7.4, Task 16). One menu per widget window (a recreated window gets a new one).</summary>
 public partial class App
 {
+    // Plain exe: PATH and the Run key are ours to change. Package (Store build): Windows owns both (execution alias, startup task).
+    private static readonly SystemMenu SystemItems = SystemMenu.For(PackageIdentity.IsPackaged);
+
     private StartupState? _startup; // last Run-key state read (null = unknown)
     private bool _opacityChanged; // the slider moved since the menu opened: save when it closes
 
     private void WireMenu(TaskbarWidget widget, TaskbarDocking docking)
     {
         var menu = widget.Menu;
+        menu.SetSystemMenu(SystemItems);
         menu.DragToggled += on => docking.DragMode = on;
         menu.SizeChosen += size => ChangeSize(widget, docking, size);
         menu.StartupToggled += on => Observe(ToggleStartupAsync(menu, on), "Start with Windows");
@@ -37,8 +43,11 @@ public partial class App
         menu.SetBackgroundOpacity(_settings.Widget.BackgroundOpacity);
         menu.SetTheme(TaskbarTheme.ParseMode(_settings.Widget.Theme));
         menu.SetMonitors(TaskbarTargets.MenuItems([.. TaskbarWindows.All().Select(t => t.Info)], _settings.Widget.Monitor));
-        ApplyStartup(menu);
-        Observe(RefreshStartupAsync(menu), "Start with Windows"); // cached state first, the registry read follows
+        if (SystemItems.StartupIsToggle)
+        {
+            ApplyStartup(menu);
+            Observe(RefreshStartupAsync(menu), "Start with Windows"); // cached state first, the registry read follows
+        }
     }
 
     private void OnMenuCommand(MenuCommand command, TaskbarDocking docking)
@@ -85,6 +94,9 @@ public partial class App
                 {
                     controller.Observe(system.AddCliToPathAsync(), "Add CLI to PATH");
                 }
+                break;
+            case MenuCommand.StartupSettings:
+                controller.Observe(OpenStartupSettingsAsync(), "Start with Windows");
                 break;
             case MenuCommand.Exit:
                 controller.Observe(RequestExitAsync(), "Exit");
@@ -192,9 +204,32 @@ public partial class App
         ApplyStartup(menu);
     }
 
+    /// <summary>
+    /// Package (Store build): Start with Windows is the package's startup task, turned on or off in Windows Settings; the
+    /// menu item only opens that page.
+    /// </summary>
+    private async Task OpenStartupSettingsAsync()
+    {
+        try
+        {
+            await Task.Run(() => Process.Start(new ProcessStartInfo(SystemMenu.StartupSettingsUri) { UseShellExecute = true })?.Dispose());
+            AppLog.Write($"Start with Windows: opened {SystemMenu.StartupSettingsUri}");
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            AppLog.Write($"opening {SystemMenu.StartupSettingsUri} failed", ex);
+            _controller?.ShowToast($"Couldn't open the Windows startup settings: {ex.Message}");
+        }
+    }
+
     /// <summary>Reads the Run key (off the UI thread) and updates the menu check mark, if a menu is given.</summary>
     private async Task MigrateThenRefreshStartupAsync()
     {
+        if (!SystemItems.StartupIsToggle)
+        {
+            AppLog.Write("Start with Windows: packaged, left to the package's startup task (Run key not read)");
+            return;
+        }
         if (_system is { } system)
         {
             await system.MigrateLegacyStartupAsync();

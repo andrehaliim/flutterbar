@@ -20,6 +20,7 @@ internal enum MenuCommand
     FlutterTools,
     OpenTerminal,
     AddToPath,
+    StartupSettings,
     Exit,
 }
 
@@ -129,9 +130,35 @@ internal sealed partial class WidgetContextMenu : ContextMenu
         TerminalItem.IsEnabled = hasProject;
     }
 
-    /// <summary>Start with Windows as the registry says: null = unknown (unreadable), <paramref name="toolTip"/> explains odd states.</summary>
+    private bool _startupIsToggle = true;
+
+    /// <summary>
+    /// Called once per menu: how "Add CLI to PATH…" and "Start with Windows" behave for this process (plain exe or
+    /// package, <see cref="SystemMenu"/>).
+    /// </summary>
+    public void SetSystemMenu(SystemMenu system)
+    {
+        AddToPathItem.Visibility = system.ShowAddCliToPath ? Visibility.Visible : Visibility.Collapsed;
+        _startupIsToggle = system.StartupIsToggle;
+        StartupItem.IsCheckable = system.StartupIsToggle;
+        StartupItem.Header = system.StartupHeader;
+        if (!system.StartupIsToggle)
+        {
+            StartupItem.IsChecked = false;
+            StartupItem.ToolTip = system.StartupToolTip;
+        }
+    }
+
+    /// <summary>
+    /// Start with Windows as the registry says: null = unknown (unreadable), <paramref name="toolTip"/> explains odd
+    /// states. Ignored when the item is a command (<see cref="SetSystemMenu"/>).
+    /// </summary>
     public void SetStartup(bool? on, string? toolTip)
     {
+        if (!_startupIsToggle)
+        {
+            return;
+        }
         StartupItem.IsChecked = on == true;
         StartupItem.ToolTip = toolTip;
     }
@@ -183,6 +210,11 @@ internal sealed partial class WidgetContextMenu : ContextMenu
 
     private void OnStartupClick(object sender, RoutedEventArgs e)
     {
+        if (!_startupIsToggle)
+        {
+            Raise(MenuCommand.StartupSettings);
+            return;
+        }
         var on = StartupItem.IsChecked;
         Dispatcher.BeginInvoke(() => StartupToggled?.Invoke(on));
     }

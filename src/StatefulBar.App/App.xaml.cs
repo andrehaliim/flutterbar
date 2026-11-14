@@ -64,7 +64,7 @@ public partial class App : Application
             _ = HandOverToFirstInstanceAsync();
             return;
         }
-        AppLog.Write($"StatefulBar start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version}");
+        AppLog.Write($"StatefulBar start pid={Environment.ProcessId} 64bit={Environment.Is64BitProcess} os={Environment.OSVersion.Version} packaged={PackageIdentity.IsPackaged}");
         if (abandoned)
         {
             AppLog.Write("single instance: abandoned mutex taken over (the previous instance ended without releasing it)");
