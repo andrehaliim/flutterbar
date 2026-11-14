@@ -7,7 +7,7 @@
   </PropertyGroup>
   <!-- Shown in the exe's Properties > Details and by the installers. Product version also carries the commit hash. -->
   <PropertyGroup>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Andre Haliim</Authors>
     <Company>Andre Haliim Studio</Company>
     <Product>StatefulBar</Product>
