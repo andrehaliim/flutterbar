@@ -22,6 +22,7 @@ run, hot reload, and stop without opening the IDE.
 - [Uninstall](#uninstall)
 - [Limitations](#limitations)
 - [Building from source](#building-from-source)
+- [Privacy](#privacy)
 - [License](#license)
 - [Trademarks](#trademarks)
 
@@ -231,6 +232,11 @@ account" > Path > Edit).
 ## Building from source
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for building, testing, and packaging StatefulBar.
+
+## Privacy
+
+StatefulBar collects no data and has no telemetry. The only request it makes to a server is the update check to GitHub,
+which you can turn off. Details are in [PRIVACY.md](PRIVACY.md).
 
 ## License
 

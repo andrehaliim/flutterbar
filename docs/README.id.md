@@ -22,6 +22,7 @@ run, hot reload, dan stop tanpa membuka IDE.
 - [Uninstall](#uninstall)
 - [Keterbatasan](#keterbatasan)
 - [Build dari source](#build-dari-source)
+- [Privasi](#privasi)
 - [Lisensi](#lisensi)
 - [Merek dagang](#merek-dagang)
 
@@ -230,6 +231,11 @@ account" > Path > Edit).
 ## Build dari source
 
 Lihat [DEVELOPMENT.md](DEVELOPMENT.md) (bahasa Inggris) untuk build, test, dan membuat paket StatefulBar.
+
+## Privasi
+
+StatefulBar tidak mengumpulkan data dan tidak punya telemetri. Satu-satunya permintaan ke server adalah pengecekan update
+ke GitHub, yang bisa dimatikan. Rinciannya ada di [PRIVACY.md](../PRIVACY.md) (bahasa Inggris).
 
 ## Lisensi
 
